@@ -12,7 +12,7 @@ grammar smart::Grammar is PCT::Grammar;
 
 rule TOP {
     <statement>*
-    [ $ || <panic: 'Syntax error'> ]
+    [ $ || <.panic: 'Syntax error'> ]
     {*}
 }
 
@@ -31,12 +31,24 @@ rule statement {
 }
 
 rule makefile_variable_declaration {
-    <makefile_variable> [ '=' | ':=' ] <makefile_variable_value>
+    <makefile_variable> [ '=' | ':=' ] <makefile_variable_value_list>
     {*}
 }
 
-token makefile_variable {  <[A..Z a..z 0..9 _ \-]>+ } # <![ : = # ]>
-token makefile_variable_value { \N* } #  [\N | <![\\]>]*
+token makefile_variable {
+    <-[ : = '#' ' ' \t ]> <-[ : = '#' ]>*
+}
+#token makefile_variable_value_list {
+#    [ <makefile_variable_value_item>* \\
+#      [\n || <.panic: 'Suspicious continuation'>]
+#    ]*
+#    <makefile_variable_value_item>*
+#}
+token makefile_variable_value_list {
+    [ <-[\\ \n]>* \\ [\n || <.panic: 'Suspicious continuation'>] ]*
+    \N*
+}
+token makefile_variable_value_item { <-[\\ \n]>+ }
 
 rule smart_say_statement {
     # used to output some messages.

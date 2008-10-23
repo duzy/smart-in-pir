@@ -33,7 +33,7 @@ method statement($/, $key) {
 }
 
 method makefile_variable_declaration($/) {
-    my $past = PAST::Var.new( :name($<makefile_variable>),
+    my $past := PAST::Var.new( :name($<makefile_variable>),
 			      :scope('package'),  );
     make $past;
 }
@@ -42,7 +42,11 @@ method makefile_variable($/) {
     make $( $/ );
 }
 
-method makefile_variable_value($/) {
+method makefile_variable_value_list($/) {
+    make $( $/ );
+}
+
+method makefile_variable_value_item($/) {
     make $( $/ );
 }
 
