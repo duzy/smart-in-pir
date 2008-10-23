@@ -32,6 +32,20 @@ method statement($/, $key) {
     make $( $/{$key} );
 }
 
+method makefile_variable_declaration($/) {
+    my $past = PAST::Var.new( :name($<makefile_variable>),
+			      :scope('package'),  );
+    make $past;
+}
+
+method makefile_variable($/) {
+    make $( $/ );
+}
+
+method makefile_variable_value($/) {
+    make $( $/ );
+}
+
 method smart_say_statement($/) {
     my $past := PAST::Op.new( :name('say'), :pasttype('call'), :node( $/ ) );
     for $<expression> {

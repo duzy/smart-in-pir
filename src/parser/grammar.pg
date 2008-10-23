@@ -26,12 +26,27 @@ token ws {
 token comment { [ '#' '{' <-['}']>* '}' ] | [ '#' \N* \n? ] }
 
 rule statement {
-     | <smart_say_statement> {*}	#= smart_say_statement
+    | <makefile_variable_declaration> {*}	#= makefile_variable_declaration
+    | <smart_say_statement> {*}			#= smart_say_statement
 }
 
+rule makefile_variable_declaration {
+    <makefile_variable> [ '=' | ':=' ] <makefile_variable_value>
+    {*}
+}
+
+token makefile_variable {  <[A..Z a..z 0..9 _ \-]>+ } # <![ : = # ]>
+token makefile_variable_value { \N* } #  [\N | <![\\]>]*
+
 rule smart_say_statement {
+    # used to output some messages.
     'say' <expression> [ ',' <expression> ]* ';'
     {*}
+}
+
+##  terms
+token term {
+    | <value> {*}                                #= value
 }
 
 rule value {
@@ -44,11 +59,6 @@ rule integer { \d+ {*} }
 rule quote {
     [ \' <string_literal: '\'' > \' | \" <string_literal: '"' > \" ]
     {*}
-}
-
-##  terms
-token term {
-    | <value> {*}                                #= value
 }
 
 rule expression is optable { ... }
