@@ -1,0 +1,70 @@
+# $Id$
+
+=begin overview
+
+This is the grammar for smart written as a sequence of Perl 6 rules.
+
+=end overview
+
+=cut
+
+grammar smart::Grammar is PCT::Grammar;
+
+rule TOP {
+    <statement>*
+    [ $ || <panic: 'Syntax error'> ]
+    {*}
+}
+
+##  this <ws> rule treats # as "comment to eol"
+##  you may want to replace it with something appropriate
+token ws {
+    <!ww>
+    [ <comment> | \s+ ]*
+}
+
+token comment { [ '#' '{' <-['}']>* '}' ] | [ '#' \N* \n? ] }
+
+rule statement {
+     | <smart_say_statement> {*}	#= smart_say_statement
+}
+
+rule smart_say_statement {
+    'say' <expression> [ ',' <expression> ]* ';'
+    {*}
+}
+
+rule value {
+    | <integer> {*}                              #= integer
+    | <quote> {*}                                #= quote
+}
+
+rule integer { \d+ {*} }
+
+rule quote {
+    [ \' <string_literal: '\'' > \' | \" <string_literal: '"' > \" ]
+    {*}
+}
+
+##  terms
+token term {
+    | <value> {*}                                #= value
+}
+
+rule expression is optable { ... }
+
+
+
+######################################################################
+##  expressions and operators
+proto 'term:'     is precedence('=')     is parsed(&term)      { ... }
+
+## multiplicative operators
+proto infix:<*>   is looser(term:)       is pirop('mul')     { ... }
+proto infix:</>   is equiv(infix:<*>)    is pirop('div')     { ... }
+
+## additive operators
+proto infix:<+>   is looser(infix:<*>)   is pirop('add')     { ... }
+proto infix:<->   is equiv(infix:<+>)    is pirop('sub')     { ... }
+######################################################################
+
