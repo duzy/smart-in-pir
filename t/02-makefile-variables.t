@@ -2,7 +2,12 @@ say '1..1';
 
 # Declare makefile-variable, compatible with GNU make
 CC = gcc -I.
-CFLAGS = -g -ggdb
+CFLAGS = -g \
+-ggdb\
+-shared
+DDD=a\
+b\
+c\
 
 D> = xxx
 >F = fff

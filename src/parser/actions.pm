@@ -46,35 +46,36 @@ method statement($/, $key) {
 
 method makefile_variable_declaration($/) {
     our $?Makefile;
-    my $past := $( $<makefile_variable> );
-    $past.scope( 'lexical' );
+    my $var := $( $<makefile_variable> );
+    my $val := $( $<makefile_variable_value_list> ),
+    $var.scope( 'lexical' );
+    $var.viviself( 'String' );
 
-    my $name := $past.name();
+    my $name := $var.name();
     my $assign := ~$<makefile_variable_assign>;
 
-    if ( $<makefile_variable_value_list> ) {
-        #$past.viviself( $( $<makefile_variable_value_list>[0] ) );
-        #$past.viviself( ~$<makefile_variable_value_list> );
-        #$past.viviself( $( $<makefile_variable_value_list> ) );
-        $past.
-    }
-    else {
-        $past.viviself( 'Undef' );
-    }
+    #if ( $<makefile_variable_value_list> ) {
+        #$var.viviself( $( $<makefile_variable_value_list>[0] ) );
+        #$var.viviself( ~$<makefile_variable_value_list> );
+        #$var.viviself( $( $<makefile_variable_value_list> ) );
+        #$var.viviself( 'String' );
+    #}
+    #else {
+    #    $var.viviself( 'Undef' );
+    #}
 
-    if $?Makefile.symbol( $name ) {
+    #if $?Makefile.symbol( $name ) {
         # ???
-    }
+    #}
 
-    $?Makefile.symbol( $name, :scope('lexical') );
+    #$?Makefile.symbol( $name, :scope('lexical') );
 
-    make $past;
+    #my $val := ~$<makefile_variable_value_list>;
+    make PAST::Op.new( $var, $val, :pasttype('bind') );
 }
 
 method makefile_variable($/) {
-    my $name := ~$/;
-    make PAST::Var.new( :name( $name ), :scope('package'),
-			:node( $/ ), :viviself('Undef') );
+    make PAST::Var.new( :name( ~$/ ), :scope('package'), :viviself('Undef') );
 }
 
 method makefile_variable_assign($/) {
@@ -83,9 +84,15 @@ method makefile_variable_assign($/) {
 
 method makefile_variable_value_list($/) {
     # make a PAST::Op node to generate the variable list
-    my $past := PAST::Op.new( :node( $/ ) );
-    #$past.push( ~$/ );
+    my $past := PAST::Op.new( #:name('String'),
+          #:pasttype('pirop'),
+          :pirop('S'),
+          :lvalue(1),
+          :node( $/ )
+        );
+    $past.push( ~$/ );
     make $past;
+    #make PAST::Val.new( :value( ~$/ ), :returns('String'), :node($/) );
 }
 
 #method makefile_variable_value_item($/) {
@@ -155,6 +162,7 @@ method makefile_variable_ref($/) {
 			:returns( 'String' ),
 			:node($/) );
 }
+
 
 
 # Local Variables:
