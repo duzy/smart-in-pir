@@ -19,5 +19,8 @@ LDLIBS = \
 
 A = $(A B)
 
-#say 'ok ', $(CC);
+say 'ok ', $(CC), ${CFLAGS};
+say 'ok ', ${D>}, $(>F);
+say 'ok ', $(A  B), ${A	B} #{separates with tab};
+say 'ok ', $(A);
 

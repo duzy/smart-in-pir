@@ -18,12 +18,24 @@ value of the comment is passed as the second argument to the method.
 
 class smart::Grammar::Actions;
 
-method TOP($/) {
-    my $past := PAST::Block.new( :blocktype('declaration'), :node( $/ ) );
-    for $<statement> {
-        $past.push( $( $_ ) );
+method TOP($/, $key) {
+    our $?BLOCK;
+    our @?BLOCK;
+    our $?Makefile;
+
+    if $key eq 'enter' {
+	$?BLOCK := PAST::Block.new( :blocktype('declaration'), :node( $/ ) );
+	@?BLOCK.unshift( $?BLOCK );
+
+        $?Makefile := PAST::Block.new( :blocktype('declaration'), :node( $/ ) );
     }
-    make $past;
+    else { # while leaving the block
+	my $past := @?BLOCK.shift();
+	for $<statement> {
+	    $past.push( $( $_ ) );
+        }
+        make $past;
+    }
 }
 
 method statement($/, $key) {
@@ -33,22 +45,52 @@ method statement($/, $key) {
 }
 
 method makefile_variable_declaration($/) {
-    my $past := PAST::Var.new( :name($<makefile_variable>),
-			      :scope('package'),  );
+    our $?Makefile;
+    my $past := $( $<makefile_variable> );
+    $past.scope( 'lexical' );
+
+    my $name := $past.name();
+    my $assign := ~$<makefile_variable_assign>;
+
+    if ( $<makefile_variable_value_list> ) {
+        #$past.viviself( $( $<makefile_variable_value_list>[0] ) );
+        #$past.viviself( ~$<makefile_variable_value_list> );
+        #$past.viviself( $( $<makefile_variable_value_list> ) );
+        $past.
+    }
+    else {
+        $past.viviself( 'Undef' );
+    }
+
+    if $?Makefile.symbol( $name ) {
+        # ???
+    }
+
+    $?Makefile.symbol( $name, :scope('lexical') );
+
     make $past;
 }
 
 method makefile_variable($/) {
+    my $name := ~$/;
+    make PAST::Var.new( :name( $name ), :scope('package'),
+			:node( $/ ), :viviself('Undef') );
+}
+
+method makefile_variable_assign($/) {
     make $( $/ );
 }
 
 method makefile_variable_value_list($/) {
-    make $( $/ );
+    # make a PAST::Op node to generate the variable list
+    my $past := PAST::Op.new( :node( $/ ) );
+    #$past.push( ~$/ );
+    make $past;
 }
 
-method makefile_variable_value_item($/) {
-    make $( $/ );
-}
+#method makefile_variable_value_item($/) {
+#    make $( $/ );
+#}
 
 method smart_say_statement($/) {
     my $past := PAST::Op.new( :name('say'), :pasttype('call'), :node( $/ ) );
@@ -104,9 +146,14 @@ method integer($/) {
     make PAST::Val.new( :value( ~$/ ), :returns('Integer'), :node($/) );
 }
 
-
 method quote($/) {
     make PAST::Val.new( :value( $($<string_literal>) ), :node($/) );
+}
+
+method makefile_variable_ref($/) {
+    make PAST::Val.new( :value( 'variable reference' ),
+			:returns( 'String' ),
+			:node($/) );
 }
 
 

@@ -49,10 +49,34 @@ to the smart compiler.
     $P1 = $P0.'command_line'(args)
 .end
 
-
 .include 'src/gen_builtins.pir'
 .include 'src/gen_grammar.pir'
 .include 'src/gen_actions.pir'
+
+.namespace []
+
+.sub 'initlist' :anon :load :init
+#    subclass $P0, 'ResizablePMCArray', 'smart::CodeBlockList'
+#    $P1 = new 'smart::CodeBlockList'
+#    set_hll_global ['smart';'Grammar';'Actions'], '@?BLOCK', $P1
+    $P0 = new 'ResizablePMCArray'
+    set_hll_global ['smart';'Grammar';'Actions'], '@?BLOCK', $P0
+
+    #$P1 = new 'Hash'
+    #set_hll_global ['smart';'Grammar';'Actions'], '%?VAR', $P1
+.end
+
+#.namespace [ 'smart::CodeBlockList' ]
+
+#.sub 'unshift' :method
+#    .param pmc obj
+#    unshift slef, obj
+#.end
+
+#.sub 'shift' :method
+#    shift $P0, self
+#    .return ($P0)
+#.end
 
 =back
 

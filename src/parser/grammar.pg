@@ -11,9 +11,10 @@ This is the grammar for smart written as a sequence of Perl 6 rules.
 grammar smart::Grammar is PCT::Grammar;
 
 rule TOP {
+    {*}					#= enter
     <statement>*
     [ $ || <.panic: 'Syntax error'> ]
-    {*}
+    {*}					#= leave
 }
 
 ##  this <ws> rule treats # as "comment to eol"
@@ -31,24 +32,24 @@ rule statement {
 }
 
 rule makefile_variable_declaration {
-    <makefile_variable> [ '=' | ':=' ] <makefile_variable_value_list>
+    <makefile_variable>
+    <makefile_variable_assign>
+    <makefile_variable_value_list>
     {*}
 }
-
-token makefile_variable {
-    <-[ : = '#' ' ' \t ]> <-[ : = '#' ]>*
-}
+token makefile_variable { <-[ : = '#' ' ' \t ]> <-[ : = '#' ]>* {*} }
+token makefile_variable_assign { '=' | ':=' | '?=' }
 #token makefile_variable_value_list {
 #    [ <makefile_variable_value_item>* \\
 #      [\n || <.panic: 'Suspicious continuation'>]
 #    ]*
 #    <makefile_variable_value_item>*
 #}
+#token makefile_variable_value_item { <-[\\ \n]>+ }
 token makefile_variable_value_list {
     [ <-[\\ \n]>* \\ [\n || <.panic: 'Suspicious continuation'>] ]*
     \N*
 }
-token makefile_variable_value_item { <-[\\ \n]>+ }
 
 rule smart_say_statement {
     # used to output some messages.
@@ -59,6 +60,7 @@ rule smart_say_statement {
 ##  terms
 token term {
     | <value> {*}                                #= value
+    | <makefile_variable_ref> {*}		 #= makefile_variable_ref
 }
 
 rule value {
@@ -70,6 +72,18 @@ rule integer { \d+ {*} }
 
 rule quote {
     [ \' <string_literal: '\'' > \' | \" <string_literal: '"' > \" ]
+    {*}
+}
+
+rule makefile_variable_ref {
+    '$'
+    [
+      [ '(' <-[')']>+ #<makefile_variable>
+      [ ')' || <.panic: "Makefile variable-referencing expects ')'"> ]]
+    |
+      [ '{' <-['}']>+ #<makefile_variable>
+      [ '}' || <.panic: "Makefile variable-referencing expects '}'"> ]]
+    ]
     {*}
 }
 
