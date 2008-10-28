@@ -65,6 +65,9 @@ method makefile_variable_declaration($/) {
     #my $val := $( $<makefile_variable_value_list> );
     my $val := PAST::Val.new( :value( ~$<makefile_variable_value_list> ),
 			      :returns('String') );
+			      #:returns('MakefileVariable') );
+
+    #$val.foobar();
 
     my $name := $var.name();
 
@@ -90,13 +93,13 @@ method makefile_variable_declaration($/) {
 		     );
 }
 
-method makefile_variable($/) {
-    make PAST::Var.new( :name( ~$/ ),
-			:scope('lexical'),#('package'),
-			:viviself('Undef'),
-			:lvalue(1)
-		      );
-}
+#method makefile_variable($/) {
+#    make PAST::Var.new( :name( ~$/ ),
+#			:scope('lexical'),#('package'),
+#			:viviself('Undef'),
+#			:lvalue(1)
+#		      );
+#}
 
 method makefile_variable_assign($/) { make $( $/ ); }
 

@@ -33,6 +33,8 @@ object.
     $P1.'language'('smart')
     $P1.'parsegrammar'('smart::Grammar')
     $P1.'parseactions'('smart::Grammar::Actions')
+
+    
 .end
 
 =item main(args :slurpy)  :main
@@ -52,6 +54,7 @@ to the smart compiler.
 .include 'src/gen_builtins.pir'
 .include 'src/gen_grammar.pir'
 .include 'src/gen_actions.pir'
+.include 'src/parser/actions.pir'
 
 .namespace []
 
@@ -62,8 +65,10 @@ to the smart compiler.
     $P0 = new 'ResizablePMCArray'
     set_hll_global ['smart';'Grammar';'Actions'], '@?BLOCK', $P0
 
-    #$P1 = new 'Hash'
-    #set_hll_global ['smart';'Grammar';'Actions'], '%?VAR', $P1
+    #newclass $P1, 'MakefileVariable'
+    #get_hll_global $P1, ['PAST'], 'Var'
+    #subclass $P0, 'PAST::Var', 'smart::MakefileVariable'
+    #subclass $P2, 'String', 'MakefileVariable'
 .end
 
 #.namespace [ 'smart::CodeBlockList' ]
@@ -77,6 +82,9 @@ to the smart compiler.
 #    shift $P0, self
 #    .return ($P0)
 #.end
+
+
+
 
 =back
 
