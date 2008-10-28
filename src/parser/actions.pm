@@ -18,6 +18,20 @@ value of the comment is passed as the second argument to the method.
 
 class smart::Grammar::Actions;
 
+sub ref_makefile_variable( $/, $name ) {
+    our $?Makefile;
+
+    if !$?Makefile.symbol( $name ) {
+	$/.panic( 'Makefile Variable undeclaraed by \''~$name~"'" );
+    }
+
+    return PAST::Var.new( :name( $name ),
+			  :scope('lexical'),#('package'),
+			  :viviself('Undef'),
+			  :lvalue(0)
+			);
+}
+
 method TOP($/, $key) {
     our $?BLOCK;
     our @?BLOCK;
@@ -27,7 +41,8 @@ method TOP($/, $key) {
 	$?BLOCK := PAST::Block.new( :blocktype('declaration'), :node( $/ ) );
 	@?BLOCK.unshift( $?BLOCK );
 
-        $?Makefile := PAST::Block.new( :blocktype('declaration'), :node( $/ ) );
+        #$?Makefile := PAST::Block.new(:blocktype('declaration'), :node( $/ ));
+        $?Makefile := $?BLOCK;
     }
     else { # while leaving the block
 	my $past := @?BLOCK.shift();
@@ -52,19 +67,22 @@ method makefile_variable_declaration($/) {
 			      :returns('String') );
 
     my $name := $var.name();
-    #my $assign := ~$<makefile_variable_assign>;
 
-    #$var.isdecl( 1 );
+    $var.isdecl( 1 );
+    $var.lvalue( 1 );
     #$var.scope( 'lexical' );
     #$var.node( $?Makefile );
     #$var.viviself( ~$<makefile_variable_value_list> );
 
-#    if $?Makefile.symbol( $name ) {
-        # ???
-#    }
-#    else {
-#	$?Makefile.symbol( $name, :scope('lexical') );
-#    }
+    if $?Makefile.symbol( $name ) {
+	my $assign := ~$<makefile_variable_assign>;
+	if $assign eq '=' || $assign eq ':=' {
+            #$/.panic( '"'~$assign~'"' );
+        }
+    }
+    else {
+	$?Makefile.symbol( $name, :scope('lexical') );
+    }
 
     make PAST::Op.new( $var, $val,
 		       :name('makefile-variable-declaration'),
@@ -74,7 +92,7 @@ method makefile_variable_declaration($/) {
 
 method makefile_variable($/) {
     make PAST::Var.new( :name( ~$/ ),
-			:scope('package'),
+			:scope('lexical'),#('package'),
 			:viviself('Undef'),
 			:lvalue(1)
 		      );
@@ -82,14 +100,13 @@ method makefile_variable($/) {
 
 method makefile_variable_assign($/) { make $( $/ ); }
 
-method makefile_variable_value_list($/) {
-    #make PAST::Val.new( :value( ~$/ ), :returns('String'), :node($/) );
-    make PAST::Val.new( :value( ~$/ ), :returns('String') );
-}
-
-method makefile_variable_value_item($/) {
-    make $( $/ );
-}
+#method makefile_variable_value_list($/) {
+#    #make PAST::Val.new( :value( ~$/ ), :returns('String'), :node($/) );
+#    make PAST::Val.new( :value( ~$/ ), :returns('String') );
+#}
+#method makefile_variable_value_item($/) {
+#    make $( $/ );
+#}
 
 method smart_say_statement($/) {
     my $past := PAST::Op.new( :name('say'), :pasttype('call'), :node( $/ ) );
@@ -131,9 +148,7 @@ method expression($/, $key) {
 ##  term:
 ##    Like 'statement' above, the $key has been set to let us know
 ##    which term subrule was matched.
-method term($/, $key) {
-    make $( $/{$key} );
-}
+method term($/, $key) { make $( $/{$key} ); }
 
 
 method value($/, $key) {
@@ -151,18 +166,10 @@ method quote($/) {
 
 method makefile_variable_ref($/, $key) { make $( $/{$key} ); }
 method makefile_variable_ref1($/) {
-    make PAST::Var.new( :name( ~$<makefile_variable_name1> ),
-			:scope('package'),
-			:viviself('Undef'),
-			:lvalue(0)
-		      );
+    make ref_makefile_variable( $/, ~$<makefile_variable_name1> );
 }
 method makefile_variable_ref2($/) {
-    make PAST::Var.new( :name( ~$<makefile_variable_name2> ),
-			:scope('package'),
-			:viviself('Undef'),
-			:lvalue(0)
-		      );
+    make ref_makefile_variable( $/, ~$<makefile_variable_name2> );
 }
 
 

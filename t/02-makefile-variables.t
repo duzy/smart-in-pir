@@ -31,3 +31,5 @@ say 'ok A B =', $(A B );
 say 'ok A  B =', $(A  B );
 say 'ok A	B =', ${A	B } #{separates with tab};
 say 'ok A = ', $(A );
+say 'ok expended A = ', $(A ).expend();
+#say $(AAAA); # this should emit a error

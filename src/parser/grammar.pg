@@ -42,8 +42,8 @@ token makefile_variable_value_list {
       [ <makefile_variable_value_item>* \\
         [\n || <.panic: 'Suspicious continuation'>]]*
 	\N*
-	#[ <<makefile_variable_value_item>>*
-        #   [ \n || <.panic: 'Expecting a new line'>]
+	#[ <makefile_variable_value_item>*
+           [ \n || <.panic: 'Expecting a new line'>]
 	#]
     ]
 }
