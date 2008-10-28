@@ -17,13 +17,9 @@ rule TOP {
     {*}					#= leave
 }
 
-##  this <ws> rule treats # as "comment to eol"
-##  you may want to replace it with something appropriate
-token ws {
-    <!ww>
-    [ <comment> | \s+ ]*
-}
-
+#token wb { \s }
+token ws { <!ww> [ <comment> | \s+ ]* }
+#token ws { <!ww> [ <comment> | [\t ' ' \v]+ ]* }
 token comment { [ '#' '{' <-['}']>* '}' ] | [ '#' \N* \n? ] }
 
 rule statement {
@@ -39,17 +35,23 @@ rule makefile_variable_declaration {
 }
 token makefile_variable { <-[ : = '#' ' ' \t ]> <-[ : = '#' ]>* {*} }
 token makefile_variable_assign { '=' | ':=' | '?=' }
-#token makefile_variable_value_list {
-#    [ <makefile_variable_value_item>* \\
-#      [\n || <.panic: 'Suspicious continuation'>]
-#    ]*
-#    <makefile_variable_value_item>*
-#}
-#token makefile_variable_value_item { <-[\\ \n]>+ }
 token makefile_variable_value_list {
-    [ <-[\\ \n]>* \\ [\n || <.panic: 'Suspicious continuation'>] ]*
-    \N*
+    [ <makefile_variable_value_item>* \n ]
+    |
+    [
+      [ <makefile_variable_value_item>* \\
+        [\n || <.panic: 'Suspicious continuation'>]]*
+	\N*
+	#[ <<makefile_variable_value_item>>*
+        #   [ \n || <.panic: 'Expecting a new line'>]
+	#]
+    ]
 }
+token makefile_variable_value_item { <-[\\ \n \s]>+ }
+#token makefile_variable_value_list {
+#    [ <-[\\ \n]>* \\ [\n || <.panic: 'Suspicious continuation'>] ]*
+#    \N*
+#}
 
 rule smart_say_statement {
     # used to output some messages.
@@ -76,16 +78,23 @@ rule quote {
 }
 
 rule makefile_variable_ref {
+    | <makefile_variable_ref1> {*}	#= makefile_variable_ref1
+    | <makefile_variable_ref2> {*}	#= makefile_variable_ref2
+}
+rule makefile_variable_ref1 {
     '$'
-    [
-      [ '(' <-[')']>+ #<makefile_variable>
-      [ ')' || <.panic: "Makefile variable-referencing expects ')'"> ]]
-    |
-      [ '{' <-['}']>+ #<makefile_variable>
-      [ '}' || <.panic: "Makefile variable-referencing expects '}'"> ]]
-    ]
+    [ '(' <makefile_variable_name1>
+    [ ')' || <.panic: "Makefile variable-referencing expects ')'"> ]]
     {*}
 }
+rule makefile_variable_ref2 {
+    '$'
+    [ '{' <makefile_variable_name2>
+    [ '}' || <.panic: "Makefile variable-referencing expects '}'"> ]]
+    {*}
+}
+token makefile_variable_name1 { <-[')']>+ }
+token makefile_variable_name2 { <-['}']>+ }
 
 rule expression is optable { ... }
 

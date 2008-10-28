@@ -47,57 +47,49 @@ method statement($/, $key) {
 method makefile_variable_declaration($/) {
     our $?Makefile;
     my $var := $( $<makefile_variable> );
-    my $val := $( $<makefile_variable_value_list> ),
-    $var.scope( 'lexical' );
-    $var.viviself( 'String' );
+    #my $val := $( $<makefile_variable_value_list> );
+    my $val := PAST::Val.new( :value( ~$<makefile_variable_value_list> ),
+			      :returns('String') );
 
     my $name := $var.name();
-    my $assign := ~$<makefile_variable_assign>;
+    #my $assign := ~$<makefile_variable_assign>;
 
-    #if ( $<makefile_variable_value_list> ) {
-        #$var.viviself( $( $<makefile_variable_value_list>[0] ) );
-        #$var.viviself( ~$<makefile_variable_value_list> );
-        #$var.viviself( $( $<makefile_variable_value_list> ) );
-        #$var.viviself( 'String' );
-    #}
-    #else {
-    #    $var.viviself( 'Undef' );
-    #}
+    #$var.isdecl( 1 );
+    #$var.scope( 'lexical' );
+    #$var.node( $?Makefile );
+    #$var.viviself( ~$<makefile_variable_value_list> );
 
-    #if $?Makefile.symbol( $name ) {
+#    if $?Makefile.symbol( $name ) {
         # ???
-    #}
+#    }
+#    else {
+#	$?Makefile.symbol( $name, :scope('lexical') );
+#    }
 
-    #$?Makefile.symbol( $name, :scope('lexical') );
-
-    #my $val := ~$<makefile_variable_value_list>;
-    make PAST::Op.new( $var, $val, :pasttype('bind') );
+    make PAST::Op.new( $var, $val,
+		       :name('makefile-variable-declaration'),
+		       :pasttype('bind'),
+		     );
 }
 
 method makefile_variable($/) {
-    make PAST::Var.new( :name( ~$/ ), :scope('package'), :viviself('Undef') );
+    make PAST::Var.new( :name( ~$/ ),
+			:scope('package'),
+			:viviself('Undef'),
+			:lvalue(1)
+		      );
 }
 
-method makefile_variable_assign($/) {
-    make $( $/ );
-}
+method makefile_variable_assign($/) { make $( $/ ); }
 
 method makefile_variable_value_list($/) {
-    # make a PAST::Op node to generate the variable list
-    my $past := PAST::Op.new( #:name('String'),
-          #:pasttype('pirop'),
-          :pirop('S'),
-          :lvalue(1),
-          :node( $/ )
-        );
-    $past.push( ~$/ );
-    make $past;
     #make PAST::Val.new( :value( ~$/ ), :returns('String'), :node($/) );
+    make PAST::Val.new( :value( ~$/ ), :returns('String') );
 }
 
-#method makefile_variable_value_item($/) {
-#    make $( $/ );
-#}
+method makefile_variable_value_item($/) {
+    make $( $/ );
+}
 
 method smart_say_statement($/) {
     my $past := PAST::Op.new( :name('say'), :pasttype('call'), :node( $/ ) );
@@ -157,10 +149,20 @@ method quote($/) {
     make PAST::Val.new( :value( $($<string_literal>) ), :node($/) );
 }
 
-method makefile_variable_ref($/) {
-    make PAST::Val.new( :value( 'variable reference' ),
-			:returns( 'String' ),
-			:node($/) );
+method makefile_variable_ref($/, $key) { make $( $/{$key} ); }
+method makefile_variable_ref1($/) {
+    make PAST::Var.new( :name( ~$<makefile_variable_name1> ),
+			:scope('package'),
+			:viviself('Undef'),
+			:lvalue(0)
+		      );
+}
+method makefile_variable_ref2($/) {
+    make PAST::Var.new( :name( ~$<makefile_variable_name2> ),
+			:scope('package'),
+			:viviself('Undef'),
+			:lvalue(0)
+		      );
 }
 
 
