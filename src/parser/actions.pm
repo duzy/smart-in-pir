@@ -21,6 +21,8 @@ class smart::Grammar::Actions;
 sub ref_makefile_variable( $/, $name ) {
     our $?Makefile;
 
+    #$name := chop_spaces( $name );
+
     if !$?Makefile.symbol( $name ) {
 	$/.panic( 'Makefile Variable undeclaraed by \''~$name~"'" );
     }
@@ -60,27 +62,22 @@ method statement($/, $key) {
 }
 
 method makefile_variable_declaration($/) {
-    our $?Makefile;
     my $var := $( $<makefile_variable> );
-    #my $val := $( $<makefile_variable_value_list> );
-    my $val := PAST::Val.new( :value( ~$<makefile_variable_value_list> ),
-			      :returns('String') );
-			      #:returns('MakefileVariable') );
-
-    #$val.foobar();
+    my $val := $( $<makefile_variable_value_list> );
 
     my $name := $var.name();
 
-    $var.isdecl( 1 );
     $var.lvalue( 1 );
+    $var.isdecl( 1 );
     #$var.scope( 'lexical' );
     #$var.node( $?Makefile );
-    #$var.viviself( ~$<makefile_variable_value_list> );
 
+    our $?Makefile;
     if $?Makefile.symbol( $name ) {
 	my $assign := ~$<makefile_variable_assign>;
 	if $assign eq '=' || $assign eq ':=' {
             #$/.panic( '"'~$assign~'"' );
+            #$val.value().expand();
         }
     }
     else {
@@ -101,15 +98,31 @@ method makefile_variable_declaration($/) {
 #		      );
 #}
 
-method makefile_variable_assign($/) { make $( $/ ); }
+method makefile_variable_value_list($/) {
+    my $past := PAST::Op.new( :name('!makefile-variable'),
+			      :pasttype('call'),
+			      :returns('MakefileVariable'),
+			      :node($/)
+			    );
+    for $<makefile_variable_value_item> {
+        $past.push( $( $_ ) );
+    }
+    make $past;
+}
+method makefile_variable_value_item($/) {
+    make PAST::Val.new( :value( ~$/ ), :returns('String'), :node($/) );
+}
 
-#method makefile_variable_value_list($/) {
-#    #make PAST::Val.new( :value( ~$/ ), :returns('String'), :node($/) );
-#    make PAST::Val.new( :value( ~$/ ), :returns('String') );
-#}
-#method makefile_variable_value_item($/) {
-#    make $( $/ );
-#}
+method makefile_variable_method_call($/) {
+    my $past := PAST::Op.new( $( $<makefile_variable_ref> ),
+        :name( ~$<ident> ),
+	:pasttype( 'callmethod' )
+       );
+    for $<expression> {
+        $past.push( $( $_ ) );
+    }
+    make $past;
+}
 
 method smart_say_statement($/) {
     my $past := PAST::Op.new( :name('say'), :pasttype('call'), :node( $/ ) );

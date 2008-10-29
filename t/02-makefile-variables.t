@@ -1,6 +1,6 @@
 say '1..7';
 
-# Declare makefile-variable, compatible with GNU make
+# Declare makefile-variables, compatible with GNU make
 CC = gcc -I.
 CFLAGS = -g \
 -ggdb\
@@ -31,5 +31,5 @@ say 'ok A B =', $(A B);
 say 'ok A  B =', $(A  B);
 say 'ok A	B =', ${A	B} #{separates with tab};
 say 'ok A = ', $(A);
-#say 'ok expended A = ', $(A).expend();
 #say $(AAAA); # this should emit a error
+

@@ -19,7 +19,6 @@ rule TOP {
 
 #token wb { \s }
 token ws { <!ww> [ <comment> | \s+ ]* }
-#token ws { <!ww> [ <comment> | [\t ' ' \v]+ ]* }
 token comment { [ '#' '{' <-['}']>* '}' ] | [ '#' \N* \n? ] }
 
 rule statement {
@@ -36,18 +35,21 @@ rule makefile_variable_declaration {
 token makefile_variable { <-[ : = '#' ' ' \t ]> <-[ : = '#' ]>* {*} }
 token makefile_variable_assign { '=' | ':=' | '?=' }
 token makefile_variable_value_list {
-    [ <makefile_variable_value_item>* \n ]
-    |
     [
-      [ <makefile_variable_value_item>* \\
-        [\n || <.panic: 'Suspicious continuation'>]]*
-	\N*
-	#[ <makefile_variable_value_item>*
-           [ \n || <.panic: 'Expecting a new line'>]
-	#]
+      [
+        [
+	  <makefile_variable_value_item>* \\
+          [ \n || <.panic: 'Suspicious continuation'> ]
+	]+
+        <makefile_variable_value_item>*
+	[ \n || <.panic: 'Expecting a new line'> ]
+      ]
+      |
+      [ <makefile_variable_value_item>* \n ]
     ]
+    {*}
 }
-token makefile_variable_value_item { <-[\\ \n \s]>+ }
+token makefile_variable_value_item { <-[\\ \n \s]>+ {*} }
 #token makefile_variable_value_list {
 #    [ <-[\\ \n]>* \\ [\n || <.panic: 'Suspicious continuation'>] ]*
 #    \N*
@@ -62,6 +64,7 @@ rule smart_say_statement {
 ##  terms
 token term {
     | <value> {*}                                #= value
+    | <makefile_variable_method_call> {*}   #= makefile_variable_method_call
     | <makefile_variable_ref> {*}		 #= makefile_variable_ref
 }
 
@@ -74,6 +77,12 @@ rule integer { \d+ {*} }
 
 rule quote {
     [ \' <string_literal: '\'' > \' | \" <string_literal: '"' > \" ]
+    {*}
+}
+
+rule makefile_variable_method_call {
+    <makefile_variable_ref> '.' <ident>
+        '(' [ <expression> [ ',' <expression> ]* ]? ')'
     {*}
 }
 

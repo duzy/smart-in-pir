@@ -58,7 +58,7 @@ to the smart compiler.
 
 .namespace []
 
-.sub 'initlist' :anon :load :init
+.sub 'init_internal_types' :anon :load :init
 #    subclass $P0, 'ResizablePMCArray', 'smart::CodeBlockList'
 #    $P1 = new 'smart::CodeBlockList'
 #    set_hll_global ['smart';'Grammar';'Actions'], '@?BLOCK', $P1
@@ -66,9 +66,8 @@ to the smart compiler.
     set_hll_global ['smart';'Grammar';'Actions'], '@?BLOCK', $P0
 
     #newclass $P1, 'MakefileVariable'
-    #get_hll_global $P1, ['PAST'], 'Var'
-    #subclass $P0, 'PAST::Var', 'smart::MakefileVariable'
-    #subclass $P2, 'String', 'MakefileVariable'
+    subclass $P1, 'ResizablePMCArray', 'MakefileVariable'
+    #subclass $P1, 'ResizableStringArray', 'MakefileVariable'
 .end
 
 #.namespace [ 'smart::CodeBlockList' ]
@@ -83,7 +82,36 @@ to the smart compiler.
 #    .return ($P0)
 #.end
 
+#.namespace ['smart::Internal::MakefileVariable']
+.namespace ['MakefileVariable']
+.sub 'expand' :method
+    $S0 = self.'value'()
+    .return ($S0)
+.end
 
+.sub 'value' :method
+    $S0 = join ' ', self
+    .return ($S0)
+.end
+
+.sub 'join' :method
+    .param string s
+    join $S0, s, self
+#    .local pmc iter
+#    new iter, 'Iterator', self
+#iterate:
+#    unless iter goto iterate_end
+#    $S1 = shift iter
+#    $S0 .= $S1
+#    $S0 .= s
+#    goto iterate
+#iterate_end:	
+    .return ($S0)
+.end
+
+#.sub 'get_string' :method
+#    .return ('MakefileVariable')
+#.end
 
 
 =back

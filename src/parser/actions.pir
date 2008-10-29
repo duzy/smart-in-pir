@@ -1,3 +1,4 @@
+
 .namespace ["smart";"Grammar";"Actions"]
 .sub 'chop_spaces'
     .param string str
@@ -35,13 +36,12 @@ end_chop:
     throw $P0
     
 valid:
-    .local pmc Var, v
+    .local pmc Var
     get_hll_global Var, ["PAST"], "Var"
     set $S0, mo
     'chop_spaces'( $S0 ) #$S0 = 'chop_spaces'( $S0 )
-    #v = Var.'new'($S0 :named("name"), "lexical" :named("scope"), "Undef" :named("viviself"), 1 :named("lvalue"))
-    v = Var.'new'('name' => $S0, 'scope' => "lexical", 'viviself' => "Undef", 'lvalue' => 1 )
-    $P1 = mo.'result_object'(v)
+    $P0 = Var.'new'('name' => $S0, 'scope' => "lexical", 'viviself' => "Undef", 'lvalue' => 1 )
+    $P1 = mo.'result_object'( $P0 )
     .return ($P1)
     
 exception_handler:
@@ -53,5 +53,22 @@ exception_handler:
     
 exception_handler_rethrow:
     rethrow exception
+.end
+
+.namespace
+.sub '!makefile-variable'
+    .param pmc items :slurpy
+    #.return (items)
+    
+    .local pmc iter
+    $P0 = new 'MakefileVariable'
+    iter = new 'Iterator', items
+iterate_items:
+    unless iter goto iterate_items_end
+    $P1 = shift iter
+    push $P0, $P1
+    goto iterate_items
+iterate_items_end:
+    .return ($P0)
 .end
 
