@@ -56,12 +56,15 @@ exception_handler_rethrow:
 .end
 
 .namespace
-.sub '!makefile-variable'
+.sub '!create-makefile-variable'
+    .param pmc name
     .param pmc items :slurpy
-    #.return (items)
     
     .local pmc iter
-    $P0 = new 'MakefileVariable'
+    new $P0, 'MakefileVariable'
+
+    setattribute $P0, 'name', name
+
     iter = new 'Iterator', items
 iterate_items:
     unless iter goto iterate_items_end
@@ -72,3 +75,7 @@ iterate_items_end:
     .return ($P0)
 .end
 
+.sub '!append-makefile-variable'
+    .param pmc name
+    .param pmc items :slurpy
+.end

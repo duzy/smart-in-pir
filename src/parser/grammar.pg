@@ -13,13 +13,13 @@ grammar smart::Grammar is PCT::Grammar;
 rule TOP {
     {*}					#= enter
     <statement>*
-    [ $ || <.panic: 'Syntax error'> ]
+    [ $ || <.panic: 'Unsupported statement'> ]
     {*}					#= leave
 }
 
 #token wb { \s }
 token ws { <!ww> [ <comment> | \s+ ]* }
-token comment { [ '#' '{' <-['}']>* '}' ] | [ '#' \N* \n? ] }
+token comment { [ '#' '{' <-[ '}' ]>* '}' ] | [ '#' \N* \n? ] }
 
 rule statement {
     | <makefile_variable_declaration> {*}	#= makefile_variable_declaration
@@ -32,32 +32,35 @@ rule makefile_variable_declaration {
     <makefile_variable_value_list>
     {*}
 }
-token makefile_variable { <-[ : = '#' ' ' \t ]> <-[ : = '#' ]>* {*} }
+token makefile_variable {
+    [ <-[ ':' '=' '#' \s ]> <-[ ':' '=' '#' ]>* ]
+    {*}
+}
+#    [ <-[ ':' '=' '#' ' ' \t ]> <-[ ':' '=' '#' ]>* ]
+#    [ $ || <.panic: 'Invalid makefile-variable identifier'> ]
 token makefile_variable_assign { '=' | ':=' | '?=' }
 token makefile_variable_value_list {
     [
-      [
-        [
-	  <makefile_variable_value_item>* \\
-          [ \n || <.panic: 'Suspicious continuation'> ]
-	]+
-        <makefile_variable_value_item>*
-	[ \n || <.panic: 'Expecting a new line'> ]
-      ]
-      |
-      [ <makefile_variable_value_item>* \n ]
-    ]
-    {*}
+      |[
+         [ <makefile_variable_value_item>* \\
+           [ \n || <.panic: 'Suspicious continuation'> ]
+           ]+
+           <makefile_variable_value_item>*
+           [ \n || <.panic: 'Expecting a new line'> ]
+         ]
+      |[ <makefile_variable_value_item>*
+         [ \n || <.panic: 'Expecting a new line'> ]
+         ]
+    ] {*}
 }
-token makefile_variable_value_item { <-[\\ \n \s]>+ {*} }
-#token makefile_variable_value_list {
-#    [ <-[\\ \n]>* \\ [\n || <.panic: 'Suspicious continuation'>] ]*
-#    \N*
-#}
+token makefile_variable_value_item { <-[ \\ \n ]>+ {*} }
+#token makefile_variable_value_item { [\S|\N|<-[\\]>]+ {*} }
+#token makefile_variable_value_item { <[A..Za..z0..9\-\.]>+ {*} }
 
 rule smart_say_statement {
     # used to output some messages.
-    'say' <expression> [ ',' <expression> ]* ';'
+    'say' <expression> [ ',' <expression> ]*
+    [ ';' || <.panic: 'Requires statement terminater'> ]
     {*}
 }
 
@@ -82,7 +85,8 @@ rule quote {
 
 rule makefile_variable_method_call {
     <makefile_variable_ref> '.' <ident>
-        '(' [ <expression> [ ',' <expression> ]* ]? ')'
+        '(' [ <expression> [ ',' <expression> ]* ]?
+        [ ')' || <.panic: "Require an ')' to terminate parameter list"> ]
     {*}
 }
 

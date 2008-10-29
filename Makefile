@@ -41,6 +41,8 @@ SOURCES = smart.pir \
   src/gen_actions.pir \
   src/gen_builtins.pir \
   src/parser/actions.pir\
+  src/classes/all.pir\
+  src/classes/MakefileVariable.pir\
 #  $(SMART_GROUP)
 
 BUILTINS_PIR = \

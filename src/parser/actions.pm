@@ -62,32 +62,42 @@ method statement($/, $key) {
 }
 
 method makefile_variable_declaration($/) {
-    my $var := $( $<makefile_variable> );
-    my $val := $( $<makefile_variable_value_list> );
+    if $<makefile_variable_assign> {
+        my $var := $( $<makefile_variable> );
+        my $ctr := $( $<makefile_variable_value_list> );
+        my $name := $var.name();
+        $ctr.unshift( PAST::Val.new( :value($name), :returns('String') ) );
 
-    my $name := $var.name();
+        $var.lvalue( 1 );
+        $var.isdecl( 1 );
+        #$var.scope( 'lexical' );
+        #$var.node( $?Makefile );
 
-    $var.lvalue( 1 );
-    $var.isdecl( 1 );
-    #$var.scope( 'lexical' );
-    #$var.node( $?Makefile );
+        $ctr.name('!create-makefile-variable');
+        my $past := PAST::Op.new( $var, $ctr,
+                                  :name('bind-makefile-variable-object'),
+                                  :pasttype('bind'),
+                              );
 
-    our $?Makefile;
-    if $?Makefile.symbol( $name ) {
-	my $assign := ~$<makefile_variable_assign>;
-	if $assign eq '=' || $assign eq ':=' {
-            #$/.panic( '"'~$assign~'"' );
-            #$val.value().expand();
+        our $?Makefile;
+        if $?Makefile.symbol( $name ) {
+            my $assign := ~$<makefile_variable_assign>;
+            if $assign eq '=' || $assign eq ':=' {
+                #$/.panic( '"'~$assign~'"' );
+                #$ctr.value().expand();
+                #$ctr.name('!create-makefile-variable');
+            }
+            elsif $assign eq '+=' {
+                $ctr.name('!append-makefile-variable');
+            }
         }
-    }
-    else {
-	$?Makefile.symbol( $name, :scope('lexical') );
-    }
+        else {
+            $?Makefile.symbol( $name, :scope('lexical') );
+            #$ctr.name('!create-makefile-variable');
+        }
 
-    make PAST::Op.new( $var, $val,
-		       :name('makefile-variable-declaration'),
-		       :pasttype('bind'),
-		     );
+        make $past;
+    }
 }
 
 #method makefile_variable($/) {
@@ -99,8 +109,7 @@ method makefile_variable_declaration($/) {
 #}
 
 method makefile_variable_value_list($/) {
-    my $past := PAST::Op.new( :name('!makefile-variable'),
-			      :pasttype('call'),
+    my $past := PAST::Op.new( :pasttype('call'),
 			      :returns('MakefileVariable'),
 			      :node($/)
 			    );
