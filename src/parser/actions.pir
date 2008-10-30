@@ -78,4 +78,20 @@ iterate_items_end:
 .sub '!append-makefile-variable'
     .param pmc name
     .param pmc items :slurpy
+    .local pmc Makefile, iter
+    get_hll_global Makefile, ['smart';'Grammar';'Actions'], '$?Makefile'
+    $P0 = Makefile.'symbol'( name )
+
+    #unless_null $P0 goto iterate_items_end
+    
+    iter = new 'Iterator', items
+iterate_items:
+    unless iter goto iterate_items_end
+    $P1 = shift iter
+    push $P0, $P1
+    goto iterate_items
+iterate_items_end:
+
+    .return($P0)
 .end
+

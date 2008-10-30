@@ -27,14 +27,15 @@ object.
 
 .sub 'onload' :anon :load :init
     load_bytecode 'PCT.pbc'
-
+    
     $P0 = get_hll_global ['PCT'], 'HLLCompiler'
     $P1 = $P0.'new'()
     $P1.'language'('smart')
     $P1.'parsegrammar'('smart::Grammar')
     $P1.'parseactions'('smart::Grammar::Actions')
-
     
+    $P1.'commandline_banner'("Smart Make for Parrot VM\n")
+    $P1.'commandline_prompt'('>> ')
 .end
 
 =item main(args :slurpy)  :main
@@ -54,6 +55,7 @@ to the smart compiler.
 .include 'src/gen_builtins.pir'
 .include 'src/gen_grammar.pir'
 .include 'src/gen_actions.pir'
+.include 'src/parser/grammar.pir'
 .include 'src/parser/actions.pir'
 .include 'src/classes/all.pir'
 

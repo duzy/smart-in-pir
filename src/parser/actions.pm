@@ -175,11 +175,9 @@ method expression($/, $key) {
 ##    which term subrule was matched.
 method term($/, $key) { make $( $/{$key} ); }
 
-
 method value($/, $key) {
     make $( $/{$key} );
 }
-
 
 method integer($/) {
     make PAST::Val.new( :value( ~$/ ), :returns('Integer'), :node($/) );
