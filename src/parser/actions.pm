@@ -74,20 +74,11 @@ method makefile_variable_declaration($/) {
         #$var.node( $?Makefile );
 
         $ctr.name('!create-makefile-variable');
-        my $past := PAST::Op.new( $var, $ctr,
-                                  :name('bind-makefile-variable-object'),
-                                  :pasttype('bind'),
-                              );
 
         our $?Makefile;
         if $?Makefile.symbol( $name ) {
             my $assign := ~$<makefile_variable_assign>;
-            if $assign eq '=' || $assign eq ':=' {
-                #$/.panic( '"'~$assign~'"' );
-                #$ctr.value().expand();
-                #$ctr.name('!create-makefile-variable');
-            }
-            elsif $assign eq '+=' {
+            if $assign eq '+=' {
                 $ctr.name('!append-makefile-variable');
             }
         }
@@ -96,7 +87,10 @@ method makefile_variable_declaration($/) {
             #$ctr.name('!create-makefile-variable');
         }
 
-        make $past;
+        make PAST::Op.new( $var, $ctr,
+                                  :name('bind-makefile-variable-object'),
+                                  :pasttype('bind'),
+                              );
     }
 }
 

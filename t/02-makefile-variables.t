@@ -1,4 +1,4 @@
-say '1..7';
+say '1..10';
 
 # Declare makefile-variables, compatible with GNU make
 CC = gcc -I.

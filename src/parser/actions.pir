@@ -63,6 +63,10 @@ exception_handler_rethrow:
     .local pmc iter
     new $P0, 'MakefileVariable'
 
+    ## Store new makefile variable as a HLL global symbol
+    set $S0, name
+    set_hll_global ['smart';'makefile';'variable'], $S0, $P0
+
     setattribute $P0, 'name', name
 
     iter = new 'Iterator', items
@@ -78,20 +82,28 @@ iterate_items_end:
 .sub '!append-makefile-variable'
     .param pmc name
     .param pmc items :slurpy
-    .local pmc Makefile, iter
-    get_hll_global Makefile, ['smart';'Grammar';'Actions'], '$?Makefile'
-    $P0 = Makefile.'symbol'( name )
-
-    #unless_null $P0 goto iterate_items_end
-    
+    .local pmc var
+    set $S0, name
+    get_hll_global var, ['smart';'makefile';'variable'], $S0
+    #set $S2, var
+    #print $S2
+    #print "\n"
+    unless null var goto makefile_variable_exists
+    set $S1, 'Makefile-variable undeclaraed: '
+    concat $S1, $S0
+    $P0 = new 'Exception'
+    $P0 = $S0
+    throw $P0
+makefile_variable_exists:
+    .local pmc iter
     iter = new 'Iterator', items
 iterate_items:
     unless iter goto iterate_items_end
     $P1 = shift iter
-    push $P0, $P1
+    push var, $P1
     goto iterate_items
 iterate_items_end:
 
-    .return($P0)
+    .return(var)
 .end
 

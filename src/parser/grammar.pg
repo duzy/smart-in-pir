@@ -33,12 +33,12 @@ rule makefile_variable_declaration {
     {*}
 }
 token makefile_variable {
-    [ <-[ ':' '=' '#' \s ]> <-[ ':' '=' '#' ]>* ]
+    [ <-[ ':' '=' '#' \s ]> <-[ ':' '=' '#' '+' '?' ]>* ]
     {*}
 }
 #    [ <-[ ':' '=' '#' ' ' \t ]> <-[ ':' '=' '#' ]>* ]
 #    [ $ || <.panic: 'Invalid makefile-variable identifier'> ]
-token makefile_variable_assign { '=' | ':=' | '?=' }
+token makefile_variable_assign { '=' | ':=' | '?=' | '+=' }
 token makefile_variable_value_list {
     [
       |[
