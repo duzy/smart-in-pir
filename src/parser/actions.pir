@@ -73,7 +73,8 @@ exception_handler_rethrow:
 iterate_items:
     unless iter goto iterate_items_end
     $P1 = shift iter
-    push $P0, $P1
+    $P2 = $P0.'items'()
+    push $P2, $P1 #   push $P0, $P1
     goto iterate_items
 iterate_items_end:
     .return ($P0)
@@ -100,7 +101,8 @@ makefile_variable_exists:
 iterate_items:
     unless iter goto iterate_items_end
     $P1 = shift iter
-    push var, $P1
+    $P2 = var.'items'()
+    push $P2, $P1 #push var, $P1
     goto iterate_items
 iterate_items_end:
 

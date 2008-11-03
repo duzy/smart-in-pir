@@ -42,20 +42,18 @@ token makefile_variable_assign { '=' | ':=' | '?=' | '+=' }
 token makefile_variable_value_list {
     [
       |[
-         [ <makefile_variable_value_item>* \\
+         [ [ <makefile_variable_value_item> <[ \ \t ]>* ]* \\
            [ \n || <.panic: 'Suspicious continuation'> ]
-           ]+
-           <makefile_variable_value_item>*
-           [ \n || <.panic: 'Expecting a new line'> ]
-         ]
-      |[ <makefile_variable_value_item>*
+         ]+
+         [ <makefile_variable_value_item> <[ \ \t ]>* ]*
          [ \n || <.panic: 'Expecting a new line'> ]
-         ]
+       ]
+      |[ [ <makefile_variable_value_item> <[ \ \t ]>* ]*
+         [ \n || <.panic: 'Expecting a new line2'> ]
+       ]
     ] {*}
 }
-#token makefile_variable_value_item { <-[ \\ \n ]>+ {*} }
-#token makefile_variable_value_item { [\S|\N|<-[\\]>]+ {*} }
-#token makefile_variable_value_item { <[A..Za..z0..9\-\.]>+ {*} }
+token makefile_variable_value_item { <-[ \\ \n \ \t ]>+ {*} }
 
 rule smart_say_statement {
     # used to output some messages.
