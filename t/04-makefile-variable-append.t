@@ -1,6 +1,6 @@
 say '1..5';
 
-#A = item 0
+#A = item0
 A += item1
 A += item2\
 item3\

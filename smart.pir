@@ -35,7 +35,7 @@ object.
     $P1.'parseactions'('smart::Grammar::Actions')
     
     $P1.'commandline_banner'("Smart Make for Parrot VM\n")
-    $P1.'commandline_prompt'('>> ')
+    $P1.'commandline_prompt'('smart> ')
 .end
 
 =item main(args :slurpy)  :main
