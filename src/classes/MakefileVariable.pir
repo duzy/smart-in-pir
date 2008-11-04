@@ -1,3 +1,10 @@
+#
+#    Copyright 2008-10-30 DuzySoft.com, by Duzy Chan
+#    All rights reserved by Duzy Chan
+#    Email: <duzy@duzy.ws, duzy.chan@gmail.com>
+#
+#    $Id$
+#
 
 .namespace ['MakefileVariable']
 

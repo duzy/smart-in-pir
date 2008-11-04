@@ -22,10 +22,13 @@ token ws { <!ww> [ <comment> | \s+ ]* }
 token comment { [ '#' '{' <-[ '}' ]>* '}' ] | [ '#' \N* \n? ] }
 
 rule statement {
+    | <empty_smart_statement> {*}               #= empty_smart_statement
     | <makefile_variable_declaration> {*}	#= makefile_variable_declaration
     | <makefile_target> {*}                     #= makefile_target
     | <smart_say_statement> {*}			#= smart_say_statement
 }
+
+rule empty_smart_statement { <.ws> ';' {*} }
 
 rule makefile_variable_declaration {
     <makefile_variable>
@@ -40,6 +43,7 @@ token makefile_variable {
 token makefile_variable_assign { '=' | ':=' | '?=' | '+=' }
 token makefile_variable_value_list {
     [
+      |[ <[ \ \t ]>* \n? ]
       |[
          [ [ <makefile_variable_value_item> <[ \ \t ]>* ]* \\
            [ \n || <.panic: 'smart: ** Suspicious continuation'> ]
@@ -57,15 +61,13 @@ token makefile_variable_value_item { <-[ \\ \n \ \t ]>+ {*} }
 token makefile_target {
     <makefile_target_name> \s* ':' <[ \ \t ]>*
     [
-     |[ ';' <[ \ \t ]>* <makefile_target_action> ]
+     |[ ';' <[ \ \t ]>* <makefile_target_action>* ]
      |[ \n \t <makefile_target_action> ]*
     ]
     {*}
 }
-token makefile_target_name { <-[ : \n ]>+ }
-token makefile_target_action {
-    '@'? <-[ \n ]>* {*}
-}
+token makefile_target_name { <-[ : \n ]>+ {*} }
+token makefile_target_action { <-[ \n ]>* {*} }
 
 rule smart_say_statement {
     # used to output some messages.
@@ -77,7 +79,7 @@ rule smart_say_statement {
 ##  terms
 token term {
     | <value> {*}                                #= value
-    | <makefile_variable_method_call> {*}   #= makefile_variable_method_call
+    | <makefile_variable_method_call> {*}        #= makefile_variable_method_call
     | <makefile_variable_ref> {*}		 #= makefile_variable_ref
 }
 

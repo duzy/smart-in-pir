@@ -109,12 +109,66 @@ iterate_items_end:
     .return(var)
 .end
 
-.sub '!create-makefile-target' :method
-    .param pmc name
-    .param pmc actions :slurpy
-    .return(tg)
+.sub '!invoke-makefile-number-one-target'
+    .local pmc target
+    get_hll_global target, ['smart';'makefile'], '$<0>'
+    if null target goto no_number_one_target
+    target.'update'()
+    .return()
+    
+no_number_one_target:
+    print "Number-one target unspecified!\n"
 .end
 
-.sub '!create-makefile-action' :method
+.sub '!create-makefile-target'
+    .param pmc name
+    .param pmc actions :slurpy
+    .local pmc target
+    target = new 'MakefileTarget'
+
+    get_hll_global $P0, ['smart';'makefile'], '$<0>'
+    unless null $P0 goto got_number_one_target
+    set_hll_global ['smart';'makefile'], '$<0>', target
+got_number_one_target:  
+
+    set $S0, name
+    set_hll_global ['smart';'makefile';'target'], $S0, target
     
+    .local pmc iter
+    iter = new 'Iterator', actions
+
+    .local pmc actions
+    actions = target.'actions'()
+    
+iterate_actions:        
+    unless iter goto end_iterate_actions
+    $P0 = shift iter
+    #$P0.'execute'()
+    push actions, $P0
+    goto iterate_actions
+end_iterate_actions:
+
+    .return(target)
+.end
+
+.sub '!create-makefile-action'
+    .param pmc command
+    .local pmc action
+
+    action = new 'MakefileAction'
+
+    set $S0, command
+    substr $S1, $S0, 0, 1
+    
+    $I0 = $S1 != '@'
+    action.'set_echo_on'( $I0 )
+    if $I0 goto command_echo_on
+    $I0 = length $S0
+    $I0 -= 1
+    substr $S1, $S0, 1, $I0
+    command = $S1
+command_echo_on:        
+    
+    action.'set_command'( command )
+    .return(action)
 .end

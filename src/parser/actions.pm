@@ -51,6 +51,13 @@ method TOP($/, $key) {
 	for $<statement> {
 	    $past.push( $( $_ ) );
         }
+
+        # push last op to active target updating
+        $past.push( PAST::Op.new( :name('!invoke-makefile-number-one-target'),
+          :pasttype('call'),
+          :node( $/ )
+        ) );
+
         make $past;
     }
 }
@@ -60,6 +67,8 @@ method statement($/, $key) {
     ## and retrieve the result object from that field
     make $( $/{$key} );
 }
+
+method empty_smart_statement($/) { make PAST::Op.new( :pirop('noop') ); }
 
 method makefile_variable_declaration($/) {
     if $<makefile_variable_assign> {
@@ -104,9 +113,9 @@ method makefile_variable_declaration($/) {
 
 method makefile_variable_value_list($/) {
     my $past := PAST::Op.new( :pasttype('call'),
-			      :returns('MakefileVariable'),
-			      :node($/)
-			    );
+                              :returns('MakefileVariable'),
+                              :node($/)
+                            );
     for $<makefile_variable_value_item> {
         $past.push( $( $_ ) );
     }
@@ -128,19 +137,45 @@ method makefile_variable_method_call($/) {
 }
 
 method makefile_target($/) {
-    my $name := ~$<makefile_target_name>
-    my $past := PAST::Op.new( :pasttype('call'), :returns('MakefileTarget'),
-      :name('!create-makefile-target'), :node( $/ ) );
+    my $target  := $( $<makefile_target_name> );
+    $target.lvalue( 1 );
+    $target.isdecl( 1 );
+    $target.scope('lexical');
+
+    my $name    := $target.name();
     chop_spaces( $name );
+
+    my $ctr     := PAST::Op.new( :pasttype('call'),
+      :name('!create-makefile-target'),
+      :returns('MakefileTarget'),
+      :node( $/ )
+    );
+    $ctr.push( PAST::Val.new( :value($name), :returns('String') ) );
     for $<makefile_target_action> {
-        $past.push( $($_) );
+        #$ctr.push( PAST::Val.new( :value(~$_), :returns('String') ) );
+        $ctr.push( $( $_ ) );
     }
-    make $past;
+
+    make PAST::Op.new( $target, $ctr,
+                       :pasttype('bind'),
+                       :name('create-makefile-target'),
+                       :node( $/ ) );
+}
+
+method makefile_target_name($/) {
+    make PAST::Var.new( :name(~$/),
+      :lvalue(1),
+      :viviself('Undef'),
+      :scope('lexical'),
+      :node( $/ )
+    );
 }
 
 method makefile_target_action($/) {
-    make PAST::Op.new( :pasttype('call'), :returns('MakefileAction'),
-      :node($/) );
+    my $past := PAST::Op.new( :pasttype('call'), :returns('MakefileAction'),
+      :name('!create-makefile-action'), :node($/) );
+    $past.push( PAST::Val.new( :value(~$/), :returns('String') ) );
+    make $past;
 }
 
 method smart_say_statement($/) {

@@ -61,7 +61,7 @@ to the smart compiler.
 
 .namespace []
 
-.sub '__init_internal_types' :anon :load :init
+.sub '__init_internal_objects' :anon :load :init
     $P0 = new 'ResizablePMCArray'
     set_hll_global ['smart';'Grammar';'Actions'], '@?BLOCK', $P0
 .end

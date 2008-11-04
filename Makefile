@@ -44,6 +44,8 @@ SOURCES = smart.pir \
   src/parser/grammar.pir\
   src/classes/all.pir\
   src/classes/MakefileVariable.pir\
+  src/classes/MakefileTarget.pir\
+  src/classes/MakefileAction.pir\
 #  $(SMART_GROUP)
 
 BUILTINS_PIR = \
