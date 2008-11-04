@@ -20,4 +20,5 @@ say "uncompatible: ", $(UN).expand();
 
 # this must be expanded to '' -- the empty string
 NIL = aa$ bb
-say "fail: ", $(NIL).expand();
+say "uncompatible: ", $(NIL).expand();
+

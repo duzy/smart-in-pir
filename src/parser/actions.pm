@@ -88,9 +88,9 @@ method makefile_variable_declaration($/) {
         }
 
         make PAST::Op.new( $var, $ctr,
-                                  :name('bind-makefile-variable-object'),
-                                  :pasttype('bind'),
-                              );
+                           :name('bind-makefile-variable-object'),
+                           :pasttype('bind'),
+                       );
     }
 }
 
@@ -125,6 +125,16 @@ method makefile_variable_method_call($/) {
         $past.push( $( $_ ) );
     }
     make $past;
+}
+
+method makefile_target($/) {
+    make PAST::Op.new( :pasttype('call'), :returns('MakefileTarget'),
+      :node( $/ ) );
+}
+
+method makefile_target_action($/) {
+    make PAST::Op.new( :pasttype('call'), :returns('MakefileAction'),
+      :node($/) );
 }
 
 method smart_say_statement($/) {

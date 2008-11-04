@@ -23,6 +23,7 @@ token comment { [ '#' '{' <-[ '}' ]>* '}' ] | [ '#' \N* \n? ] }
 
 rule statement {
     | <makefile_variable_declaration> {*}	#= makefile_variable_declaration
+    | <makefile_target> {*}                     #= makefile_target
     | <smart_say_statement> {*}			#= smart_say_statement
 }
 
@@ -33,11 +34,9 @@ rule makefile_variable_declaration {
     {*}
 }
 token makefile_variable {
-    [ <-[ ':' '=' '#' \s ]> <-[ ':' '=' '#' '+' '?' ]>* ]
+    [ <-[ ':' '=' '#' \ \t ]> <-[ ':' '=' '#' '+' '?' ]>* ]
     {*}
 }
-#    [ <-[ ':' '=' '#' ' ' \t ]> <-[ ':' '=' '#' ]>* ]
-#    [ $ || <.panic: 'smart: ** Invalid makefile-variable identifier'> ]
 token makefile_variable_assign { '=' | ':=' | '?=' | '+=' }
 token makefile_variable_value_list {
     [
@@ -54,6 +53,18 @@ token makefile_variable_value_list {
     ] {*}
 }
 token makefile_variable_value_item { <-[ \\ \n \ \t ]>+ {*} }
+
+token makefile_target {
+    <-[ : \n ]>+ \s* ':' <[ \ \t ]>*
+    [
+     |[ ';' <[ \ \t ]>* <makefile_target_action> ]
+     |[ \n \t <makefile_target_action> ]*
+    ]
+    {*}
+}
+token makefile_target_action {
+    '@'? <-[ \n ]>*
+}
 
 rule smart_say_statement {
     # used to output some messages.

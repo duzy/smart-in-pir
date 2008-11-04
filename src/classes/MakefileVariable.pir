@@ -65,7 +65,7 @@ donot_append_space:
     len = length item
     pos1 = 0
     
-search_variable_sign:
+search_variable_sign: # search '$'
     unless pos1 < len goto end_search_variable_sign
     $S0 = substr item, pos1, 1
     if $S0 == '$' goto got_makefile_variable_sign
@@ -87,6 +87,7 @@ got_makefile_variable_sign:
     ## make the next single character as the name
     pos2 = pos1 + 1
     goto got_single_character_variable
+    
 got_makefile_variable_left_paren:
     pos2 = pos1 + 2 ## skip the '$(' or '${' sign
 search_makefile_variable_right_paren:
@@ -108,7 +109,6 @@ got_single_character_variable:
     get_hll_global $P0, ['smart';'makefile';'variable'], $S0
     if null $P0 goto makefile_variable_not_exist
     ## expand the variable by name $S2
-    ## should check "can $P0, 'expand'"
     $I0 = can $P0, 'expand'
     if $I0 goto object_can_expand
     $P1 = new 'Exception'

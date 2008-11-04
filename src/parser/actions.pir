@@ -32,7 +32,7 @@ end_chop:
     unless_null mo, valid
     #new mo, "Undef"
     $P0 = new 'Exception'
-    $P0 = 'Invalid match object'
+    $P0 = 'smart: * Invalid match object'
     throw $P0
     
 valid:
@@ -109,3 +109,6 @@ iterate_items_end:
     .return(var)
 .end
 
+.sub '!create-makefile-target' :method
+    
+.end
