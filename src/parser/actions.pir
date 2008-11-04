@@ -110,5 +110,11 @@ iterate_items_end:
 .end
 
 .sub '!create-makefile-target' :method
+    .param pmc name
+    .param pmc actions :slurpy
+    .return(tg)
+.end
+
+.sub '!create-makefile-action' :method
     
 .end

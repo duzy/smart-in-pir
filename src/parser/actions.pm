@@ -128,8 +128,14 @@ method makefile_variable_method_call($/) {
 }
 
 method makefile_target($/) {
-    make PAST::Op.new( :pasttype('call'), :returns('MakefileTarget'),
-      :node( $/ ) );
+    my $name := ~$<makefile_target_name>
+    my $past := PAST::Op.new( :pasttype('call'), :returns('MakefileTarget'),
+      :name('!create-makefile-target'), :node( $/ ) );
+    chop_spaces( $name );
+    for $<makefile_target_action> {
+        $past.push( $($_) );
+    }
+    make $past;
 }
 
 method makefile_target_action($/) {

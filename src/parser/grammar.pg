@@ -55,15 +55,16 @@ token makefile_variable_value_list {
 token makefile_variable_value_item { <-[ \\ \n \ \t ]>+ {*} }
 
 token makefile_target {
-    <-[ : \n ]>+ \s* ':' <[ \ \t ]>*
+    <makefile_target_name> \s* ':' <[ \ \t ]>*
     [
      |[ ';' <[ \ \t ]>* <makefile_target_action> ]
      |[ \n \t <makefile_target_action> ]*
     ]
     {*}
 }
+token makefile_target_name { <-[ : \n ]>+ }
 token makefile_target_action {
-    '@'? <-[ \n ]>*
+    '@'? <-[ \n ]>* {*}
 }
 
 rule smart_say_statement {
