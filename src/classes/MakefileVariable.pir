@@ -14,6 +14,16 @@
 #    setattribute self, 'name', v
 #.end
 
+.sub 'name' :method
+    .local pmc name
+    getattribute name, self, 'name'
+    unless null name goto has_name
+    name = new 'String'
+    name = '<null>'
+has_name:
+    .return(name)
+.end
+
 .sub 'items' :method
     .local pmc items
     getattribute items, self, 'items'
@@ -26,20 +36,13 @@ not_null:
 .end
 
 .sub 'count' :method
-    #set $I0, self
     $P0 = self.'items'()
     set $I0, $P0
     .return ($I0)
 .end
 
-.sub 'name' :method
-    .local pmc name
-    getattribute name, self, 'name'
-    unless null name goto has_name
-    name = new 'String'
-    name = '<null>'
-has_name:
-    .return(name)
+.sub 'count_deeply' :method
+    .return (-1)
 .end
 
 .sub 'expand' :method
@@ -50,85 +53,87 @@ has_name:
     iter = new 'Iterator', items
 iterate_items:  
     unless iter goto end_iterate_items
-    $P0 = shift iter
-    item = $P0
-
+    item = shift iter
+    
+    $I0 = length result
+    unless 0 < $I0 goto donot_append_space
+    concat result, ' '
+donot_append_space:     
+    
     ## looking for '$' -- the makefile variable sign
     .local int pos1, pos2, len
-    pos1 = 0
     len = length item
-
-
-loop_searching_var:
-    unless pos1 < len goto end_loop_searching_var
+    pos1 = 0
+    
+search_variable_sign:
+    unless pos1 < len goto end_search_variable_sign
     $S0 = substr item, pos1, 1
-
-    unless $S0 == '$' goto not_makefile_variable_sign
-    print "at "
-    print pos1
-    ##print "\n"
+    if $S0 == '$' goto got_makefile_variable_sign
+    concat result, $S0
+    inc pos1 ## normal character -- not '$'
+    goto search_variable_sign
+    
+got_makefile_variable_sign:
     ## here, we found a '$', indicating a makefile variable,
-    ## we should parse the name of the makefile variable here
-    inc pos1
-    $S0 = substr item, pos1, 1
-    $I0 = index "({", $S0
-    unless 0 <= $I0 goto got_invalid_makefile_variable
-    ##print "got"
-    ##print $S0
-    ##print "\n"
-    ## here, we got a valid makefile variable
-    inc pos1
-    set pos2, pos1
-    inc pos2
+    ## we should parse the name of the makefile variable
+    $I0 = pos1 + 1
+    $S0 = substr item, $I0, 1
+    $I1 = $S0 == "("
+    $S1 = ")"
+    if $I1 goto got_makefile_variable_left_paren
+    $I1 = $S0 == "{"
+    $S1 = "}"
+    if $I1 goto got_makefile_variable_left_paren
+    ## make the next single character as the name
+    pos2 = pos1 + 1
+    goto got_single_character_variable
+got_makefile_variable_left_paren:
+    pos2 = pos1 + 2 ## skip the '$(' or '${' sign
+search_makefile_variable_right_paren:
     ## find ')' or '}' to end the variable name
-loop_searching_var_closer:      
-    unless pos2 < len goto got_invalid_makefile_variable
-    $S1 = substr item, pos2, 1
-    $I0 = index ")}", $S1
-    unless 0 <= $I0 goto not_makefile_variable_closer
-    ## here we got the valid makefile variable
-    ## TODO: should check $S0 and $S1 to see if there are paried
-    $I0 = pos2 - pos1
-    $S2 = substr item, pos1, $I0
-    print " var "
-    print $S2
-    print "\n"
-    ## should expand the variable by name $S2
-    goto loop_searching_var
-not_makefile_variable_closer:
-    inc pos2
-    goto loop_searching_var_closer
-got_invalid_makefile_variable:
-    ## we got '$' or '${' or '$(' only
-    ##inc pos
-    ##goto loop_searching_var
-not_makefile_variable_sign:
-    ## normal character -- not '$'
-    inc pos1
-    goto loop_searching_var
-end_loop_searching_var: 
+    if len <= pos2 goto got_unterminated_makefile_variable
+    $S0 = substr item, pos2, 1
+    $I0 = $S0 == $S1
+    if $I0 goto got_valid_makefile_variable
+    inc pos2 # try next...
+    goto search_makefile_variable_right_paren
 
-    ## the following code expands only one variable
-    $S0 = substr item, 0, 1
-    unless $S0 == '$' goto not_makefile_variable
-    $I0 = length item
-    $I0 -= 3
-    $S1 = substr item, 2, $I0
-    get_hll_global $P1, ['smart';'makefile';'variable'], $S1
-    unless null $P1 goto no_makefile_variable_exists
-    #concat $S1, '<non-exists>'
-    print 'Makefile Variable '
-    print $S1
-    print " not exists\n"
-    set $S1, ''
-no_makefile_variable_exists:
-    $S1 = $P1.'expand'()
+got_valid_makefile_variable:
+    ## here we got the valid makefile variable
+    $I0 = pos1 + 2
+    $I1 = pos2 - $I0
+    $S0 = substr item, $I0, $I1
+got_single_character_variable:
+    pos1 = pos2 + 1
+    get_hll_global $P0, ['smart';'makefile';'variable'], $S0
+    if null $P0 goto makefile_variable_not_exist
+    ## expand the variable by name $S2
+    ## should check "can $P0, 'expand'"
+    $I0 = can $P0, 'expand'
+    if $I0 goto object_can_expand
+    $P1 = new 'Exception'
+    $P1 = "smart: * expand() does not supported"
+    throw $P1
+object_can_expand:     
+    $S1 = $P0.'expand'()
     concat result, $S1
-    concat result, ' '
-    goto iterate_items
-not_makefile_variable: 
-    concat result, item
-    concat result, ' '
+    goto search_variable_sign
+    
+makefile_variable_not_exist:
+    print "smart: Makefile Variable '"
+    print $S0
+    print "' not declaraed!\n"
+    goto search_variable_sign
+    
+got_unterminated_makefile_variable:
+    ## we got '$' or '${' or '$(' only
+    print "smart: Unterminated Makefile Variable: "
+    print item
+    print "\n"
+    inc pos1
+    goto search_variable_sign
+end_search_variable_sign: 
+
     goto iterate_items
 end_iterate_items:       
     
@@ -136,7 +141,6 @@ end_iterate_items:
 .end
 
 .sub 'value' :method
-    #$S0 = join ' ', self
     $P0 = self.'items'()
     $S0 = join ' ', $P0
     .return ($S0)
@@ -144,15 +148,18 @@ end_iterate_items:
 
 .sub 'join' :method
     .param string s
-    #join $S0, s, self
     $P0 = self.'items'()
-    join $S0, s, $P0
+    $S0 = join s, $P0
     .return ($S0)
 .end
 
-#.sub get_string :method
-#    $S0 = self.'value'()
-#    .return ($S0)
-#.end
+.sub get_string :method :vtable
+    $S0 = self.'value'()
+    .return ($S0)
+.end
 
+.sub get_integer :method :vtable
+    $I0 = self.'count'()
+    .return ($I0)
+.end
 

@@ -13,7 +13,7 @@ grammar smart::Grammar is PCT::Grammar;
 rule TOP {
     {*}					#= enter
     <statement>*
-    [ $ || <.panic: 'Unsupported statement'> ]
+    [ $ || <.panic: 'smart: ** Unsupported Statement'> ]
     {*}					#= leave
 }
 
@@ -37,19 +37,19 @@ token makefile_variable {
     {*}
 }
 #    [ <-[ ':' '=' '#' ' ' \t ]> <-[ ':' '=' '#' ]>* ]
-#    [ $ || <.panic: 'Invalid makefile-variable identifier'> ]
+#    [ $ || <.panic: 'smart: ** Invalid makefile-variable identifier'> ]
 token makefile_variable_assign { '=' | ':=' | '?=' | '+=' }
 token makefile_variable_value_list {
     [
       |[
          [ [ <makefile_variable_value_item> <[ \ \t ]>* ]* \\
-           [ \n || <.panic: 'Suspicious continuation'> ]
+           [ \n || <.panic: 'smart: ** Suspicious continuation'> ]
          ]+
          [ <makefile_variable_value_item> <[ \ \t ]>* ]*
-         [ \n || <.panic: 'Expecting a new line'> ]
+         [ \n || <.panic: 'smart: ** Expecting a new line'> ]
        ]
       |[ [ <makefile_variable_value_item> <[ \ \t ]>* ]*
-         [ \n || <.panic: 'Expecting a new line2'> ]
+         [ \n || <.panic: 'smart: ** Expecting end of line'> ]
        ]
     ] {*}
 }
@@ -58,7 +58,7 @@ token makefile_variable_value_item { <-[ \\ \n \ \t ]>+ {*} }
 rule smart_say_statement {
     # used to output some messages.
     'say' <expression> [ ',' <expression> ]*
-    [ ';' || <.panic: 'Requires statement terminater'> ]
+    [ ';' || <.panic: 'smart: ** Unterminated statement'> ]
     {*}
 }
 
@@ -84,7 +84,7 @@ rule quote {
 rule makefile_variable_method_call {
     <makefile_variable_ref> '.' <ident>
         '(' [ <expression> [ ',' <expression> ]* ]?
-        [ ')' || <.panic: "Require an ')' to terminate parameter list"> ]
+        [ ')' || <.panic: "smart: ** Require an ')' to terminate parameter list"> ]
     {*}
 }
 
@@ -95,13 +95,13 @@ rule makefile_variable_ref {
 rule makefile_variable_ref1 {
     '$'
     [ '(' <makefile_variable_name1>
-    [ ')' || <.panic: "Makefile variable-referencing expects ')'"> ]]
+    [ ')' || <.panic: "smart: ** Makefile variable-referencing expects ')'"> ]]
     {*}
 }
 rule makefile_variable_ref2 {
     '$'
     [ '{' <makefile_variable_name2>
-    [ '}' || <.panic: "Makefile variable-referencing expects '}'"> ]]
+    [ '}' || <.panic: "smart: ** Makefile variable-referencing expects '}'"> ]]
     {*}
 }
 token makefile_variable_name1 { <-[')']>+ }

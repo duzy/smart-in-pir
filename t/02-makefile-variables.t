@@ -29,7 +29,7 @@ say 'ok >F =', $(>F);
 say 'ok D =', ${D};
 say 'ok A B =', $(A B);
 say 'ok A  B =', $(A  B);
-say 'ok A	B =', ${A	B} #{separates with tab};
+say 'ok A	B =', ${A	B} #{ separates with tab } ;
 say 'ok A = ', $(A);
 #say $(AAAA); # this should emit a error
 
