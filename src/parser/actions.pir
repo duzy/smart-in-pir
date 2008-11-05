@@ -120,34 +120,70 @@ no_number_one_target:
     print "Number-one target unspecified!\n"
 .end
 
+.sub '!pack-args-into-array'
+    .param pmc args :slurpy
+    .return (args)
+.end
+
+.sub '!create-makefile-rule'
+.end
+
 .sub '!create-makefile-target'
     .param pmc name
-    .param pmc actions :slurpy
+    .param pmc ruled    :optional
+    .param pmc deps     :optional
+    .param pmc actions  :optional
     .local pmc target
+    
     target = new 'MakefileTarget'
-
+    setattribute target, 'name', name
+    setattribute target, 'object', name
+    $P0 = new 'Integer'
+    $P0 = 0
+    setattribute target, 'ruled', $P0
+    
     get_hll_global $P0, ['smart';'makefile'], '$<0>'
     unless null $P0 goto got_number_one_target
     set_hll_global ['smart';'makefile'], '$<0>', target
-got_number_one_target:  
-
+got_number_one_target:
+    
+    ## store the object
     set $S0, name
     set_hll_global ['smart';'makefile';'target'], $S0, target
     
-    .local pmc iter
-    iter = new 'Iterator', actions
-
-    .local pmc actions
-    actions = target.'actions'()
+    if null ruled goto not_ruled
+    set $I0, ruled
+    setattribute target, 'ruled', ruled
+    unless $I0 goto not_ruled
     
+    if null deps goto no_deps
+    
+    .local pmc iter, cont
+
+    iter = new 'Iterator', deps
+    cont = target.'deps'()
+iterate_deps:
+    unless iter goto end_iterate_deps
+    $P0 = shift iter
+    push cont, $P0
+    goto iterate_deps
+end_iterate_deps:       
+
+    if null actions goto no_actions
+    
+    iter = new 'Iterator', actions
+    cont = target.'actions'()
 iterate_actions:        
     unless iter goto end_iterate_actions
     $P0 = shift iter
-    #$P0.'execute'()
-    push actions, $P0
+    push cont, $P0
     goto iterate_actions
 end_iterate_actions:
 
+no_deps:
+no_actions:
+not_ruled: ## an un-ruled target is act as dependency of another target,
+    ## but it's nevered declaraed by any makefile rule.
     .return(target)
 .end
 

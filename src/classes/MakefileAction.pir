@@ -61,7 +61,9 @@ no_echo:
     concat $S1, "' failed with exit code '"
     concat $S1, $S2
     concat $S1, "'"
-    die $S1
+    #die $S1
+    print $S1
+    exit -1
 succeed:        
 .end
 

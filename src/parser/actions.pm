@@ -136,8 +136,8 @@ method makefile_variable_method_call($/) {
     make $past;
 }
 
-method makefile_target($/) {
-    my $target  := $( $<makefile_target_name> );
+method makefile_rule($/) {
+    my $target  := $( $<makefile_target> );
     $target.lvalue( 1 );
     $target.isdecl( 1 );
     $target.scope('lexical');
@@ -150,11 +150,40 @@ method makefile_target($/) {
       :returns('MakefileTarget'),
       :node( $/ )
     );
-    $ctr.push( PAST::Val.new( :value($name), :returns('String') ) );
-    for $<makefile_target_action> {
-        #$ctr.push( PAST::Val.new( :value(~$_), :returns('String') ) );
-        $ctr.push( $( $_ ) );
+    my $op_deps := PAST::Op.new( :pasttype('call'),
+      :name('!pack-args-into-array'),
+      :returns('ResizablePMCArray'),
+      :node($/)
+    );
+    my $op_actions := PAST::Op.new( :pasttype('call'),
+      :name('!pack-args-into-array'),
+      :returns('ResizablePMCArray'),
+      :node($/)
+    );
+    for $<makefile_target_dep> {
+        my $dep := $( $_ );
+        $dep.lvalue( 0 );
+        $dep.isdecl( 1 );
+        $dep.scope('lexical');
+        ##bind dep to the target object
+        my $dep_ctr := PAST::Op.new( :pasttype('call'),
+          :name('!create-makefile-target'),
+          :returns('MakefileTarget'),
+          #:node($/)
+        );
+        $dep_ctr.push( PAST::Val.new( :value($dep.name()), :returns('String') ) );
+        my $op := PAST::Op.new( $dep, $dep_ctr, :pasttype('bind'),
+                                :name('bind-makefile-target'),
+                                #:node($/)
+                            );
+        $op_deps.push( $op );
     }
+    for $<makefile_rule_action> { $op_actions.push( $( $_ ) ); }
+
+    $ctr.push( PAST::Val.new( :value($name), :returns('String') ) );
+    $ctr.push( PAST::Val.new( :value(1), :returns('Integer') ) );
+    $ctr.push( $op_deps );
+    $ctr.push( $op_actions );
 
     make PAST::Op.new( $target, $ctr,
                        :pasttype('bind'),
@@ -162,7 +191,7 @@ method makefile_target($/) {
                        :node( $/ ) );
 }
 
-method makefile_target_name($/) {
+method makefile_target($/) {
     make PAST::Var.new( :name(~$/),
       :lvalue(1),
       :viviself('Undef'),
@@ -171,7 +200,16 @@ method makefile_target_name($/) {
     );
 }
 
-method makefile_target_action($/) {
+method makefile_target_dep($/) {
+    make PAST::Var.new( :name(~$/),
+      :lvalue(0),
+      :viviself('Undef'),
+      :scope('lexical'),
+      :node($/)
+    );
+}
+
+method makefile_rule_action($/) {
     my $past := PAST::Op.new( :pasttype('call'), :returns('MakefileAction'),
       :name('!create-makefile-action'), :node($/) );
     $past.push( PAST::Val.new( :value(~$/), :returns('String') ) );

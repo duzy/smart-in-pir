@@ -24,7 +24,7 @@ token comment { [ '#' '{' <-[ '}' ]>* '}' ] | [ '#' \N* \n? ] }
 rule statement {
     | <empty_smart_statement> {*}               #= empty_smart_statement
     | <makefile_variable_declaration> {*}	#= makefile_variable_declaration
-    | <makefile_target> {*}                     #= makefile_target
+    | <makefile_rule> {*}                     #= makefile_rule
     | <smart_say_statement> {*}			#= smart_say_statement
 }
 
@@ -58,16 +58,19 @@ token makefile_variable_value_list {
 }
 token makefile_variable_value_item { <-[ \\ \n \ \t ]>+ {*} }
 
-token makefile_target {
-    <makefile_target_name> \s* ':' <[ \ \t ]>*
+token makefile_rule {
+    <makefile_target> \s* ':' <[ \ \t ]>*
+    [ <makefile_target_dep> <[ \ \t ]>* ]*
     [
-     |[ ';' <[ \ \t ]>* <makefile_target_action>* ]
-     |[ \n \t <makefile_target_action> ]*
+     |[ ';' <[ \ \t ]>* <makefile_rule_action>* ]
+     |[ \n \t <makefile_rule_action> ]*
+     |[ <.panic: "smart: ** Bad target format"> ]
     ]
     {*}
 }
-token makefile_target_name { <-[ : \n ]>+ {*} }
-token makefile_target_action { <-[ \n ]>* {*} }
+token makefile_target { <-[ : \n ]>+ {*} }
+token makefile_target_dep { <-[ \ \t \n ]>+ {*} }
+token makefile_rule_action { <-[ \n ]>* {*} }
 
 rule smart_say_statement {
     # used to output some messages.
