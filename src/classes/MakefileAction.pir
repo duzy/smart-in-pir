@@ -14,12 +14,13 @@
     addattribute $P0, 'echo_on'
 .end
 
-.sub 'set_command' :method
-    .param pmc command
-    setattribute self, 'command', command
-.end
-
 .sub 'command' :method
+    .param pmc command :optional
+    if null command goto return_value_only
+    setattribute self, 'command', command
+    .return(command)
+    
+return_value_only:
     getattribute $P0, self, 'command'
     unless null $P0 goto got_command
     $P0 = new 'String'
@@ -31,6 +32,12 @@ got_command:
 .end
 
 .sub 'echo_on' :method
+    .param pmc v :optional
+    if null v goto return_value_only
+    setattribute self, 'echo_on', v
+    .return(v)
+    
+return_value_only:
     getattribute $P0, self, 'echo_on'
     unless null $P0 goto got_echo_on
     $P0 = new 'Integer'
@@ -38,11 +45,6 @@ got_command:
     setattribute self, 'echo_on', $P0
 got_echo_on:
     .return ($P0)
-.end
-
-.sub 'set_echo_on' :method
-    .param pmc v
-    setattribute self, 'echo_on', v
 .end
 
 .sub 'execute' :method

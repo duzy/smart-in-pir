@@ -9,7 +9,7 @@
 PARROT_ARGS =
 
 ## configuration settings
-BUILD_DIR     = /home/duzy/open/parrot
+BUILD_DIR     = /more/temp/parrot
 LOAD_EXT      = .so
 O             = .o
 
@@ -46,6 +46,7 @@ SOURCES = smart.pir \
   src/classes/MakefileVariable.pir\
   src/classes/MakefileTarget.pir\
   src/classes/MakefileAction.pir\
+  src/classes/MakefileRule.pir\
 #  $(SMART_GROUP)
 
 BUILTINS_PIR = \

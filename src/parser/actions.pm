@@ -52,8 +52,8 @@ method TOP($/, $key) {
 	    $past.push( $( $_ ) );
         }
 
-        # push last op to active target updating
-        $past.push( PAST::Op.new( :name('!invoke-makefile-number-one-target'),
+        # push last op to the block to active target updating
+        $past.push( PAST::Op.new( :name('!update-makefile-number-one-target'),
           :pasttype('call'),
           :node( $/ )
         ) );
@@ -143,19 +143,18 @@ method makefile_rule($/) {
     $target.scope('lexical');
 
     my $name    := $target.name();
-    chop_spaces( $name );
 
-    my $ctr     := PAST::Op.new( :pasttype('call'),
+    my $target_ctr     := PAST::Op.new( :pasttype('call'),
       :name('!create-makefile-target'),
       :returns('MakefileTarget'),
       :node( $/ )
     );
-    my $op_deps := PAST::Op.new( :pasttype('call'),
+    my $pack_deps := PAST::Op.new( :pasttype('call'),
       :name('!pack-args-into-array'),
       :returns('ResizablePMCArray'),
       :node($/)
     );
-    my $op_actions := PAST::Op.new( :pasttype('call'),
+    my $pack_actions := PAST::Op.new( :pasttype('call'),
       :name('!pack-args-into-array'),
       :returns('ResizablePMCArray'),
       :node($/)
@@ -168,31 +167,44 @@ method makefile_rule($/) {
         ##bind dep to the target object
         my $dep_ctr := PAST::Op.new( :pasttype('call'),
           :name('!create-makefile-target'),
-          :returns('MakefileTarget'),
-          #:node($/)
+          :returns('MakefileTarget')
         );
         $dep_ctr.push( PAST::Val.new( :value($dep.name()), :returns('String') ) );
         my $op := PAST::Op.new( $dep, $dep_ctr, :pasttype('bind'),
-                                :name('bind-makefile-target'),
-                                #:node($/)
+                                :name('bind-makefile-target')
                             );
-        $op_deps.push( $op );
+        $pack_deps.push( $op );
     }
-    for $<makefile_rule_action> { $op_actions.push( $( $_ ) ); }
+    for $<makefile_rule_action> { $pack_actions.push( $( $_ ) ); }
 
-    $ctr.push( PAST::Val.new( :value($name), :returns('String') ) );
-    $ctr.push( PAST::Val.new( :value(1), :returns('Integer') ) );
-    $ctr.push( $op_deps );
-    $ctr.push( $op_actions );
+    $target_ctr.push( PAST::Val.new( :value($name), :returns('String') ) );
+    $target_ctr.push( PAST::Val.new( :value(1), :returns('Integer') ) );
 
-    make PAST::Op.new( $target, $ctr,
+    my $target_bind := PAST::Op.new( $target, $target_ctr,
+                                     :pasttype('bind'),
+                                     :name('create-makefile-target')
+                                 );
+
+    my $rule := PAST::Var.new( :lvalue(0), :viviself('Undef'),
+      :scope('lexical'), :name($name)
+    );
+    my $rule_ctr := PAST::Op.new( :pasttype('call'),
+      :name('!create-makefile-rule'), :returns('MakefileRule')
+    );
+    $rule_ctr.push( $target_bind );
+    $rule_ctr.push( $pack_deps );
+    $rule_ctr.push( $pack_actions );
+
+    make PAST::Op.new( $rule, $rule_ctr,
                        :pasttype('bind'),
-                       :name('create-makefile-target'),
+                       :name('create-makefile-rule'),
                        :node( $/ ) );
 }
 
 method makefile_target($/) {
-    make PAST::Var.new( :name(~$/),
+    my $name := ~$/;
+    chop_spaces( $name );
+    make PAST::Var.new( :name($name),
       :lvalue(1),
       :viviself('Undef'),
       :scope('lexical'),
