@@ -9,7 +9,7 @@
 PARROT_ARGS =
 
 ## configuration settings
-BUILD_DIR     = /more/temp/parrot
+BUILD_DIR     = /home/duzy/open/parrot
 LOAD_EXT      = .so
 O             = .o
 

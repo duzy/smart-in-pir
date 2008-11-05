@@ -143,9 +143,10 @@ method makefile_rule($/) {
     $target.scope('lexical');
 
     my $name    := $target.name();
+    my $match   := $name;
 
     my $target_ctr     := PAST::Op.new( :pasttype('call'),
-      :name('!create-makefile-target'),
+      :name('!bind-makefile-target'),
       :returns('MakefileTarget'),
       :node( $/ )
     );
@@ -166,7 +167,7 @@ method makefile_rule($/) {
         $dep.scope('lexical');
         ##bind dep to the target object
         my $dep_ctr := PAST::Op.new( :pasttype('call'),
-          :name('!create-makefile-target'),
+          :name('!bind-makefile-target'),
           :returns('MakefileTarget')
         );
         $dep_ctr.push( PAST::Val.new( :value($dep.name()), :returns('String') ) );
@@ -189,8 +190,9 @@ method makefile_rule($/) {
       :scope('lexical'), :name($name)
     );
     my $rule_ctr := PAST::Op.new( :pasttype('call'),
-      :name('!create-makefile-rule'), :returns('MakefileRule')
+      :name('!update-makefile-rule'), :returns('MakefileRule')
     );
+    $rule_ctr.push( PAST::Val.new( :value($match), :returns('String') ) );
     $rule_ctr.push( $target_bind );
     $rule_ctr.push( $pack_deps );
     $rule_ctr.push( $pack_actions );

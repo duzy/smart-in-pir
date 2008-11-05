@@ -1,3 +1,10 @@
+#
+#    Copyright 2008-10-27 DuzySoft.com, by Duzy Chan
+#    All rights reserved by Duzy Chan
+#    Email: <duzy@duzy.ws, duzy.chan@gmail.com>
+#
+#    $Id$
+#
 
 .namespace ["smart";"Grammar";"Actions"]
 .sub 'chop_spaces'
@@ -133,31 +140,63 @@ no_number_one_target:
     .return (args)
 .end
 
-.sub '!create-makefile-rule'
+=item <'!update-makefile-rule'(IN match, IN target, OPT deps, OPT actions)>
+    Update the rule by 'match', created one if the rule is not existed.
+=cut
+.sub '!update-makefile-rule'
     .param pmc match
     .param pmc target
     .param pmc deps     :optional
     .param pmc actions  :optional
     .local pmc rule
+
+    set $S0, match
+    get_hll_global rule, ['smart';'makefile';'rule'], $S0
+    unless null rule goto got_rule_object
     rule = new 'MakefileRule'
-    rule.'match'( match )
+    rule.'match'( $S0 )
+    setattribute target, 'rule', rule
+got_rule_object:
+
     if null deps goto no_deps
-    rule.'deps'( deps )
+    
+    .local pmc iter, cont
+    iter = new 'Iterator', deps
+    cont = rule.'deps'()
+iterate_deps:
+    unless iter goto end_iterate_deps
+    $P0 = shift iter
+    push cont, $P0
+    goto iterate_deps
+end_iterate_deps:
+    
 no_deps:
+    
     if null actions goto no_actions
     rule.'actions'( actions )
 no_actions:
-
-    set $S0, match
-    set_hll_global ['smart';'makefile';'rule'], $S0, rule
     
+    set_hll_global ['smart';'makefile';'rule'], $S0, rule
+
+#    print "rule '"
+#    print $S0
+#    print "'\n"
     .return(rule)
 .end
 
-.sub '!create-makefile-target'
+=item <'!bind-makefile-target'(IN name, OPT is_rule)>
+        Create or bind(if existed) 'name' to a makefile target object.
+=cut
+.sub '!bind-makefile-target'
     .param pmc name
     .param pmc is_rule :optional ## is target declaraed as rule?
     .local pmc target
+    
+    set $S0, name
+    get_hll_global $P0, ['smart';'makefile';'target'], $S0
+    if null $P0 goto target_object_not_created
+    .return ($P0)
+target_object_not_created:
     
     target = new 'MakefileTarget'
     setattribute target, 'name', name
@@ -167,15 +206,17 @@ no_actions:
     $I0 = is_rule
     unless $I0 goto donot_change_number_one_target
     get_hll_global $P0, ['smart';'makefile'], '$<0>'
-    unless null $P0 goto got_number_one_target
+    unless null $P0 goto donot_change_number_one_target
     set_hll_global ['smart';'makefile'], '$<0>', target
-got_number_one_target:
 donot_change_number_one_target:
     
-    ## store the object
-    set $S0, name
+    ## store the new target object
     set_hll_global ['smart';'makefile';'target'], $S0, target
     
+#    print "target '"
+#    print $S0
+#    print "'\n"
+
     .return(target)
 .end
 
