@@ -7,7 +7,7 @@
 #
 
 .namespace ["smart";"Grammar";"Actions"]
-.sub 'chop_spaces'
+.sub 'trim_spaces'
     .param string str
     .local int len, pos
 
@@ -37,16 +37,15 @@ end_chop:
     push_eh eh
     
     unless_null mo, valid
-    #new mo, "Undef"
-    $P0 = new 'Exception'
-    $P0 = 'smart: * Invalid match object'
-    throw $P0
+
+    $S0 = 'smart: *** Invalid match object'
+    die $S0
     
 valid:
     .local pmc Var
     get_hll_global Var, ["PAST"], "Var"
     set $S0, mo
-    'chop_spaces'( $S0 ) #$S0 = 'chop_spaces'( $S0 )
+    'trim_spaces'( $S0 ) #$S0 = 'trim_spaces'( $S0 )
     $P0 = Var.'new'('name' => $S0, 'scope' => "lexical", 'viviself' => "Undef", 'lvalue' => 1 )
     $P1 = mo.'result_object'( $P0 )
     .return ($P1)
@@ -123,7 +122,7 @@ iterate_items_end:
     $I0 = target.'update'()
     if $I0 goto all_done
     $S0 = target.'name'()
-    print "smart: *** Updating target '"
+    print "smart: ** Updating target '"
     print $S0
     print "' failed. Stop.\n"
     exit -1
@@ -131,7 +130,7 @@ all_done:
     .return()
     
 no_number_one_target:
-    print "smart: *** No targets. Stop.\n"
+    print "smart: ** No targets. Stop.\n"
     exit -1
 .end
 
@@ -140,14 +139,37 @@ no_number_one_target:
     .return (args)
 .end
 
+.sub 'make_rule_name'
+    .param pmc match
+    .local string name
+    name = match
+    $I0 = length name
+    $I1 = 0
+loop:
+    unless $I1 < $I0 goto end_loop
+    $S0 = substr name, $I1, 1
+    unless $S0 == ' ' goto next
+    substr name, $I1, 1, ';'
+next:
+    inc $I1
+    goto loop
+end_loop:
+
+    print "rule-name: '"
+    print name
+    print "'\n"
+    
+    .return (name)
+.end
+
 =item <'!update-makefile-rule'(IN match, IN target, OPT deps, OPT actions)>
     Update the rule by 'match', created one if the rule is not existed.
 =cut
 .sub '!update-makefile-rule'
     .param pmc match
-    .param pmc target
-    .param pmc prerequisites     :optional
-    .param pmc actions  :optional
+    .param pmc targets
+    .param pmc prerequisites    :optional
+    .param pmc actions          :optional
     .local pmc rule
 
     set $S0, match
@@ -155,8 +177,20 @@ no_number_one_target:
     unless null rule goto got_rule_object
     rule = new 'MakefileRule'
     rule.'match'( $S0 )
-    setattribute target, 'rule', rule
+
+    $P0 = new 'Iterator', targets
+iterate_targets:
+    unless $P0 goto end_iterate_targets
+    $P1 = shift $P0
+    setattribute $P1, 'rule', rule
+    goto iterate_targets
+end_iterate_targets:
+    
     set_hll_global ['smart';'makefile';'rule'], $S0, rule
+
+    print "rule: '"
+    print $S0
+    print "' \n"
 got_rule_object:
 
     if null prerequisites goto no_prerequisites
@@ -197,7 +231,7 @@ target_object_not_created:
     target = new 'MakefileTarget'
     setattribute target, 'name', name
     setattribute target, 'object', name
-
+    
     if null is_rule goto donot_change_number_one_target
     $I0 = is_rule
     unless $I0 goto donot_change_number_one_target
@@ -208,11 +242,11 @@ donot_change_number_one_target:
     
     ## store the new target object
     set_hll_global ['smart';'makefile';'target'], $S0, target
-    
-#    print "target '"
-#    print $S0
-#    print "'\n"
 
+    print "target: '"
+    print $S0
+    print "'\n"
+    
     .return(target)
 .end
 

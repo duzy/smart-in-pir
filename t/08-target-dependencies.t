@@ -3,24 +3,24 @@
 # NOTE: all targets should always be updated
 
 all: foobar
-	@echo update all
 	@ls -lh foo.txt bar.txt foobar.txt
 	@cat foobar.txt
+	@wc -l foobar.txt
 foobar: foobar.txt
-	@echo update foobar
+	@echo "ok, update foobar"
 foobar.txt: foo bar
-	@echo update foobar.txt
+	@echo "ok, update foobar.txt"
 	@cat "foo.txt" >> foobar.txt
 	@cat "bar.txt" >> foobar.txt
 foo: bar foo.txt
-	@echo update foo
+	@echo "ok, update foo"
 foo.txt:
-	@echo update foo.txt
+	@echo "ok, update foo.txt"
 	@echo "foo" > foo.txt
 
 bar: bar.txt
-	@echo update bar
+	@echo "ok, update bar"
 bar.txt:
-	@echo update bar.txt
+	@echo "ok, update bar.txt"
 	@echo "bar" > bar.txt
 

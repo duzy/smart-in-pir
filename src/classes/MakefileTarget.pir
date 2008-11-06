@@ -86,7 +86,7 @@ end_iterate_prerequisites:
     .return (out)
     
 no_rule_found:
-    $S0 = "smart: * No rule found for target '"
+    $S0 = "smart: ** No rule found for target '"
     $S1 = self.'object'()
     $S0 .= $S1
     $S0 .= "'. Stop."
@@ -118,7 +118,7 @@ iterate_prerequisites:
     inc update_count
     goto iterate_prerequisites
 invalid_target_object:
-    die "smart: * Got invalid target object(prerequisite)"
+    die "smart: *** Got invalid target object(prerequisite)"
 end_iterate_prerequisites:
 
     $I0 = 0 < update_count
@@ -136,13 +136,13 @@ do_update:
     
 no_rule_found:
     $S1 = self.'object'()
-    set $S0, "smart: * No rule for target '"
+    set $S0, "smart: ** No rule for target '"
     concat $S0, $S1
     concat $S0, "'. Stop."
     exit -1
     
 invalid_rule_object:
-    $S0 = "smart: Invalid rule object"
+    $S0 = "smart: *** Invalid rule object"
     die $S0
 .end
 

@@ -60,7 +60,7 @@ iterate_actions:
     $P0.'execute'()
     goto iterate_actions
 invalid_action_object:
-    die "smart: * Got invalid action object."
+    die "smart: *** Got invalid action object."
 end_iterate_actions:
     .return(0)
 .end
@@ -84,7 +84,7 @@ returns_only:
 got_prerequisites:
     .return ($P0)
 invalid_arg:
-    die "smart: * Not an ResizablePMCArray object."
+    die "smart: *** Not an ResizablePMCArray object."
 .end
 
 =item <actions()>
@@ -107,5 +107,5 @@ returns_only:
 got_actions:    
     .return ($P0)
 invalid_arg:
-    die "smart: * Not an ResizablePMCArray object."
+    die "smart: *** Not an ResizablePMCArray object."
 .end

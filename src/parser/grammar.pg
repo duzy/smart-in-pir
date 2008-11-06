@@ -13,7 +13,7 @@ grammar smart::Grammar is PCT::Grammar;
 rule TOP {
     {*}					#= enter
     <statement>*
-    [ $ || <.panic: 'smart: ** Unsupported Statement'> ]
+    [ $ || <.panic: 'smart: * Unsupported Statement'> ]
     {*}					#= leave
 }
 
@@ -46,36 +46,42 @@ token makefile_variable_value_list {
       |[ <[ \ \t ]>* \n? ]
       |[
          [ [ <makefile_variable_value_item> <[ \ \t ]>* ]* \\
-           [ \n || <.panic: 'smart: ** Suspicious continuation'> ]
+           [ \n || <.panic: 'smart: * Suspicious continuation'> ]
          ]+
          [ <makefile_variable_value_item> <[ \ \t ]>* ]*
-         [ \n || <.panic: 'smart: ** Expecting a new line'> ]
+         [ \n || <.panic: 'smart: * Expecting a new line'> ]
        ]
       |[ [ <makefile_variable_value_item> <[ \ \t ]>* ]*
-         [ \n || <.panic: 'smart: ** Expecting end of line'> ]
+         [ \n || <.panic: 'smart: * Expecting end of line'> ]
        ]
     ] {*}
 }
 token makefile_variable_value_item { <-[ \\ \n \ \t ]>+ {*} }
 
 token makefile_rule {
-    <makefile_target> \s* ':' <[ \ \t ]>*
-    [ <makefile_target_dep> <[ \ \t ]>* ]*
+    <makefile_targets> <[ \ \t ]>* ':' <[ \ \t ]>*
+    [ <makefile_prerequisite> <[ \ \t ]>* ]*
     [
-     |[ ';' <[ \ \t ]>* <makefile_rule_action>* ]
+     |[ ';' <[ \ \t ]>* <makefile_rule_action>
+        [ \n \t <makefile_rule_action> ]*
+      ]
      |[ \n \t <makefile_rule_action> ]*
-     |[ <.panic: "smart: ** Bad target format"> ]
+     |[ <.panic: "smart: * Bad rule format"> ]
     ]
     {*}
 }
-token makefile_target { <-[ : \n ]>+ {*} }
-token makefile_target_dep { <-[ \ \t \n ]>+ {*} }
+token makefile_targets { [ <makefile_target> <[ \ \t ]>* ]+ }
+token makefile_target {
+    <-[ : \ \t \n ]>+
+    {*}
+}
+token makefile_prerequisite { <-[ ; \ \t \n ]>+ {*} }
 token makefile_rule_action { <-[ \n ]>* {*} }
 
 rule smart_say_statement {
     # used to output some messages.
     'say' <expression> [ ',' <expression> ]*
-    [ ';' || <.panic: 'smart: ** Unterminated statement'> ]
+    [ ';' || <.panic: 'smart: * Unterminated statement'> ]
     {*}
 }
 
@@ -101,7 +107,7 @@ rule quote {
 rule makefile_variable_method_call {
     <makefile_variable_ref> '.' <ident>
         '(' [ <expression> [ ',' <expression> ]* ]?
-        [ ')' || <.panic: "smart: ** Require an ')' to terminate parameter list"> ]
+        [ ')' || <.panic: "smart: * Require an ')' to terminate parameter list"> ]
     {*}
 }
 
@@ -112,13 +118,13 @@ rule makefile_variable_ref {
 rule makefile_variable_ref1 {
     '$'
     [ '(' <makefile_variable_name1>
-    [ ')' || <.panic: "smart: ** Makefile variable-referencing expects ')'"> ]]
+    [ ')' || <.panic: "smart: * Makefile variable-referencing expects ')'"> ]]
     {*}
 }
 rule makefile_variable_ref2 {
     '$'
     [ '{' <makefile_variable_name2>
-    [ '}' || <.panic: "smart: ** Makefile variable-referencing expects '}'"> ]]
+    [ '}' || <.panic: "smart: * Makefile variable-referencing expects '}'"> ]]
     {*}
 }
 token makefile_variable_name1 { <-[')']>+ }

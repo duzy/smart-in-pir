@@ -71,7 +71,7 @@ no_echo:
     unless $I0 goto succeed
     
     set $S2, $I0
-    set $S1, "smart: Command '"
+    set $S1, "smart: ** Command '"
     concat $S1, $S0
     concat $S1, "' failed with exit code '"
     concat $S1, $S2
