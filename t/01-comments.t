@@ -1,4 +1,4 @@
-say '1..4';
+say '1..5';
 
 # this is simple comment to EOL, no more needed to say for this
 
@@ -11,4 +11,6 @@ say '1..4';
 
 say "ok: Simple statement." #{ Comments in a statement } ;
 say #{ More inline comments... } "ok: Simple statement..";
+
+say "ok";
 

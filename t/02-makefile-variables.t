@@ -21,17 +21,18 @@ A  B = "variable with in-space is ok"
 A	B = "variable with in-tab is ok"
 A = $(A B)
 
-NONE =
+EMPTY =
 
-say 'ok CC =', $(CC);
-say 'ok CFLAGS =', ${CFLAGS};
-say 'ok DDD=', ${DDD};
-say 'ok D> =', ${D>};
-say 'ok >F =', $(>F);
-say 'ok D =', ${D};
-say 'ok A B =', $(A B);
-say 'ok A  B =', $(A  B);
-say 'ok A	B =', ${A	B} #{ separates with tab } ;
-say 'ok A = ', $(A);
+#say 'ok CC =', $(CC);
+#say 'ok CFLAGS =', ${CFLAGS};
+#say 'ok DDD=', ${DDD};
+#say 'ok D> =', ${D>};
+#say 'ok >F =', $(>F);
+#say 'ok D =', ${D};
+#say 'ok A B =', $(A B);
+#say 'ok A  B =', $(A  B);
+#say 'ok A	B =', ${A	B} #{ separates with tab } ;
+#say 'ok A = ', $(A);
+
 #say $(AAAA); # this should emit a error
 

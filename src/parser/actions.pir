@@ -27,7 +27,7 @@ end_chop:
     .return (str)
 .end
 
-.sub "makefile_variable" :method
+.sub "makefile_variable_" :method
     .param pmc mo # $/
 
     .local pmc eh
@@ -46,7 +46,7 @@ valid:
     get_hll_global Var, ["PAST"], "Var"
     set $S0, mo
     'trim_spaces'( $S0 ) #$S0 = 'trim_spaces'( $S0 )
-    $P0 = Var.'new'('name' => $S0, 'scope' => "lexical", 'viviself' => "Undef", 'lvalue' => 1 )
+    $P0 = Var.'new'('name' => $S0, 'scope' => "package", 'namespace' => "smart::makefile::variable", 'viviself' => "Undef", 'lvalue' => 1 )
     $P1 = mo.'result_object'( $P0 )
     .return ($P1)
     
@@ -62,46 +62,46 @@ exception_handler_rethrow:
 .end
 
 .namespace
-.sub '!create-makefile-variable'
-    .param pmc name
+.sub '!update-makefile-variable'
+    .param string name
     .param pmc items :slurpy
+
+    ##.param string sign
+
+    .local string sign
+    sign = '='
     
-    .local pmc iter
-    new $P0, 'MakefileVariable'
+    .local pmc var
+    get_hll_global var, ['smart';'makefile';'variable'], name
+    unless null var goto makefile_variable_exists
+    
+    print "new-variable: "
+    print name
+    print sign
+    print "\n"
+    
+    var = new 'MakefileVariable'
+    $P0 = new 'String'
+    $P0 = name
+    setattribute var, 'name', $P0
 
     ## Store new makefile variable as a HLL global symbol
-    set $S0, name
-    set_hll_global ['smart';'makefile';'variable'], $S0, $P0
+    set_hll_global ['smart';'makefile';'variable'], name, var
 
-    setattribute $P0, 'name', name
-
-    iter = new 'Iterator', items
-iterate_items:
-    unless iter goto iterate_items_end
-    $P1 = shift iter
-    $P2 = $P0.'items'()
-    push $P2, $P1 #   push $P0, $P1
-    goto iterate_items
-iterate_items_end:
-    .return ($P0)
-.end
-
-.sub '!append-makefile-variable'
-    .param pmc name
-    .param pmc items :slurpy
-    .local pmc var
-    set $S0, name
-    get_hll_global var, ['smart';'makefile';'variable'], $S0
-    #set $S2, var
-    #print $S2
-    #print "\n"
-    unless null var goto makefile_variable_exists
-    set $S1, 'Makefile-variable undeclaraed: '
-    concat $S1, $S0
-    $P0 = new 'Exception'
-    $P0 = $S0
-    throw $P0
 makefile_variable_exists:
+
+    print "use-variable: "
+    print name
+    print sign
+    print "\n"
+
+    $I0 = sign == '+='
+    unless $I0 goto append_items
+    $P1 = var.'items'()
+    $P1 = items
+    goto done
+
+append_items:
     .local pmc iter
     iter = new 'Iterator', items
 iterate_items:
@@ -112,7 +112,8 @@ iterate_items:
     goto iterate_items
 iterate_items_end:
 
-    .return(var)
+done:
+    .return (var)
 .end
 
 .sub '!update-makefile-number-one-target'
@@ -139,44 +140,43 @@ no_number_one_target:
     .return (args)
 .end
 
-.sub 'make_rule_name'
-    .param pmc match
-    .local string name
-    name = match
-    $I0 = length name
-    $I1 = 0
-loop:
-    unless $I1 < $I0 goto end_loop
-    $S0 = substr name, $I1, 1
-    unless $S0 == ' ' goto next
-    substr name, $I1, 1, ';'
-next:
-    inc $I1
-    goto loop
-end_loop:
+# .sub 'make_rule_name'
+#     .param pmc match
+#     .local string name
+#     name = match
+#     $I0 = length name
+#     $I1 = 0
+# loop:
+#     unless $I1 < $I0 goto end_loop
+#     $S0 = substr name, $I1, 1
+#     unless $S0 == ' ' goto next
+#     substr name, $I1, 1, ':'
+# next:
+#     inc $I1
+#     goto loop
+# end_loop:
 
-    print "rule-name: '"
-    print name
-    print "'\n"
+#     print "rule-name: '"
+#     print name
+#     print "'\n"
     
-    .return (name)
-.end
+#     .return (name)
+# .end
 
 =item <'!update-makefile-rule'(IN match, IN target, OPT deps, OPT actions)>
     Update the rule by 'match', created one if the rule is not existed.
 =cut
 .sub '!update-makefile-rule'
-    .param pmc match
+    .param string match
     .param pmc targets
     .param pmc prerequisites    :optional
     .param pmc actions          :optional
     .local pmc rule
 
-    set $S0, match
-    get_hll_global rule, ['smart';'makefile';'rule'], $S0
+    get_hll_global rule, ['smart';'makefile';'rule'], match
     unless null rule goto got_rule_object
     rule = new 'MakefileRule'
-    rule.'match'( $S0 )
+    rule.'match'( match )
 
     $P0 = new 'Iterator', targets
 iterate_targets:
@@ -186,11 +186,12 @@ iterate_targets:
     goto iterate_targets
 end_iterate_targets:
     
-    set_hll_global ['smart';'makefile';'rule'], $S0, rule
+    set_hll_global ['smart';'makefile';'rule'], match, rule
 
-    print "rule: '"
-    print $S0
-    print "' \n"
+    ##print "store-rule: '"
+    ##print match
+    ##print "' \n"
+    
 got_rule_object:
 
     if null prerequisites goto no_prerequisites
@@ -210,7 +211,7 @@ no_prerequisites:
     if null actions goto no_actions
     rule.'actions'( actions )
 no_actions:
-    
+
     .return(rule)
 .end
 
@@ -243,9 +244,9 @@ donot_change_number_one_target:
     ## store the new target object
     set_hll_global ['smart';'makefile';'target'], $S0, target
 
-    print "target: '"
-    print $S0
-    print "'\n"
+    ##print "target: '"
+    ##print $S0
+    ##print "'\n"
     
     .return(target)
 .end
@@ -271,4 +272,11 @@ command_echo_is_on:
     
     action.'command'( command )
     .return(action)
+.end
+
+.sub '!debug'
+    .param string info
+    print "debug: "
+    print info
+    print "\n"
 .end

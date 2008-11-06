@@ -1,5 +1,5 @@
 # -*- mode: Makefile -*-
-#say "1..5";
+say "1..5";
 
 foo: a
 foo: b

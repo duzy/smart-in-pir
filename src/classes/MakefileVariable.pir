@@ -58,7 +58,7 @@ not_null:
     .local string result, item
     items = self.'items'()
     iter = new 'Iterator', items
-iterate_items:  
+iterate_items:
     unless iter goto end_iterate_items
     item = shift iter
     
@@ -134,7 +134,7 @@ makefile_variable_not_exist:
     
 got_unterminated_makefile_variable:
     ## we got '$' or '${' or '$(' only
-    print "smart: Unterminated Makefile Variable: "
+    print "smart: ** Unterminated Makefile Variable: "
     print item
     print "\n"
     inc pos1
