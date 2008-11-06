@@ -18,15 +18,16 @@
 #.sub 'get_bool' :method :vtable
 #    .return (0)
 #.end
-.sub 'get_string' :method :vtable
-    $S0 = ''
-    .return ($S0)
-.end
+#.sub 'get_string' :method :vtable
+#    $S0 = ''
+#    .return ($S0)
+#.end
 
 .sub 'name' :method
     getattribute $P0, self, 'name'
     unless null $P0 goto got_name
     $P0 = new 'String'
+    $P0 = ''
     setattribute self, 'name', $P0
 got_name:
     $S0 = $P0
@@ -47,83 +48,98 @@ got_object:
     .return($S0)
 .end
 
-.sub 'exists' :method
+.sub 'out_of_date' :method
+    .local pmc rule
+    getattribute rule, self, 'rule'
+    if null rule goto no_rule_found
+    
+    .local int out
+    out = 0
+    
     $S0 = self.'object'()
     stat $I0, $S0, 0 # EXISTS
-    .return ($I0)
-.end
+    if $I0 goto object_already_exists
 
-.sub 'newer_than' :method
-    .param pmc other
-    $S0 = self.'object'()
-    $S1 = other.'object'()
-    print "compare: "
+    goto out_of
+    
+object_already_exists:
+    .local int changetime
+    stat changetime, $S0, 7 # CHANGETIME
+
+    .local pmc prerequisites, iter
+    prerequisites = rule.'prerequisites'()
+    iter = new 'Iterator', prerequisites
+iterate_prerequisites:
+    unless iter goto end_iterate_prerequisites
+    $P0 = shift iter
+    $S1 = $P0.'object'()
+    stat $I0, $S1, 7 # CHANGETIME
+    $I0 = changetime < $I0
+    if $I0 goto out_of
+    $I0 = $P0.'out_of_date'()
+    if $I0 goto out_of
+    goto iterate_prerequisites
+out_of:
+    out = 1
+end_iterate_prerequisites:
+    
+    .return (out)
+    
+no_rule_found:
+    $S0 = "smart: * No rule found for target '"
+    $S1 = self.'object'()
+    $S0 .= $S1
+    $S0 .= "'. Stop."
     print $S0
-    print ", "
-    print $S1
-    print "\n"
-    stat $I0, $S0, 7 # CHANGETIME
-    stat $I1, $S1, 7 # CHANGETIME
-    print $I0
-    print ", "
-    print $I1
-    print "\n"
+    exit -1
 .end
 
 =item <update()>
     Update the target, returns 1 if succeed, 0 otherwise.
 =cut
 .sub 'update' :method
-    
     .local pmc rule
     getattribute rule, self, 'rule'
-    $I0 = rule.'update_target'( self )
-    .return ($I0)
-
-
+    if null rule goto no_rule_found
     
-    $I0 = self.exists()
-    unless $I0 goto object_exists
-    ## object not exists, always need update
-    goto do_update
+    .local pmc prerequisites, iter
+    .local int update_count
+    update_count = 0
     
-object_exists:
-    ## object exists, should check object time
-    .local int need
-    .local pmc rule, deps, iter
-    getattribute rule, self, 'rule'
-    deps = rule.'deps'()
-    iter = new 'Iterator', deps
-iterate_deps:
-    unless iter goto end_iterate_deps
+    prerequisites = rule.'prerequisites'()
+    iter = new 'Iterator', prerequisites
+iterate_prerequisites:
+    unless iter goto end_iterate_prerequisites
     $P0 = shift iter
-    $I0 = $P0.'exists'()
-    unless $I0 goto set_need_cause_unexists
-    need = $P0.'newer_than'( self )
-    if need goto end_iterate_deps
-    goto iterate_deps
-set_need_cause_unexists:
-    need = 1
-end_iterate_deps:
+    $I0 = can $P0, 'update'
+    unless $I0 goto invalid_target_object
+    $I0 = $P0.'update'()
+    unless $I0 goto iterate_prerequisites
+    inc update_count
+    goto iterate_prerequisites
+invalid_target_object:
+    die "smart: * Got invalid target object(prerequisite)"
+end_iterate_prerequisites:
 
-    if need goto do_update
-    .return (0) ## no need update, returns 0 tells nothing done
+    $I0 = 0 < update_count
+    if $I0 goto do_update ## if any prerequisites updated
 
+    $I0 = self.'out_of_date'()
+    if $I0 goto do_update
+
+    .return (0)
+    
 do_update:
-    .local pmc rule
-    $S0 = self.'object'()
-    getattribute rule, self, 'rule'
-    unless null rule goto got_rule
-    print "smart: *** No rule for target '"
-    print $S0
-    print "'. Stop.\n"
+    $I0 = rule.'execute_actions'()
+    #.return ($I0)
+    .return (1)
+    
+no_rule_found:
+    $S1 = self.'object'()
+    set $S0, "smart: * No rule for target '"
+    concat $S0, $S1
+    concat $S0, "'. Stop."
     exit -1
-got_rule:
-
-    $I0 = can rule, 'update_target'
-    unless $I0 goto invalid_rule_object  
-    $I0 = rule.'update_target'(self)
-    .return ($I0)
     
 invalid_rule_object:
     $S0 = "smart: Invalid rule object"

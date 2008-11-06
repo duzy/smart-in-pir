@@ -146,7 +146,7 @@ no_number_one_target:
 .sub '!update-makefile-rule'
     .param pmc match
     .param pmc target
-    .param pmc deps     :optional
+    .param pmc prerequisites     :optional
     .param pmc actions  :optional
     .local pmc rule
 
@@ -156,31 +156,27 @@ no_number_one_target:
     rule = new 'MakefileRule'
     rule.'match'( $S0 )
     setattribute target, 'rule', rule
+    set_hll_global ['smart';'makefile';'rule'], $S0, rule
 got_rule_object:
 
-    if null deps goto no_deps
+    if null prerequisites goto no_prerequisites
     
     .local pmc iter, cont
-    iter = new 'Iterator', deps
-    cont = rule.'deps'()
-iterate_deps:
-    unless iter goto end_iterate_deps
+    iter = new 'Iterator', prerequisites
+    cont = rule.'prerequisites'()
+iterate_prerequisites:
+    unless iter goto end_iterate_prerequisites
     $P0 = shift iter
     push cont, $P0
-    goto iterate_deps
-end_iterate_deps:
+    goto iterate_prerequisites
+end_iterate_prerequisites:
     
-no_deps:
+no_prerequisites:
     
     if null actions goto no_actions
     rule.'actions'( actions )
 no_actions:
     
-    set_hll_global ['smart';'makefile';'rule'], $S0, rule
-
-#    print "rule '"
-#    print $S0
-#    print "'\n"
     .return(rule)
 .end
 

@@ -14,11 +14,14 @@
     addattribute $P0, 'echo_on'
 .end
 
+=item <command(OPT cmd)>
+    Accessor to the command line string of the action.
+=cut
 .sub 'command' :method
     .param pmc command :optional
     if null command goto return_value_only
     setattribute self, 'command', command
-    .return(command)
+    .return()
     
 return_value_only:
     getattribute $P0, self, 'command'
@@ -31,41 +34,52 @@ got_command:
     .return ($S0)
 .end
 
+=item <echo_on(OPT flag)>
+=cut
 .sub 'echo_on' :method
-    .param pmc v :optional
-    if null v goto return_value_only
-    setattribute self, 'echo_on', v
-    .return(v)
+    .param pmc flag :optional
+    if null flag goto return_value_only
+    setattribute self, 'echo_on', flag
+    .return()
     
 return_value_only:
     getattribute $P0, self, 'echo_on'
+    
     unless null $P0 goto got_echo_on
+    
     $P0 = new 'Integer'
     $P0 = 1
     setattribute self, 'echo_on', $P0
+    
 got_echo_on:
     .return ($P0)
 .end
 
+=item <execute()>
+    Execute the command of the action, returns the status code.
+=cut
 .sub 'execute' :method
     $S0 = self.'command'()
     $I0 = self.'echo_on'()
     unless $I0 goto no_echo
     print $S0
     print "\n"
-no_echo:        
+no_echo:
+    
     spawnw $I0, $S0
-
+    
     unless $I0 goto succeed
+    
     set $S2, $I0
     set $S1, "smart: Command '"
     concat $S1, $S0
     concat $S1, "' failed with exit code '"
     concat $S1, $S2
     concat $S1, "'"
-    #die $S1
     print $S1
     exit -1
-succeed:        
+    
+succeed:
+    .return ($I0)
 .end
 
