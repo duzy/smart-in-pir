@@ -22,8 +22,8 @@ token ws { <!ww> [ <comment> | \s+ ]* }
 token comment { [ '#{' <-[ } ]>* '}' ] | [ '#' \N* \n? ] }
 
 rule statement {
-    | <empty_smart_statement> {*}               #= empty_smart_statement
     | <makefile_variable_declaration> {*}	#= makefile_variable_declaration
+    | <empty_smart_statement> {*}               #= empty_smart_statement
     | <makefile_rule> {*}                       #= makefile_rule
     | <smart_say_statement> {*}			#= smart_say_statement
 }

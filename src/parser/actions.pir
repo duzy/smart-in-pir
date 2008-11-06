@@ -27,39 +27,6 @@ end_chop:
     .return (str)
 .end
 
-.sub "makefile_variable_" :method
-    .param pmc mo # $/
-
-    .local pmc eh
-    new eh, 'ExceptionHandler'
-    set_addr eh, exception_handler
-    eh.handle_types( 58 )
-    push_eh eh
-    
-    unless_null mo, valid
-
-    $S0 = 'smart: *** Invalid match object'
-    die $S0
-    
-valid:
-    .local pmc Var
-    get_hll_global Var, ["PAST"], "Var"
-    set $S0, mo
-    'trim_spaces'( $S0 ) #$S0 = 'trim_spaces'( $S0 )
-    $P0 = Var.'new'('name' => $S0, 'scope' => "package", 'namespace' => "smart::makefile::variable", 'viviself' => "Undef", 'lvalue' => 1 )
-    $P1 = mo.'result_object'( $P0 )
-    .return ($P1)
-    
-exception_handler:
-    .local pmc exception, payload
-    .get_results (exception)
-    getattribute payload, exception, "payload"
-    set $S0, exception
-    .return (payload)
-    
-exception_handler_rethrow:
-    rethrow exception
-.end
 
 .namespace
 .sub '!update-makefile-variable'

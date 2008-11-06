@@ -1,7 +1,7 @@
 
 ## <smart::Grammar::makefile_variable_value_item>
 .namespace ["smart";"Grammar"]
-.sub "makefile_variable_value_item_" :method
+.sub "__makefile_variable_value_item__" :method
     .param pmc adverbs      :unique_reg :slurpy :named
     .local pmc mob
     .local string target
