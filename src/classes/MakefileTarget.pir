@@ -41,7 +41,7 @@ got_name:
     getattribute $P0, self, 'object'
     unless null $P0 goto got_object
     $P0 = new 'String'
-    $P0 = ''
+    $P0 = '<nothing>'
     setattribute self, 'object', $P0
 got_object:     
     $S0 = $P0
@@ -94,6 +94,33 @@ no_rule_found:
     exit -1
 .end
 
+.sub '.!setup_automatic_variables' :method
+    .local pmc object
+    object = self.'object'()
+    set_hll_global ['smart';'makefile';'variable'], '@', object
+    set_hll_global ['smart';'makefile';'variable'], '%', object
+    set_hll_global ['smart';'makefile';'variable'], '<', object
+    set_hll_global ['smart';'makefile';'variable'], '?', object
+    set_hll_global ['smart';'makefile';'variable'], '^', object
+    set_hll_global ['smart';'makefile';'variable'], '+', object
+    set_hll_global ['smart';'makefile';'variable'], '|', object
+    set_hll_global ['smart';'makefile';'variable'], '*', object
+.end
+
+.sub '.!clear_automatic_variables' :method
+    .local pmc empty
+    empty = new 'String'
+    empty = ''
+    set_hll_global ['smart';'makefile';'variable'], '@', empty
+    set_hll_global ['smart';'makefile';'variable'], '%', empty
+    set_hll_global ['smart';'makefile';'variable'], '<', empty
+    set_hll_global ['smart';'makefile';'variable'], '?', empty
+    set_hll_global ['smart';'makefile';'variable'], '^', empty
+    set_hll_global ['smart';'makefile';'variable'], '+', empty
+    set_hll_global ['smart';'makefile';'variable'], '|', empty
+    set_hll_global ['smart';'makefile';'variable'], '*', empty
+.end
+
 =item <update()>
     Update the target, returns 1 if succeed, 0 otherwise.
 =cut
@@ -115,14 +142,14 @@ iterate_prerequisites:
     unless $I0 goto invalid_target_object
     $I0 = $P0.'update'()
     unless $I0 goto iterate_prerequisites
-    inc update_count
+    #inc update_count
+    update_count += $I0
     goto iterate_prerequisites
 invalid_target_object:
     die "smart: *** Got invalid target object(prerequisite)"
 end_iterate_prerequisites:
 
-    $I0 = 0 < update_count
-    if $I0 goto do_update ## if any prerequisites updated
+    if 0 < update_count goto do_update ## if any prerequisites updated
 
     $I0 = self.'out_of_date'()
     if $I0 goto do_update
@@ -130,15 +157,18 @@ end_iterate_prerequisites:
     .return (0)
     
 do_update:
+    self.'.!setup_automatic_variables'()
     $I0 = rule.'execute_actions'()
-    #.return ($I0)
-    .return (1)
+    self.'.!clear_automatic_variables'()
+    inc update_count
+    .return (update_count)
     
 no_rule_found:
     $S1 = self.'object'()
     set $S0, "smart: ** No rule for target '"
     concat $S0, $S1
     concat $S0, "'. Stop."
+    print $S0
     exit -1
     
 invalid_rule_object:

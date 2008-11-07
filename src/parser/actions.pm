@@ -82,9 +82,7 @@ method makefile_variable_declaration($/) {
 
 method makefile_variable_method_call($/) {
     my $past := PAST::Op.new( $( $<makefile_variable_ref> ),
-        :name( ~$<ident> ),
-	:pasttype( 'callmethod' )
-       );
+        :name( ~$<ident> ), :pasttype( 'callmethod' ) );
     for $<expression> {
         $past.push( $( $_ ) );
     }

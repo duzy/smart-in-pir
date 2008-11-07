@@ -1,3 +1,4 @@
+# -*- mode: makefile -*-
 say '1..7';
 
 A = item1 item2
@@ -18,7 +19,7 @@ say 'ok $(E).expand = ', $(E).expand();
 UN = aaa${unterminated
 say "uncompatible: ", $(UN).expand();
 
-# this must be expanded to '' -- the empty string
+# this should be expanded to '' -- the empty string -- as make does
 NIL = aa$ bb
 say "uncompatible: ", $(NIL).expand();
 

@@ -19,10 +19,12 @@
     Returns the match string.
 =cut
 .sub 'match' :method
-    .param pmc value :optional
-    if null value goto return_value_onle
+    .param pmc value            :optional
+    .param int has_value        :opt_flag
+    
+    if has_value == 0 goto return_value_onle
     setattribute self, 'match', value
-    .return(value)
+    .return()
     
 return_value_onle:      
     getattribute $P0, self, 'match'
@@ -69,13 +71,16 @@ end_iterate_actions:
     Returns the prerequisites of the rule.
 =cut
 .sub 'prerequisites' :method
-    .param pmc prerequisites :optional
-    if null prerequisites goto returns_only
+    .param pmc prerequisites            :optional
+    .param int has_prerequisites        :opt_flag
+    
+    if has_prerequisites == 0 goto returns_only
     $S0 = typeof prerequisites
     $I0 = $S0 == 'ResizablePMCArray'
     unless $I0 goto invalid_arg
     setattribute self, 'prerequisites', prerequisites
     .return()
+    
 returns_only:
     getattribute $P0, self, 'prerequisites'
     unless null $P0 goto got_prerequisites
@@ -91,8 +96,10 @@ invalid_arg:
     Returns the actions of the rule.
 =cut
 .sub 'actions' :method
-    .param pmc actions :optional
-    if null actions goto returns_only
+    .param pmc actions          :optional
+    .param int has_actions      :opt_flag
+    
+    if has_actions == 0 goto returns_only
     $S0 = typeof actions
     $I0 = $S0 == 'ResizablePMCArray'
     unless $I0 goto invalid_arg

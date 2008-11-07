@@ -10,16 +10,10 @@
 
 .sub '__init_class' :anon :init :load
     newclass $P1, 'MakefileVariable'
-    #subclass $P1, 'ResizableStringArray', 'MakefileVariable'
     #subclass $P1, 'ResizablePMCArray', 'MakefileVariable'
     addattribute $P1, 'name'
     addattribute $P1, 'items'
 .end
-
-#.sub 'set_name' :method
-#    .param string 'name' => v
-#    setattribute self, 'name', v
-#.end
 
 .sub 'name' :method
     .local pmc name
@@ -118,25 +112,23 @@ got_single_character_variable:
     ## expand the variable by name $S2
     $I0 = can $P0, 'expand'
     if $I0 goto object_can_expand
-    $P1 = new 'Exception'
-    $P1 = "smart: * expand() does not supported"
-    throw $P1
+    die "smart: * expand() does not supported"
 object_can_expand:     
     $S1 = $P0.'expand'()
     concat result, $S1
     goto search_variable_sign
     
 makefile_variable_not_exist:
-    print "smart: Makefile Variable '"
+    print "smart: Makefile variable '"
     print $S0
-    print "' not declaraed!\n"
+    print "' undeclaraed\n"
     goto search_variable_sign
     
 got_unterminated_makefile_variable:
     ## we got '$' or '${' or '$(' only
-    print "smart: ** Unterminated Makefile Variable: "
+    print "smart: Unterminated makefile variable: '"
     print item
-    print "\n"
+    print "'\n"
     inc pos1
     goto search_variable_sign
 end_search_variable_sign: 

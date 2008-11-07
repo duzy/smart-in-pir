@@ -106,14 +106,18 @@ done:
     get_hll_global target, ['smart';'makefile'], '$<0>'
     if null target goto no_number_one_target
     $I0 = target.'update'()
-    if $I0 goto all_done
+    
+    if 0 < $I0 goto all_done
     $S0 = target.'name'()
-    print "smart: ** Updating target '"
+    print "smart: '"
     print $S0
-    print "' failed. Stop.\n"
+    print "' is up to date.\n"
     exit -1
     
-all_done:   
+all_done:
+    print "smart: Done, "
+    print $I0
+    print " targets updated.\n"
     .return()
     
 no_number_one_target:
