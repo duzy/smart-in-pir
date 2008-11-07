@@ -22,38 +22,71 @@ token ws { <!ww> [ <comment> | \s+ ]* }
 token comment { [ '#{' <-[ } ]>* '}' ] | [ '#' \N* \n? ] }
 
 rule statement {
-    | <makefile_variable_declaration> {*}	#= makefile_variable_declaration
     | <empty_smart_statement> {*}               #= empty_smart_statement
-    | <makefile_rule> {*}                       #= makefile_rule
     | <smart_say_statement> {*}			#= smart_say_statement
+    | <makefile_variable_declaration> {*}	#= makefile_variable_declaration
+    | <makefile_rule> {*}                       #= makefile_rule
 }
 
-rule empty_smart_statement { <.ws> ';' {*} }
+token empty_smart_statement { <.ws> ';' {*} }
 
-rule makefile_variable_declaration {
+token makefile_variable_declaration {
     <makefile_variable>
-    <makefile_variable_assign>
+    <makefile_variable_assign> 
     <makefile_variable_value_list>
+    [ [\n | $] || <.panic: 'smart: * Makefile variable declaration expecting end of line'> ]
     {*}
 }
-token makefile_variable { <-[ : = # \ \t \n ]> <-[ : = # + ? \n ]>* }
-token makefile_variable_assign { '=' | ':=' | '?=' | '+=' }
+
+token makefile_variable {
+      <-[ : = # \ \t \n ]> <-[ : = # + ? \n ]>*
+      {{
+      $S0 = match.'text'()
+      $I0 = length $S0
+      $I1 = $I0 - 1
+      loop:
+      unless 0 <= $I1 goto end
+      $S1 = substr $S0, $I1, 1
+      if $S1 != ' ' goto loop_end
+      dec $I1
+      goto loop
+      loop_end:
+      if $I0 <= 0 goto end
+      $I2 = match.'from'()
+      $I2 = $I2 + $I1
+      match.'to'( $I2 )
+      end:
+
+      #print "var: "
+      #print " '"
+      #$S0 = match.'text'()
+      #print $S0
+      #print "'\n"
+      }}
+}
+token makefile_variable_assign { [ '=' | ':=' | '?=' | '+=' ] }
 token makefile_variable_value_list {
     [
-      |[ <[ \ \t ]>* \n? ]
-      |[
+      |[ <[ \ \t ]>*
          [ [ <makefile_variable_value_item> <[ \ \t ]>* ]* \\
            [ \n || <.panic: 'smart: * Suspicious continuation'> ]
          ]+
+         <[ \ \t ]>*
          [ <makefile_variable_value_item> <[ \ \t ]>* ]*
-         [ \n || <.panic: 'smart: * Expecting a new line'> ]
        ]
-      |[ [ <makefile_variable_value_item> <[ \ \t ]>* ]*
-         [ \n || <.panic: 'smart: * Makefile variable declaration expecting end of line'> ]
+      |[ <[ \ \t ]>*
+         [ <makefile_variable_value_item> <[ \ \t ]>* ]*
        ]
     ]
+    
+#    {{
+#    $S0 = match.'text'()
+#    print "value: '"
+#    print $S0
+#    print "'\n"
+#    }}
 }
-token makefile_variable_value_item { <-[ \ \t \\ \n ]>+ {*} }
+token makefile_variable_value_item { <-[ \ \t \\ \n ]>+ }
 
 token makefile_rule {
     <makefile_targets> <[ \ \t ]>* ':' <[ \ \t ]>*
@@ -68,11 +101,8 @@ token makefile_rule {
     {*}
 }
 token makefile_targets { [ <makefile_target> <[ \ \t ]>* ]+ }
-token makefile_target {
-    <-[ : \ \t \n ]>+
-    {*}
-}
-token makefile_prerequisite { <-[ ; \ \t \n ]>+ {*} }
+token makefile_target { <-[ : \ \t \n ]>+ }
+token makefile_prerequisite { <-[ ; \ \t \n ]>+ }
 token makefile_rule_action { <-[ \n ]>* {*} }
 
 rule smart_say_statement {
@@ -108,20 +138,18 @@ rule makefile_variable_method_call {
 }
 
 rule makefile_variable_ref {
-    | <makefile_variable_ref1> {*}	#= makefile_variable_ref1
-    | <makefile_variable_ref2> {*}	#= makefile_variable_ref2
+    | <makefile_variable_ref1> {*}
+    | <makefile_variable_ref2> {*}
 }
 rule makefile_variable_ref1 {
     '$'
     [ '(' <makefile_variable_name1>
     [ ')' || <.panic: "smart: * Makefile variable referencing expects ')'"> ]]
-    {*}
 }
 rule makefile_variable_ref2 {
     '$'
     [ '{' <makefile_variable_name2>
     [ '}' || <.panic: "smart: * Makefile variable referencing expects '}'"> ]]
-    {*}
 }
 token makefile_variable_name1 { <-[ ) \n : = # ]>+ }
 token makefile_variable_name2 { <-[ } \n : = # ]>+ }

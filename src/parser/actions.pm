@@ -51,42 +51,33 @@ method statement($/, $key) {
 method empty_smart_statement($/) { make PAST::Op.new( :pirop('noop') ); }
 
 method makefile_variable_declaration($/) {
-    #$( $<makefile_variable> );
-    my $var := PAST::Var.new( :name( ~$/ ),
-      :scope('package'),
-      :namespace('smart::makefile::variable'),
-      :viviself('Undef'),
-      :lvalue(1),
-      #:isdecl(1),
-      :node( $/ )
+    my $var := PAST::Var.new(
+        #:name(~$<makefile_variable>),
+        :name( trim_spaces(~$<makefile_variable>) ),
+          :scope('package'),
+          :namespace('smart::makefile::variable'),
+          #:scope('lexical'),
+          :viviself('Undef'),
+          :lvalue(1),
+          :isdecl(1),
+          :node( $<makefile_variable> )
     );
 
-    my $ctr := PAST::Op.new( :pasttype('call'), :returns('MakefileVariable') );
+    my $ctr := PAST::Op.new( :pasttype('call'),
+      :name('!update-makefile-variable'),
+      :returns('MakefileVariable') );
     for $<makefile_variable_value_list><makefile_variable_value_item> {
-        $ctr.push( $( $_ ) );
+        $ctr.push( PAST::Val.new( :value( ~$_ ), :returns('String') ) );
     }
 
-    my $name := $var.name();
     my $sign := ~$<makefile_variable_assign>;
-    $ctr.name('!update-makefile-variable');
-    #$ctr.unshift( PAST::Val.new( :value($sign), :returns('String') ) );
-    $ctr.unshift( PAST::Val.new( :value($name), :returns('String') ) );
+    $ctr.unshift( PAST::Val.new( :value($sign), :returns('String') ) );
+    $ctr.unshift( PAST::Val.new( :value($var.name()), :returns('String') ) );
 
     make PAST::Op.new( $var, $ctr,
                        :pasttype('bind'),
-                       :name('bind-makefile-variable-object'),
-                       :node( $/ )
+                       :name('bind-makefile-variable-variable'),
                    );
-}
-
-#method makefile_variable($/) {
-#    my $p := PAST::Op.new( :pasttype('call'), :name('!debug'), :node($/) );
-#    $p.push( PAST::Val.new( :value(~$/), :returns('String') ) );
-#    make $p;
-#}
-
-method makefile_variable_value_item($/) {
-    make PAST::Val.new( :value( ~$/ ), :returns('String'), :node($/) );
 }
 
 method makefile_variable_method_call($/) {
@@ -99,32 +90,45 @@ method makefile_variable_method_call($/) {
     }
     make $past;
 }
-method makefile_variable_ref($/, $key) { make $( $/{$key} ); }
-method makefile_variable_ref1($/) {
-    make PAST::Var.new( :name( ~$<makefile_variable_name1> ),
+method makefile_variable_ref($/) {
+    my $name;
+    if $<makefile_variable_ref1> {
+        $name := ~$<makefile_variable_ref1><makefile_variable_name1>;
+    }
+    elsif $<makefile_variable_ref2> {
+        $name := ~$<makefile_variable_ref2><makefile_variable_name2>;
+    }
+    my $var := PAST::Var.new( :name($name),
       :scope('package'),
       :namespace('smart::makefile::variable'),
+      #:scope('lexical'),
       :viviself('Undef'),
-      :lvalue(0)
-  );
-}
-method makefile_variable_ref2($/) {
-    make PAST::Var.new( :name( ~$<makefile_variable_name2> ),
-      :scope('package'),
-      :namespace('smart::makefile::variable'),
-      :viviself('Undef'),
-      :lvalue(0)
-  );
+      :lvalue(0),
+      :node($/)
+    );
+    my $binder := PAST::Op.new( :pasttype('call'),
+      :name('!bind-makefile-variable'),
+      :returns('MakefileVariable') );
+    $binder.push( PAST::Val.new( :value($var.name()), :returns('String') ) );
+
+    make PAST::Op.new( $var, $binder,
+                       :pasttype('bind'),
+                       :name('bind-makefile-variable-variable'),
+                   );
 }
 
 method makefile_rule($/) {
     my $pack_targets := PAST::Op.new( :pasttype('call'),
       :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
     for $<makefile_targets><makefile_target> {
-        my $t := $( $_ );
-        $t.lvalue( 0 );
-        $t.isdecl( 1 );
-        $t.scope('lexical');
+        my $name := trim_spaces( ~$_ );
+        my $t := PAST::Var.new( :name($name),
+          :lvalue(0),
+          :isdecl(1),
+          :viviself('Undef'),
+          :scope('lexical'),
+          :node( $/ )
+        );
 
         my $c := PAST::Op.new( :pasttype('call'), :returns('MakefileTarget'),
           :name('!bind-makefile-target') );
@@ -138,10 +142,13 @@ method makefile_rule($/) {
     my $pack_prerequisites := PAST::Op.new( :pasttype('call'),
       :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
     for $<makefile_prerequisite> {
-        my $pre := $( $_ );
-        $pre.lvalue( 0 );
-        $pre.isdecl( 1 );
-        $pre.scope('lexical');
+        my $pre := PAST::Var.new( :name(~$_),
+          :lvalue(0),
+          :isdecl(1),
+          :viviself('Undef'),
+          :scope('lexical'),
+          :node($/)
+        );
         ##bind dep to the target object
         my $ctr := PAST::Op.new( :pasttype('call'),
           :name('!bind-makefile-target'), :returns('MakefileTarget') );
@@ -172,26 +179,6 @@ method makefile_rule($/) {
                        :pasttype('bind'),
                        :name('bind-makefile-rule-variable'),
                        :node( $/ ) );
-}
-
-method makefile_target($/) {
-    my $name := trim_spaces( ~$/ ); # ~$/
-    make PAST::Var.new( :name($name),
-      :lvalue(1),
-      :viviself('Undef'),
-      :scope('lexical'),
-      :node( $/ )
-    );
-}
-
-method makefile_prerequisite($/) {
-    my $name := trim_spaces( ~$/ ); #~$/;
-    make PAST::Var.new( :name($name),
-      :lvalue(0),
-      :viviself('Undef'),
-      :scope('lexical'),
-      :node($/)
-    );
 }
 
 method makefile_rule_action($/) {

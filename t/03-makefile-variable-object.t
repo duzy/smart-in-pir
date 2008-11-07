@@ -1,4 +1,4 @@
-say '1..6';
+say '1..7';
 
 #A = item1 item2 item3 item4 item5
 A = item1\

@@ -31,44 +31,43 @@ end_chop:
 .namespace
 .sub '!update-makefile-variable'
     .param string name
+    .param string sign
     .param pmc items :slurpy
 
-    ##.param string sign
-
-    .local string sign
-    sign = '='
+#     print "update '"
+#     print name
+#     print "'\n"
     
     .local pmc var
     get_hll_global var, ['smart';'makefile';'variable'], name
     unless null var goto makefile_variable_exists
     
-    print "new-variable: "
-    print name
-    print sign
-    print "\n"
-    
     var = new 'MakefileVariable'
     $P0 = new 'String'
     $P0 = name
     setattribute var, 'name', $P0
-
+    
     ## Store new makefile variable as a HLL global symbol
+#     print "store: '"
+#     print name
+#     print "'\n"
     set_hll_global ['smart';'makefile';'variable'], name, var
-
+    
 makefile_variable_exists:
-
-    print "use-variable: "
-    print name
-    print sign
-    print "\n"
-
+    
     $I0 = sign == '+='
-    unless $I0 goto append_items
-    $P1 = var.'items'()
-    $P1 = items
+    if $I0 goto append_items
+    setattribute var, 'items', items
+#     print "assign: "
+#     print items
+#     print " items\n"
     goto done
-
+    
 append_items:
+#     print "append: "
+#     print items
+#     print " items\n"
+    
     .local pmc iter
     iter = new 'Iterator', items
 iterate_items:
@@ -78,7 +77,26 @@ iterate_items:
     push $P2, $P1 #push var, $P1
     goto iterate_items
 iterate_items_end:
+    
+done:
+    .return (var)
+.end
 
+.sub '!bind-makefile-variable'
+    .param string name
+    .local pmc var
+    
+#     print "bind: '"
+#     print name
+#     print "'\n"
+    
+    get_hll_global var, ['smart';'makefile';'variable'], name
+    unless null var goto done
+    print "smart: ** Makefile variable '"
+    print name
+    print "' not declaraed. Stop.\n"
+    exit -1
+    
 done:
     .return (var)
 .end
@@ -94,6 +112,7 @@ done:
     print $S0
     print "' failed. Stop.\n"
     exit -1
+    
 all_done:   
     .return()
     
