@@ -94,20 +94,80 @@ no_rule_found:
     exit -1
 .end
 
-.sub '.!setup_automatic_variables' :method
-    .local pmc object
-    object = self.'object'()
-    set_hll_global ['smart';'makefile';'variable'], '@', object
-    set_hll_global ['smart';'makefile';'variable'], '%', object
-    set_hll_global ['smart';'makefile';'variable'], '<', object
-    set_hll_global ['smart';'makefile';'variable'], '?', object
-    set_hll_global ['smart';'makefile';'variable'], '^', object
-    set_hll_global ['smart';'makefile';'variable'], '+', object
-    set_hll_global ['smart';'makefile';'variable'], '|', object
-    set_hll_global ['smart';'makefile';'variable'], '*', object
+.macro MAKEFILE_VARIABLE( var, name, items, temp )
+    .var = new 'MakefileVariable'
+    .temp = new 'String'
+    .temp = .name
+    setattribute .var, "name", .temp
+    setattribute .var, "items", .items
+.endm
+
+.sub '.!setup-automatic-variables' :method
+    .local pmc rule, array, temp1, temp2
+    getattribute rule, self, "rule"
+    
+    ## $P0 => $@
+    array = new 'ResizablePMCArray'
+    $S0 = self.'object'()
+    push array, $S0
+    .MAKEFILE_VARIABLE( $P0, "@", array, temp1 )
+
+    ## $P1 => $%
+    array = new 'ResizablePMCArray'
+    ## the target member name, should see Archives
+    .MAKEFILE_VARIABLE( $P1, "%", array, temp1 )
+    
+    ## $P2 => $<
+    array = new 'ResizablePMCArray'
+    temp1 = rule.'prerequisites'()
+    $I0 = exists temp1[0]
+    unless $I0 goto no_items
+    temp2 = temp1[0]
+    $S0 = temp2.'object'()
+    push array, $S0
+no_items:
+    .MAKEFILE_VARIABLE( $P2, "<", array, temp1 )
+
+    ## $P3 => $?
+    array = new 'ResizablePMCArray'
+    .MAKEFILE_VARIABLE( $P3, "?", array, temp1 )
+
+    ## $P4 => $^
+    array = new 'ResizablePMCArray'
+    temp1 = rule.'prerequisites'()
+    temp2 = new 'Iterator', temp1
+loop_P4:
+    unless temp2 goto end_loop_P4
+    temp1 = shift temp2
+    $S0 = temp1.'object'()
+    push array, $S0
+    goto loop_P4
+end_loop_P4:
+    .MAKEFILE_VARIABLE( $P4, "^", array, temp1 )
+
+    ## $P5 => $+
+    array = new 'ResizablePMCArray'
+    .MAKEFILE_VARIABLE( $P5, "+", array, temp1 )
+
+    ## $P6 => $|
+    array = new 'ResizablePMCArray'
+    .MAKEFILE_VARIABLE( $P6, "|", array, temp1 )
+
+    ## $P7 => $*
+    array = new 'ResizablePMCArray'
+    .MAKEFILE_VARIABLE( $P7, "*", array, temp1 )
+    
+    set_hll_global ['smart';'makefile';'variable'], '@', $P0
+    set_hll_global ['smart';'makefile';'variable'], '%', $P1
+    set_hll_global ['smart';'makefile';'variable'], '<', $P2
+    set_hll_global ['smart';'makefile';'variable'], '?', $P3
+    set_hll_global ['smart';'makefile';'variable'], '^', $P4
+    set_hll_global ['smart';'makefile';'variable'], '+', $P5
+    set_hll_global ['smart';'makefile';'variable'], '|', $P6
+    set_hll_global ['smart';'makefile';'variable'], '*', $P7
 .end
 
-.sub '.!clear_automatic_variables' :method
+.sub '.!clear-automatic-variables' :method
     .local pmc empty
     empty = new 'String'
     empty = ''
@@ -157,9 +217,9 @@ end_iterate_prerequisites:
     .return (0)
     
 do_update:
-    self.'.!setup_automatic_variables'()
+    self.'.!setup-automatic-variables'()
     $I0 = rule.'execute_actions'()
-    self.'.!clear_automatic_variables'()
+    self.'.!clear-automatic-variables'()
     inc update_count
     .return (update_count)
     

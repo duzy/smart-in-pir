@@ -18,14 +18,16 @@ expand_variable -- Expand makefile variable.
     .local string result
     .local string char, paren, name
     .local int len, n, pos
+
+    result = ''
     len = length str
     n = 0
-    
+
 loop_chars:
     unless n < len goto end_loop_chars
     
     char = substr str, n, 1
-    unless char == '$' goto got_dollar_sign
+    if char == '$' goto got_dollar_sign
     concat result, char
     inc n ## skip the eat char
     goto loop_chars
@@ -52,11 +54,8 @@ check_2: ## the '$$' will be escape to a single '$'
 check_3: ## single character variable name
     ## should be a single char variable name
     ## should do some checking?
-    pos = n ## bookmark the position
-    goto get_single_char_name
-
-get_single_char_name:
     name = char
+    inc n ## skip the single character variable name
     goto try_expand_variable
     
 get_variable_name:
@@ -73,8 +72,8 @@ get_variable_name:
     
 try_expand_variable:
     get_hll_global $P0, ['smart';'makefile';'variable'], name
-    unless null $P0 goto got_null_variable
-    $S0 = $P0
+    if null $P0 goto got_null_variable
+    $S0 = $P0.'expand'()
     concat result, $S0
     goto loop_chars
     
@@ -85,7 +84,7 @@ got_null_variable:
     print $S0
     goto loop_chars
 end_loop_chars:
-    
+
     .return(result)
 .end
 

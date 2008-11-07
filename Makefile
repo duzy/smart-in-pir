@@ -9,7 +9,7 @@
 PARROT_ARGS =
 
 ## configuration settings
-BUILD_DIR     = /more/temp/parrot
+BUILD_DIR     = /home/duzy/open/parrot
 LOAD_EXT      = .so
 O             = .o
 
@@ -51,6 +51,7 @@ SOURCES = smart.pir \
 
 BUILTINS_PIR = \
   src/builtins/say.pir \
+  src/builtins/expand.pir \
 
 # PMCS = smart
 # PMC_SOURCES = $(PMC_DIR)/smart.pmc
