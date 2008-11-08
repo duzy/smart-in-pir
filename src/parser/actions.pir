@@ -28,7 +28,7 @@ end_chop:
 .end
 
 
-.namespace
+.namespace []
 .sub '!update-makefile-variable'
     .param string name
     .param string sign
@@ -220,7 +220,7 @@ no_actions:
 target_object_not_created:
     
     target = new 'MakefileTarget'
-    setattribute target, 'name', name
+    #setattribute target, 'name', name
     setattribute target, 'object', name
     
     if null is_rule goto donot_change_number_one_target

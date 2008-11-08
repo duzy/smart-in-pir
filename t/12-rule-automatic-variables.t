@@ -60,18 +60,22 @@ suffix, '$*' is set to the empty string for that rule.
 
 }
 
-say "1..6";
+say "1..12";
 foobar: foo bar
 	@echo "ok, $@ => $^; first: $<"
-foo: b
+foo: echo
 	@echo "ok, $@ => $^; first: $<"
-bar: ;	@echo "ok, $@ => $^; first: $<"
+bar: baz ;
+	@echo "ok, $@ => $^; first: $<"
 
-  a b c d : echo
-	@echo "ok, update '$@'"
+  a b c d : trick2
+	@echo "ok, $@, $^"
 
-baz: c d ; @echo "ok, $@ => $^; first: $<"
+baz: a c d ; @echo "ok, $@ => $^; first: $<"
 
 echo: trick
-	@$@ "ok, you $< me, $^..."
-trick:
+	@$@ "ok, you '$<' me, $^..."
+trick: trick1 trick2 trick3
+	@echo "ok, [$?], [$^], [$|]"
+trick1 trick2 trick3:
+	@echo "ok, $@"

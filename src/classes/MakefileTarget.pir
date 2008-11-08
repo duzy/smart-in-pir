@@ -9,30 +9,12 @@
 .namespace ['MakefileTarget']
 .sub '__init_class' :anon :init :load
     newclass $P0, 'MakefileTarget'
-    addattribute $P0, 'name'
     addattribute $P0, 'object'
+    addattribute $P0, 'member'
     addattribute $P0, 'rule'
+    addattribute $P0, 'updated'
 .end
 
-## why???  The PCT;HLLCompiler;command_line always need it
-#.sub 'get_bool' :method :vtable
-#    .return (0)
-#.end
-#.sub 'get_string' :method :vtable
-#    $S0 = ''
-#    .return ($S0)
-#.end
-
-.sub 'name' :method
-    getattribute $P0, self, 'name'
-    unless null $P0 goto got_name
-    $P0 = new 'String'
-    $P0 = ''
-    setattribute self, 'name', $P0
-got_name:
-    $S0 = $P0
-    .return ($S0)
-.end
 
 =item <object()>
     Returns the object file updated by the target.
@@ -48,6 +30,40 @@ got_object:
     .return($S0)
 .end
 
+=item <member()>
+    Returns the member name of the target.
+=cut
+.sub 'member' :method
+    getattribute $P0, self, 'member'
+    unless null $P0 goto got_member
+    $P0 = new 'String'
+    $P0 = '' #'<nothing>'
+    setattribute self, 'member', $P0
+got_member:
+    $S0 = $P0
+    .return($S0)
+.end
+
+.sub 'updated' :method
+    .param int updated          :optional
+    .param int has_updated      :opt_flag
+    unless has_updated goto return_only
+    $P0 = new 'Integer'
+    $P0 = updated
+    setattribute self, 'updated', $P0
+    .return()
+    
+return_only:
+    getattribute $P0, self, 'updated'
+    unless null $P0 goto got_updated
+    $P0 = new 'Integer'
+    $P0 = 0
+    setattribute self, 'updated', $P0
+got_updated:
+    updated = $P0
+    .return(updated)
+.end
+
 .sub 'out_of_date' :method
     .local pmc rule
     getattribute rule, self, 'rule'
@@ -59,12 +75,13 @@ got_object:
     $S0 = self.'object'()
     stat $I0, $S0, 0 # EXISTS
     if $I0 goto object_already_exists
-
+    
     goto out_of
     
 object_already_exists:
     .local int changetime
-    stat changetime, $S0, 7 # CHANGETIME
+    ##stat changetime, $S0, 7 # CHANGETIME
+    stat changetime, $S0, 6 # MODIFYTIME
 
     .local pmc prerequisites, iter
     prerequisites = rule.'prerequisites'()
@@ -73,7 +90,10 @@ iterate_prerequisites:
     unless iter goto end_iterate_prerequisites
     $P0 = shift iter
     $S1 = $P0.'object'()
-    stat $I0, $S1, 7 # CHANGETIME
+    stat $I0, $S1, 0 # EXISTS
+    unless $I0 goto out_of # prerequisite not exists
+    ##stat $I0, $S1, 7 # CHANGETIME
+    stat $I0, $S1, 6 # MODIFYTIME
     $I0 = changetime < $I0
     if $I0 goto out_of
     $I0 = $P0.'out_of_date'()
@@ -94,83 +114,214 @@ no_rule_found:
     exit -1
 .end
 
-.macro MAKEFILE_VARIABLE( var, name, items, temp )
+.macro MAKEFILE_VARIABLE( var, name, h )
     .var = new 'MakefileVariable'
-    .temp = new 'String'
-    .temp = .name
-    setattribute .var, "name", .temp
-    setattribute .var, "items", .items
+    $P0 = new 'String'
+    $P0 = .name
+    $P1 = h[.name]
+    setattribute .var, "name", $P0
+    setattribute .var, "items", $P1
 .endm
 
-.sub '.!setup-automatic-variables' :method
-    .local pmc rule, array, temp1, temp2
-    getattribute rule, self, "rule"
+.sub "!get<?D?F>" :anon
+    .param string name_D
+    .param string name_F
+    .param pmc src
+    .local pmc items_D, items_F
+    items_D = new 'ResizablePMCArray'
+    items_F = new 'ResizablePMCArray'
+    $P1 = getattribute src, 'items'
+    $P2 = new 'Iterator', $P1
+loop_tag:
+    unless $P2 goto loop_tag_end
+    $P3 = shift $P2
+    $S0 = $P3
     
-    ## $P0 => $@
-    array = new 'ResizablePMCArray'
-    $S0 = self.'object'()
-    push array, $S0
-    .MAKEFILE_VARIABLE( $P0, "@", array, temp1 )
-
-    ## $P1 => $%
-    array = new 'ResizablePMCArray'
-    ## the target member name, should see Archives
-    .MAKEFILE_VARIABLE( $P1, "%", array, temp1 )
+    $I0 = length $S0
+    $I1 = $I0 - 1
+loop_chars:
+    unless 0 <= $I1 goto end_loop_chars
+    $S3 = substr $S0, $I1, 1
+    if $S3 == "/" goto found_slash
+    dec $I1
+    goto loop_chars
+found_slash:
+    $S1 = substr $S0, 0, $I1
+    $I0 = $I0 - $I1
+    inc $I1
+    dec $I0
+    $S2 = substr $S0, $I1, $I0
+    goto done_D_F
+end_loop_chars:
+    $S1 = "."
+    $S2 = $S0
+done_D_F:
     
-    ## $P2 => $<
-    array = new 'ResizablePMCArray'
-    temp1 = rule.'prerequisites'()
-    $I0 = exists temp1[0]
-    unless $I0 goto no_items
-    temp2 = temp1[0]
-    $S0 = temp2.'object'()
-    push array, $S0
-no_items:
-    .MAKEFILE_VARIABLE( $P2, "<", array, temp1 )
-
-    ## $P3 => $?
-    array = new 'ResizablePMCArray'
-    .MAKEFILE_VARIABLE( $P3, "?", array, temp1 )
-
-    ## $P4 => $^
-    array = new 'ResizablePMCArray'
-    temp1 = rule.'prerequisites'()
-    temp2 = new 'Iterator', temp1
-loop_P4:
-    unless temp2 goto end_loop_P4
-    temp1 = shift temp2
-    $S0 = temp1.'object'()
-    push array, $S0
-    goto loop_P4
-end_loop_P4:
-    .MAKEFILE_VARIABLE( $P4, "^", array, temp1 )
-
-    ## $P5 => $+
-    array = new 'ResizablePMCArray'
-    .MAKEFILE_VARIABLE( $P5, "+", array, temp1 )
-
-    ## $P6 => $|
-    array = new 'ResizablePMCArray'
-    .MAKEFILE_VARIABLE( $P6, "|", array, temp1 )
-
-    ## $P7 => $*
-    array = new 'ResizablePMCArray'
-    .MAKEFILE_VARIABLE( $P7, "*", array, temp1 )
-    
-    set_hll_global ['smart';'makefile';'variable'], '@', $P0
-    set_hll_global ['smart';'makefile';'variable'], '%', $P1
-    set_hll_global ['smart';'makefile';'variable'], '<', $P2
-    set_hll_global ['smart';'makefile';'variable'], '?', $P3
-    set_hll_global ['smart';'makefile';'variable'], '^', $P4
-    set_hll_global ['smart';'makefile';'variable'], '+', $P5
-    set_hll_global ['smart';'makefile';'variable'], '|', $P6
-    set_hll_global ['smart';'makefile';'variable'], '*', $P7
+    push items_D, $S1
+    push items_F, $S2
+    goto loop_tag
+loop_tag_end:
+    .local pmc var_D, var_F
+    var_D = new 'MakefileVariable'
+    $P0 = new 'String'
+    $P0 = name_D
+    setattribute var_D, "name" , $P0
+    setattribute var_D, "items", items_D
+    var_F = new 'MakefileVariable'
+    $P0 = new 'String'
+    $P0 = name_F
+    setattribute var_F, "name" , $P0
+    setattribute var_F, "items", items_F
+    .return (var_D, var_F)
 .end
 
-.sub '.!clear-automatic-variables' :method
+.sub ".!setup-automatic-variables" :anon
+    .param pmc self
+    .local pmc rule, prerequisites
+    getattribute rule, self, "rule"
+
+    prerequisites = rule.'prerequisites'()
+
+    .local pmc var0, var1, var2, var3, var4, var5, var6, var7, var8, var9
+    .local pmc var10, var11, var12, var13, var14, var15, var16, var17
+    .local pmc var18, var19, var20, var21, var22, var23
+    .local pmc array, h
+
+    h = new 'Hash'
+    
+    ## var0 => $@
+    array = new 'ResizablePMCArray'
+    h["@"] = array
+    $S0 = self.'object'()
+    push array, $S0
+
+    ## var1 => $%
+    array = new 'ResizablePMCArray'
+    h["%"] = array
+    $S0 = self.'member'()
+    push array, $S0
+    
+    ## var2 => $<
+    array = new 'ResizablePMCArray'
+    h["<"] = array
+    $I0 = exists prerequisites[0]
+    unless $I0 goto no_items
+    $P1 = prerequisites[0]
+    $S0 = $P1.'object'()
+    push array, $S0
+no_items:
+
+    ## var3 => $?
+    ## var4 => $^
+    ## var5 => $+
+    ## var6 => $|
+    array = new 'ResizablePMCArray'
+    h["?"] = array
+    array = new 'ResizablePMCArray'
+    h["^"] = array
+    array = new 'ResizablePMCArray'
+    h["|"] = array
+    array = new 'ResizablePMCArray'
+    h["+"] = array
+    $P1 = new 'Iterator', prerequisites
+loop_prerequisites:
+    unless $P1 goto end_loop_prerequisites
+    $P0 = shift $P1
+    $S0 = self.'object'()
+    $S1 = $P0.'object'()
+
+    ## var3 => $?
+    array = h["?"]
+    stat $I0, $S0, 0 # EXISTS
+    unless $I0 goto collect_prerequisite_P3 # object not exists
+    stat $I0, $S1, 0 # EXISTS
+    unless $I0 goto skip_prerequisite_P3
+    #stat $I0, $S0, 7 # CHANGETIME
+    #stat $I1, $S1, 7 # CHANGETIME
+    stat $I0, $S0, 6 # MODIFYTIME
+    stat $I1, $S1, 6 # MODIFYTIME
+    $I0 = $I0 < $I1 # if newer...
+    if $I0 goto collect_prerequisite_P3
+skip_prerequisite_P3:
+    goto end_var3 #loop_prerequisites
+collect_prerequisite_P3:
+    push array, $S1
+end_var3:
+
+    ## var4 => $^
+    array = h["^"]
+    push array, $S1
+end_var4:
+
+    ## var5 => $+
+    array = h["+"]
+    push array, $S1
+end_var5:
+
+    ## var6 => $|
+    array = h["|"]
+    #push array, $S1
+    ## order-only??
+end_var6:
+    
+    goto loop_prerequisites
+end_loop_prerequisites:
+
+    ## var7 => $*
+    array = new 'ResizablePMCArray'
+    h["*"] = array
+
+    .MAKEFILE_VARIABLE( var0, "@", h )
+    .MAKEFILE_VARIABLE( var1, "%", h )
+    .MAKEFILE_VARIABLE( var2, "<", h )
+    .MAKEFILE_VARIABLE( var3, "?", h )
+    .MAKEFILE_VARIABLE( var4, "^", h )
+    .MAKEFILE_VARIABLE( var5, "+", h )
+    .MAKEFILE_VARIABLE( var6, "|", h )
+    .MAKEFILE_VARIABLE( var7, "*", h )
+
+    null h
+
+    (var8 , var9 ) = "!get<?D?F>"( "@D", "@F", var0 )
+    (var10, var11) = "!get<?D?F>"( "%D", "%F", var1 )
+    (var12, var13) = "!get<?D?F>"( "<D", "<F", var2 )
+    (var14, var15) = "!get<?D?F>"( "?D", "?F", var3 )
+    (var16, var17) = "!get<?D?F>"( "^D", "^F", var4 )
+    (var18, var19) = "!get<?D?F>"( "+D", "+F", var5 )
+    (var20, var21) = "!get<?D?F>"( "|D", "|F", var6 )
+    (var22, var23) = "!get<?D?F>"( "*D", "*F", var7 )
+
+    set_hll_global ['smart';'makefile';'variable'], '@', var0
+    set_hll_global ['smart';'makefile';'variable'], '%', var1
+    set_hll_global ['smart';'makefile';'variable'], '<', var2
+    set_hll_global ['smart';'makefile';'variable'], '?', var3
+    set_hll_global ['smart';'makefile';'variable'], '^', var4
+    set_hll_global ['smart';'makefile';'variable'], '+', var5
+    set_hll_global ['smart';'makefile';'variable'], '|', var6
+    set_hll_global ['smart';'makefile';'variable'], '*', var7
+    set_hll_global ['smart';'makefile';'variable'], '@D', var8
+    set_hll_global ['smart';'makefile';'variable'], '@F', var9
+    set_hll_global ['smart';'makefile';'variable'], '%D', var10
+    set_hll_global ['smart';'makefile';'variable'], '%F', var11
+    set_hll_global ['smart';'makefile';'variable'], '<D', var12
+    set_hll_global ['smart';'makefile';'variable'], '<F', var13
+    set_hll_global ['smart';'makefile';'variable'], '?D', var14
+    set_hll_global ['smart';'makefile';'variable'], '?F', var15
+    set_hll_global ['smart';'makefile';'variable'], '^D', var16
+    set_hll_global ['smart';'makefile';'variable'], '^F', var17
+    set_hll_global ['smart';'makefile';'variable'], '+D', var18
+    set_hll_global ['smart';'makefile';'variable'], '+F', var19
+    set_hll_global ['smart';'makefile';'variable'], '|D', var20
+    set_hll_global ['smart';'makefile';'variable'], '|F', var21
+    set_hll_global ['smart';'makefile';'variable'], '*D', var22
+    set_hll_global ['smart';'makefile';'variable'], '*F', var23
+.end
+
+.sub ".!clear-automatic-variables" :anon
+    .param pmc self
     .local pmc empty
-    empty = new 'String'
-    empty = ''
+    #empty = new 'String'
+    #empty = ''
     set_hll_global ['smart';'makefile';'variable'], '@', empty
     set_hll_global ['smart';'makefile';'variable'], '%', empty
     set_hll_global ['smart';'makefile';'variable'], '<', empty
@@ -179,12 +330,31 @@ end_loop_P4:
     set_hll_global ['smart';'makefile';'variable'], '+', empty
     set_hll_global ['smart';'makefile';'variable'], '|', empty
     set_hll_global ['smart';'makefile';'variable'], '*', empty
+    set_hll_global ['smart';'makefile';'variable'], '@D', empty
+    set_hll_global ['smart';'makefile';'variable'], '@F', empty
+    set_hll_global ['smart';'makefile';'variable'], '%D', empty
+    set_hll_global ['smart';'makefile';'variable'], '%F', empty
+    set_hll_global ['smart';'makefile';'variable'], '<D', empty
+    set_hll_global ['smart';'makefile';'variable'], '<F', empty
+    set_hll_global ['smart';'makefile';'variable'], '?D', empty
+    set_hll_global ['smart';'makefile';'variable'], '?F', empty
+    set_hll_global ['smart';'makefile';'variable'], '^D', empty
+    set_hll_global ['smart';'makefile';'variable'], '^F', empty
+    set_hll_global ['smart';'makefile';'variable'], '+D', empty
+    set_hll_global ['smart';'makefile';'variable'], '+F', empty
+    set_hll_global ['smart';'makefile';'variable'], '|D', empty
+    set_hll_global ['smart';'makefile';'variable'], '|F', empty
+    set_hll_global ['smart';'makefile';'variable'], '*D', empty
+    set_hll_global ['smart';'makefile';'variable'], '*F', empty
 .end
 
 =item <update()>
     Update the target, returns 1 if succeed, 0 otherwise.
 =cut
 .sub 'update' :method
+    $I0 = self.'updated'()
+    if $I0 goto no_need_update
+    
     .local pmc rule
     getattribute rule, self, 'rule'
     if null rule goto no_rule_found
@@ -202,7 +372,6 @@ iterate_prerequisites:
     unless $I0 goto invalid_target_object
     $I0 = $P0.'update'()
     unless $I0 goto iterate_prerequisites
-    #inc update_count
     update_count += $I0
     goto iterate_prerequisites
 invalid_target_object:
@@ -214,12 +383,14 @@ end_iterate_prerequisites:
     $I0 = self.'out_of_date'()
     if $I0 goto do_update
 
+no_need_update:
     .return (0)
     
 do_update:
-    self.'.!setup-automatic-variables'()
+    '.!setup-automatic-variables'( self )
     $I0 = rule.'execute_actions'()
-    self.'.!clear-automatic-variables'()
+    '.!clear-automatic-variables'( self )
+    self.'updated'( 1 )
     inc update_count
     .return (update_count)
     
