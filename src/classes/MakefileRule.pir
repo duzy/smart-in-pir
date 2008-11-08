@@ -10,6 +10,7 @@
 .sub '__init_class' :anon :init :load
     newclass $P0, 'MakefileRule'
     addattribute $P0, 'match'
+    addattribute $P0, 'patterns' ## used only if the rule is a pattern rule
     addattribute $P0, 'prerequisites'
     addattribute $P0, 'actions'
     ##addattribute $P0, 'targets'

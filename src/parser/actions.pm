@@ -127,35 +127,32 @@ method makefile_rule($/) {
           :scope('lexical'),
           :node( $/ )
         );
-
         my $c := PAST::Op.new( :pasttype('call'), :returns('MakefileTarget'),
           :name('!bind-makefile-target') );
         $c.push( PAST::Val.new( :value($t.name()), :returns('String') ) );
         $c.push( PAST::Val.new( :value(1), :returns('Integer') ) );
-
         $pack_targets.push( PAST::Op.new( $t, $c, :pasttype('bind'),
                                           :name('bind-makefile-target-variable') ) );
+#        $pack_targets.push( PAST::Val.new(:value($name), :returns('Strings')) );
     }
 
     my $pack_prerequisites := PAST::Op.new( :pasttype('call'),
       :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
     for $<makefile_prerequisite> {
-        my $pre := PAST::Var.new( :name(~$_),
+        my $p := PAST::Var.new( :name(~$_),
           :lvalue(0),
           :isdecl(1),
           :viviself('Undef'),
           :scope('lexical'),
           :node($/)
         );
-        ##bind dep to the target object
-        my $ctr := PAST::Op.new( :pasttype('call'),
+        my $c := PAST::Op.new( :pasttype('call'),
           :name('!bind-makefile-target'), :returns('MakefileTarget') );
-        $ctr.push( PAST::Val.new( :value($pre.name()),
-          :returns('String') ) );
-
-        $pack_prerequisites.push(
-            PAST::Op.new( $pre, $ctr, :pasttype('bind'),
-                          :name('bind-makefile-target-variable') ) );
+        $c.push( PAST::Val.new( :value($p.name()), :returns('String') ) );
+        $c.push( PAST::Val.new( :value(0), :returns('Integer') ) );
+        $pack_prerequisites.push( PAST::Op.new( $p, $c, :pasttype('bind'),
+                                                :name('bind-makefile-target-variable') ) );
+#        $pack_prerequisites.push(PASTH::Val.new(:value(~$_), :returns("String")));
     }
 
     my $pack_actions := PAST::Op.new( :pasttype('call'),

@@ -9,10 +9,10 @@
 .namespace ['MakefileTarget']
 .sub '__init_class' :anon :init :load
     newclass $P0, 'MakefileTarget'
-    addattribute $P0, 'object'
-    addattribute $P0, 'member'
-    addattribute $P0, 'rule'
-    addattribute $P0, 'updated'
+    addattribute $P0, 'object'  ## the filename of the object 
+    addattribute $P0, 'member'  ## for Archive target, indicates the member name
+    addattribute $P0, 'rule'    ## the MakefileRule object
+    addattribute $P0, 'updated' ## 1/0, wether the object has been updated
 .end
 
 
@@ -226,50 +226,56 @@ no_items:
     $P1 = new 'Iterator', prerequisites
 loop_prerequisites:
     unless $P1 goto end_loop_prerequisites
-    $P0 = shift $P1
-    $S0 = self.'object'()
-    $S1 = $P0.'object'()
-
+    $P0 = shift $P1       ## $P0, $P1 used
+    $S0 = self.'object'() ## $S0 used
+    $S1 = $P0.'object'()  ## $S1 used
+    
     ## var3 => $?
     array = h["?"]
     stat $I0, $S0, 0 # EXISTS
-    unless $I0 goto collect_prerequisite_P3 # object not exists
+    unless $I0 goto push_var3 # object not exists
     stat $I0, $S1, 0 # EXISTS
-    unless $I0 goto skip_prerequisite_P3
+    unless $I0 goto end_var3
     #stat $I0, $S0, 7 # CHANGETIME
     #stat $I1, $S1, 7 # CHANGETIME
     stat $I0, $S0, 6 # MODIFYTIME
     stat $I1, $S1, 6 # MODIFYTIME
     $I0 = $I0 < $I1 # if newer...
-    if $I0 goto collect_prerequisite_P3
-skip_prerequisite_P3:
-    goto end_var3 #loop_prerequisites
-collect_prerequisite_P3:
+    if $I0 goto push_var3
+    goto end_var3
+push_var3:
     push array, $S1
 end_var3:
-
+    
     ## var4 => $^
     array = h["^"]
+    $P2 = new 'Iterator', array
+iterate_var4_items:
+    unless $P2 goto push_var4
+    $P3 = shift $P2
+    $S2 = $P3
+    if $S1 == $S2 goto end_var4
+    goto iterate_var4_items
+push_var4:
     push array, $S1
 end_var4:
-
+    
     ## var5 => $+
     array = h["+"]
     push array, $S1
 end_var5:
-
-    ## var6 => $|
-    array = h["|"]
-    #push array, $S1
-    ## order-only??
-end_var6:
     
+    ## var6 => $|
+    array = h["|"] # order-only??
+    #push array, $S1
+end_var6:
     goto loop_prerequisites
 end_loop_prerequisites:
 
-    ## var7 => $*
+    ## var7 => $* , the stem
     array = new 'ResizablePMCArray'
     h["*"] = array
+    ## TODO: implement it...
 
     .MAKEFILE_VARIABLE( var0, "@", h )
     .MAKEFILE_VARIABLE( var1, "%", h )

@@ -37,7 +37,6 @@ token makefile_variable_declaration {
     [ [\n | $] || <.panic: 'smart: * Makefile variable declaration expecting end of line'> ]
     {*}
 }
-
 token makefile_variable {
       <-[ : = # \ \t \n ]> <-[ : = # + ? \n ]>*
       {{
