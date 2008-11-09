@@ -454,9 +454,8 @@ iterate_objects:
     unless iter goto end_iterate_objects
     object_name = shift iter
     if object_name == "" goto iterate_objects
-    print "object: "
-    say object_name
-    
+#     print "object: "
+#     say object_name
     get_hll_global object, ['smart';'makefile';'target'], object_name
     unless null object goto got_stored_target_object
     object = new 'MakefileTarget'
@@ -480,9 +479,9 @@ update_done:
     Update the target, returns 1 if succeed, 0 otherwise.
 =cut
 .sub 'update' :method
-    $S0 = self.'object'()
-    print "update: "
-    say $S0
+#     $S0 = self.'object'()
+#     print "update: "
+#     say $S0
     
     $I0 = self.'updated'()
     if $I0 goto no_need_update
@@ -571,6 +570,9 @@ do_update:
     .return (update_count)
 
 check_out_implicit_rules:
+#     $S0 = self.'object'()
+#     print "implicit: "
+#     say $S0
     .local pmc implict_rules, implicit_rule, iter
     implict_rules = get_hll_global ['smart';'makefile'], "@<%>"
     if null implict_rules goto no_rule_found

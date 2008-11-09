@@ -169,8 +169,8 @@ no_number_one_target:
     rule = new 'MakefileRule'
     rule.'match'( match )
 
-    print "rule: "
-    say match
+#     print "rule: "
+#     say match
 
     .local pmc iter, target
     iter = new 'Iterator', targets
@@ -179,11 +179,11 @@ iterate_targets:
     target = shift iter
 
     ## test for the 'rule' attribute, if
-    $P2 = getattribute target, 'rule'
-    if null $P2 goto got_normal_target
-    $S0 = typeof $P2
+    $P0 = getattribute target, 'rule'
+    if null $P0 goto got_normal_target
+    $S0 = typeof $P0
     unless $S0 == "String" goto got_normal_target
-    $S0 = $P2
+    $S0 = $P0
     if $S0 == "pattern" goto got_temporary_implicit_rule_target
 
 got_normal_target:
@@ -221,13 +221,13 @@ end_iterate_targets:
     unless null implict_rules goto got_implict_rule_list
     implict_rules = new 'ResizablePMCArray'
     set_hll_global ['smart';'makefile'], "@<%>", implict_rules
-  got_implict_rule_list:
-  ## TODO: think about the ordering of implicit rules, should I use unshift
-  ## instead of push?
-#   print "implicit: "
-#   say match
-  push implict_rules, rule
-  goto init_prerequsite_list
+    got_implict_rule_list:
+    ## TODO: think about the ordering of implicit rules, should I use unshift
+    ## instead of push?
+    print "implicit: "
+    say match
+    push implict_rules, rule
+    goto init_prerequsite_list
 
 not_a_implicit_rule:
     ## only normal rule should be stored as HLL global in "smart;makefile;rule"
@@ -304,11 +304,13 @@ create_temporary_target_for_implicit_rule:
     $I0 = index name, "%"
     if $I0 < 0 goto create_normal_target
     ## If the '%' appears only one in the name, the rule is a pattern rule
-    $I1 = index name, "%", $I0
+    $I1 = $I0
+    inc $I1
+    $I1 = index name, "%", $I1
     unless $I1 < 0 goto create_normal_target
 
-#     print "pattern: "
-#     say name
+#       print "pattern: "
+#       say name
     ## This new MakefileTarget object hold by '$P0' is never stored by
     ## set_hll_global, because it's a pattern-rule-target.
     $P0 = new 'MakefileTarget'
