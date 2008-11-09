@@ -46,28 +46,19 @@ end_chop:
     $P0 = new 'String'
     $P0 = name
     setattribute var, 'name', $P0
-    
     ## Store new makefile variable as a HLL global symbol
-#     print "store: '"
-#     print name
-#     print "'\n"
     set_hll_global ['smart';'makefile';'variable'], name, var
     
 makefile_variable_exists:
+
+    if sign == "" goto done
+    if sign == "+=" goto append_items
     
-    $I0 = sign == '+='
-    if $I0 goto append_items
+assign_items:
     setattribute var, 'items', items
-#     print "assign: "
-#     print items
-#     print " items\n"
     goto done
     
 append_items:
-#     print "append: "
-#     print items
-#     print " items\n"
-    
     .local pmc iter
     iter = new 'Iterator', items
 iterate_items:
@@ -77,38 +68,39 @@ iterate_items:
     push $P2, $P1 #push var, $P1
     goto iterate_items
 iterate_items_end:
-    
+
 done:
     .return (var)
 .end
 
-.sub '!bind-makefile-variable'
-    .param string name
-    .local pmc var
+# .sub '!bind-makefile-variable'
+#     .param string name
+#     .local pmc var
     
-#     print "bind: '"
+# #     print "bind: '"
+# #     print name
+# #     print "'\n"
+    
+#     get_hll_global var, ['smart';'makefile';'variable'], name
+#     unless null var goto done
+#     print "smart: ** Makefile variable '"
 #     print name
-#     print "'\n"
+#     print "' not declaraed. Stop.\n"
+#     exit -1
     
-    get_hll_global var, ['smart';'makefile';'variable'], name
-    unless null var goto done
-    print "smart: ** Makefile variable '"
-    print name
-    print "' not declaraed. Stop.\n"
-    exit -1
-    
-done:
-    .return (var)
-.end
+# done:
+#     .return (var)
+# .end
 
-.sub '!update-makefile-number-one-target'
+.sub "!update-makefile-number-one-target"
     .local pmc target
     get_hll_global target, ['smart';'makefile'], '$<0>'
     if null target goto no_number_one_target
     $I0 = target.'update'()
     
     if 0 < $I0 goto all_done
-    $S0 = target.'name'()
+    ##$S0 = target.'name'()
+    $S0 = target.'object'()
     print "smart: '"
     print $S0
     print "' is up to date.\n"

@@ -66,11 +66,12 @@ token makefile_variable {
 token makefile_variable_assign { [ '=' | ':=' | '?=' | '+=' ] }
 token makefile_variable_value_list {
     [
-      |[ <[ \ \t ]>*
-         [ [ <makefile_variable_value_item> <[ \ \t ]>* ]* \\
+      |[ 
+         [ [ <[ \ \t ]> | <.comment> ]*
+           [ <makefile_variable_value_item> <[ \ \t ]>* ]* \\
            [ \n || <.panic: 'smart: * Suspicious continuation'> ]
          ]+
-         <[ \ \t ]>*
+         [ <[ \ \t ]> | <.comment> ]*
          [ <makefile_variable_value_item> <[ \ \t ]>* ]*
        ]
       |[ <[ \ \t ]>*

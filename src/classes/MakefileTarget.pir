@@ -84,13 +84,13 @@ object_already_exists:
     ##stat changetime, $S0, 7 # CHANGETIME
     stat changetime, $S0, 6 # MODIFYTIME
 
-    .local pmc prerequisites, iter
+    .local pmc prerequisites, prerequisite, iter
     prerequisites = rule.'prerequisites'()
     iter = new 'Iterator', prerequisites
 iterate_prerequisites:
     unless iter goto end_iterate_prerequisites
-    $P0 = shift iter
-    $S1 = $P0.'object'()
+    prerequisite = shift iter
+    $S1 = prerequisite.'object'()
     stat $I0, $S1, 0 # EXISTS
     unless $I0 goto out_of # prerequisite not exists
     ##stat $I0, $S1, 7 # CHANGETIME
@@ -489,7 +489,7 @@ update_done:
     .local pmc rule
     getattribute rule, self, 'rule'
     if null rule goto check_out_implicit_rules
-
+    
 we_got_the_rule:
     
     .local pmc prerequisites, prerequisite, iter
@@ -555,8 +555,8 @@ end_iterate_prerequisites:
 
     if 0 < update_count goto do_update ## if any prerequisites updated
 
-    $I0 = self.'out_of_date'()
-    if $I0 goto do_update
+#     $I0 = self.'out_of_date'()
+#     if $I0 goto do_update
 
 no_need_update:
     .return (0)
@@ -597,8 +597,12 @@ end_iterate_implict_rules:
     goto we_got_the_rule
     
 no_rule_found:
-    $S0 = "smart: ** No rule to make target '"
     $S1 = self.'object'()
+    $I0 = stat $S1, 0 # EXISTS
+    unless $I0 goto report_no_rule_error
+    .return(0)
+report_no_rule_error:
+    $S0 = "smart: ** No rule to make target '"
     $S0 .= $S1
     $S0 .= "', needed by '"
     $S0 .= "<TODO>'. Stop."

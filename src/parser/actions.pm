@@ -105,9 +105,11 @@ method makefile_variable_ref($/) {
       :node($/)
     );
     my $binder := PAST::Op.new( :pasttype('call'),
-      :name('!bind-makefile-variable'),
+      #:name('!bind-makefile-variable'),
+      :name('!update-makefile-variable'),
       :returns('MakefileVariable') );
     $binder.push( PAST::Val.new( :value($var.name()), :returns('String') ) );
+    $binder.push( PAST::Val.new( :value(""), :returns('String') ) );
 
     make PAST::Op.new( $var, $binder,
                        :pasttype('bind'),
