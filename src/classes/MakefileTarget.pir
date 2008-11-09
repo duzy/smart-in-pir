@@ -217,6 +217,7 @@ no_stem:
     unless $I0 goto var2_no_prerequisites
     $P1 = prerequisites[0]
     $S0 = '.!get-object-of-prerequisite'( self, $P1 )
+    if $S0 == "" goto var2_done
     push array, $S0
 var2_no_prerequisites:
 var2_done:
@@ -234,11 +235,14 @@ var2_done:
     array = new 'ResizablePMCArray'
     h["+"] = array
     $P1 = new 'Iterator', prerequisites
+    $S0 = self.'object'() ## $S0 used
 loop_prerequisites:
     unless $P1 goto end_loop_prerequisites
     $P0 = shift $P1       ## $P0, $P1 used
-    $S0 = self.'object'() ## $S0 used
     $S1 = '.!get-object-of-prerequisite'( self, $P0 ) ## $S1 used
+
+    ## skip empty object, e.g. variable prerequisite will returns empty
+    if $S1 == "" goto loop_prerequisites
     
     ## var3 => $?
     array = h["?"]
@@ -375,6 +379,7 @@ var7_got_empty_stem:
     .param pmc prerequisite
     .local string stem
     $S0 = typeof prerequisite
+    if $S0 == "MakefileVariable" goto got_variable_prerequisite
     unless $S0 == "String" goto got_normal_prerequisite
     $S0 = prerequisite
     $I0 = index $S0, "%"
@@ -408,6 +413,15 @@ got_normal_prerequisite:
     ## as to normal prerequisite, 'prerequisite' muste be a MakefileTarget
     $S0 = prerequisite.'object'()
     .return ($S0)
+
+got_variable_prerequisite:
+    $S0 = ""
+    $I0 = prerequisite.'count'()
+    if $I0 <= 0 goto got_variable_prerequisite_done
+    $S0 = prerequisite.'expand'()
+got_variable_prerequisite_done:
+    .return ($S0)
+    
     
 invalid_implicit_prerequisite: ## it's an internal error!
     $S1 = "smart: ** Expecting a implicit prerequisite '"
@@ -422,10 +436,54 @@ invalid_stem: ## another internal error
     die $S1 ## it's an internal error!
 .end
 
+.sub ".!update-variable-prerequisite" :anon
+    .param pmc self
+    .param pmc var
+    $S0 = var.'expand'()
+#     print "prerequisite: "
+#     say $S0 #var
+
+    .local int update_count
+    update_count = 0
+
+    .local string object_name
+    .local pmc objects, object, iter
+    objects = split " ", $S0
+    iter = new 'Iterator', objects
+iterate_objects:
+    unless iter goto end_iterate_objects
+    object_name = shift iter
+    if object_name == "" goto iterate_objects
+    print "object: "
+    say object_name
+    
+    get_hll_global object, ['smart';'makefile';'target'], object_name
+    unless null object goto got_stored_target_object
+    object = new 'MakefileTarget'
+    $P0 = new 'String'
+    $P0 = object_name
+    setattribute object, 'object', $P0
+    set_hll_global ['smart';'makefile';'target'], object_name, object
+    
+got_stored_target_object:
+    $I0 = object.'update'()
+    if $I0 <= 0 goto iterate_objects
+    update_count += $I0
+    goto iterate_objects
+end_iterate_objects:
+
+update_done:
+    .return (update_count)
+.end
+
 =item <update()>
     Update the target, returns 1 if succeed, 0 otherwise.
 =cut
 .sub 'update' :method
+    $S0 = self.'object'()
+    print "update: "
+    say $S0
+    
     $I0 = self.'updated'()
     if $I0 goto no_need_update
     
@@ -435,7 +493,7 @@ invalid_stem: ## another internal error
 
 we_got_the_rule:
     
-    .local pmc prerequisites, iter
+    .local pmc prerequisites, prerequisite, iter
     .local int update_count
     update_count = 0
     
@@ -443,33 +501,52 @@ we_got_the_rule:
     iter = new 'Iterator', prerequisites
 iterate_prerequisites:
     unless iter goto end_iterate_prerequisites
-    $P0 = shift iter
-    $S0 = typeof $P0
+    prerequisite = shift iter
+    $S0 = typeof prerequisite
+    if $S0 == "MakefileVariable" goto got_variable_prerequisite
     unless $S0 == "String" goto got_non_implicit_prerequisite
-    $S0 = $P0
+    $S0 = prerequisite
     $I0 = index $S0, "%"
     if $I0 < 0 goto invalid_implicit_prerequisite
-    $S1 = '.!get-object-of-prerequisite'( self, $P0 )
+    $S1 = '.!get-object-of-prerequisite'( self, prerequisite )
 #     print "implicit: "
 #     print $S1
 #     print "\n"
-    get_hll_global $P0, ['smart';'makefile';'target'], $S1
-    unless null $P0 goto got_stored_implicit_prerequisite
-    $P0 = new 'MakefileTarget'
+    get_hll_global prerequisite, ['smart';'makefile';'target'], $S1
+    unless null prerequisite goto got_stored_implicit_prerequisite
+    prerequisite = new 'MakefileTarget'
     $P1 = new 'String'
     $P1 = $S1
-    setattribute $P0, 'object', $P1
-    set_hll_global ['smart';'makefile';'target'], $S1,  $P0
+    setattribute prerequisite, 'object', $P1
+    set_hll_global ['smart';'makefile';'target'], $S1,  prerequisite
 got_stored_implicit_prerequisite:
 got_non_implicit_prerequisite:
-    $I0 = can $P0, 'update'
+handle_on_normal_prerequisite: ## normal prerequisite: MakefileTarget object
+    $I0 = can prerequisite, 'update'
     unless $I0 goto invalid_target_object
-    $I0 = $P0.'update'()
-    unless $I0 goto iterate_prerequisites
+    $I0 = prerequisite.'update'()
+    unless 0 < $I0 goto iterate_prerequisites
     update_count += $I0
     goto iterate_prerequisites
+
+got_variable_prerequisite:
+#     $S0 = "prerequisite: variable -> "
+#     $S1 = prerequisite.'expand'() #( "$" )
+#     $S0 .= $S1
+#     say $S0
+    $I0 = prerequisite.'count'()
+    if $I0 <= 0 goto iterate_prerequisites
+    $I0 = '.!update-variable-prerequisite'( self, prerequisite )
+    unless 0 < $I0 goto iterate_prerequisites
+    update_count += $I0
+    goto iterate_prerequisites
+
 invalid_target_object:
-    die "smart: *** Got invalid target object(prerequisite)"
+    $S0 = "smart: *** Invalid prerequisite of type '"
+    $S1 = typeof prerequisite
+    $S0 .= $S1
+    $S0 .= "', expecting to be 'MakefileTarget'\n"
+    die $S0
 invalid_implicit_prerequisite:
     $S1 = "smart: *** Not a pattern prerequisite '"
     $S1 .= $S0
@@ -494,16 +571,16 @@ do_update:
     .return (update_count)
 
 check_out_implicit_rules:
-    .local pmc implict_rules, iter
+    .local pmc implict_rules, implicit_rule, iter
     implict_rules = get_hll_global ['smart';'makefile'], "@<%>"
     if null implict_rules goto no_rule_found
     iter = new 'Iterator', implict_rules
 iterate_implict_rules:
     unless iter goto end_iterate_implict_rules
-    $P0 = shift iter
-    $S0 = $P0.'match_patterns'( self )
+    implicit_rule = shift iter
+    $S0 = implicit_rule.'match_patterns'( self )
     if $S0 == "" goto iterate_implict_rules
-    rule = $P0
+    rule = implicit_rule
     $P1 = new 'String'
     $P1 = $S0
     setattribute self, 'rule', rule

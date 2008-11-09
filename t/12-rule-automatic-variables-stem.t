@@ -2,9 +2,6 @@
 
 all: t/a.foo.t.t.t foo
 
-%:
-	@echo "%, target:$@, stem:$*"
-
 foo: t/%.a foo.a foo.b a.bar b.bar
 	@echo "ok, target:$@, prerequsites:$^, stem:$*"
 
@@ -23,3 +20,5 @@ foo.%:
 head:
 	@echo "1..8"
 
+%:
+	@echo "%, target:$@, stem:$*"

@@ -101,7 +101,10 @@ token makefile_rule {
 }
 token makefile_targets { [ <makefile_target> <[ \ \t ]>* ]+ }
 token makefile_target { <-[ : \ \t \n ]>+ }
-token makefile_prerequisite { <-[ ; \ \t \n ]>+ }
+token makefile_prerequisite {
+    | <makefile_variable_ref> {*}
+    | <-[ ; \ \t \n ]>+ {*}
+}
 token makefile_rule_action { <-[ \n ]>* {*} }
 
 rule smart_say_statement {
@@ -136,16 +139,16 @@ rule makefile_variable_method_call {
     {*}
 }
 
-rule makefile_variable_ref {
+token makefile_variable_ref {
     | <makefile_variable_ref1> {*}
     | <makefile_variable_ref2> {*}
 }
-rule makefile_variable_ref1 {
+token makefile_variable_ref1 {
     '$'
     [ '(' <makefile_variable_name1>
     [ ')' || <.panic: "smart: * Makefile variable referencing expects ')'"> ]]
 }
-rule makefile_variable_ref2 {
+token makefile_variable_ref2 {
     '$'
     [ '{' <makefile_variable_name2>
     [ '}' || <.panic: "smart: * Makefile variable referencing expects '}'"> ]]

@@ -46,10 +46,12 @@ not_null:
     .return (-1)
 .end
 
-.sub 'expand' :method
+.sub "expand" :method
     .local pmc items
     .local pmc iter
     .local string result, item
+    result = ""
+    item = ""
     items = self.'items'()
     iter = new 'Iterator', items
 iterate_items:
@@ -135,7 +137,7 @@ end_search_variable_sign:
 
     goto iterate_items
 end_iterate_items:       
-    
+
     .return (result)
 .end
 

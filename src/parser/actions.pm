@@ -138,19 +138,21 @@ method makefile_rule($/) {
     my $pack_prerequisites := PAST::Op.new( :pasttype('call'),
       :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
     for $<makefile_prerequisite> {
-        my $p := PAST::Var.new( :name(~$_),
-          :lvalue(0),
-          :isdecl(1),
-          :viviself('Undef'),
-          :scope('lexical'),
-          :node($/)
-        );
-        my $c := PAST::Op.new( :pasttype('call'),
-          :name('!bind-makefile-target'), :returns('MakefileTarget') );
-        $c.push( PAST::Val.new( :value($p.name()), :returns('String') ) );
-        $c.push( PAST::Val.new( :value(0), :returns('Integer') ) );
-        $pack_prerequisites.push( PAST::Op.new( $p, $c, :pasttype('bind'),
-                                                :name('bind-makefile-target-variable') ) );
+#         my $p := PAST::Var.new( :name(~$_),
+#           :lvalue(0),
+#           :isdecl(1),
+#           :viviself('Undef'),
+#           :scope('lexical'),
+#           :node($/)
+#         );
+#         my $c := PAST::Op.new( :pasttype('call'),
+#           :name('!bind-makefile-target'), :returns('MakefileTarget') );
+#         $c.push( PAST::Val.new( :value($p.name()), :returns('String') ) );
+#         $c.push( PAST::Val.new( :value(0), :returns('Integer') ) );
+#         $pack_prerequisites.push( PAST::Op.new( $p, $c, :pasttype('bind'),
+#                                                 :name('bind-makefile-prerequisite') ) );
+        my $p := $( $_ );
+        $pack_prerequisites.push( $p );
     }
 
     my $pack_actions := PAST::Op.new( :pasttype('call'),
@@ -173,7 +175,25 @@ method makefile_rule($/) {
                        :name('bind-makefile-rule-variable'),
                        :node( $/ ) );
 }
-
+method makefile_prerequisite($/) {
+    if $<makefile_variable_ref> {
+        make $( $<makefile_variable_ref> );
+    }
+    else {
+        my $p := PAST::Var.new( :name(~$/),
+          :lvalue(0),
+          :isdecl(1),
+          :viviself('Undef'),
+          :scope('lexical') );
+        my $c := PAST::Op.new( :pasttype('call'),
+          :name('!bind-makefile-target'), :returns('MakefileTarget') );
+        $c.push( PAST::Val.new( :value($p.name()), :returns('String') ) );
+        $c.push( PAST::Val.new( :value(0), :returns('Integer') ) );
+        make PAST::Op.new( $p, $c, :pasttype('bind'),
+                           :name('bind-makefile-prerequisite'),
+                           :node($/) );
+    }
+}
 method makefile_rule_action($/) {
     my $past := PAST::Op.new( :pasttype('call'), :returns('MakefileAction'),
       :name('!create-makefile-action'), :node($/) );

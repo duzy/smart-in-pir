@@ -169,6 +169,9 @@ no_number_one_target:
     rule = new 'MakefileRule'
     rule.'match'( match )
 
+    print "rule: "
+    say match
+
     .local pmc iter, target
     iter = new 'Iterator', targets
 iterate_targets:
@@ -194,7 +197,8 @@ got_temporary_implicit_rule_target:
     patterns_array_created:
     $S0 = target.'object'()
     push patterns, $S0
-    ##say $S0
+#     print "implicit: "
+#     say $S0
     goto iterate_targets
     
 multi_target_rule_not_all_patterns:
@@ -218,10 +222,12 @@ end_iterate_targets:
     implict_rules = new 'ResizablePMCArray'
     set_hll_global ['smart';'makefile'], "@<%>", implict_rules
   got_implict_rule_list:
-    ## TODO: think about the ordering of implicit rules, should I use unshift
-    ## instead of push?
-    push implict_rules, rule
-    goto init_prerequsite_list
+  ## TODO: think about the ordering of implicit rules, should I use unshift
+  ## instead of push?
+#   print "implicit: "
+#   say match
+  push implict_rules, rule
+  goto init_prerequsite_list
 
 not_a_implicit_rule:
     ## only normal rule should be stored as HLL global in "smart;makefile;rule"
@@ -286,42 +292,27 @@ no_actions:
     be created on the fly, and the created implicit targets will be stored.
 =cut
 .sub '!bind-makefile-target'
-    .param pmc name
+    .param pmc name_pmc
     .param int is_target           ## is target declaraed as rule?
     .local pmc target
+    .local string name
+    name = name_pmc
     
-    set $S0, name
-    
-#     print "rule: "
-#     print is_target
-#     print ", "
-#     print name
-#     print "\n"
     unless is_target goto create_normal_target
     
 create_temporary_target_for_implicit_rule:
-    $I0 = length $S0
-    $I1 = 0 # iterator number
-    $I2 = 0 # '%' sign counter
-loop_target_name_chars:
-    unless $I1 < $I0 goto end_loop_target_name_chars
-    $S1 = substr $S0, $I1, 1
-    inc $I1
-    if $S1 == "%" goto sign_count
-    goto loop_target_name_chars
-sign_count:
-    inc $I2 ## count sing '%'
-    goto loop_target_name_chars
-end_loop_target_name_chars:
-
+    $I0 = index name, "%"
+    if $I0 < 0 goto create_normal_target
     ## If the '%' appears only one in the name, the rule is a pattern rule
-    unless $I2 == 1 goto create_normal_target
+    $I1 = index name, "%", $I0
+    unless $I1 < 0 goto create_normal_target
+
 #     print "pattern: "
 #     say name
     ## This new MakefileTarget object hold by '$P0' is never stored by
     ## set_hll_global, because it's a pattern-rule-target.
     $P0 = new 'MakefileTarget'
-    setattribute $P0, 'object', name
+    setattribute $P0, 'object', name_pmc
     ## and init $P0's "rule" attribute to a String with value "pattern",
     ## this will tell that it's an temporary target, should not bind with any
     ## new rule, and the new rule should use it as a 'pattern rule target',
@@ -333,14 +324,14 @@ end_loop_target_name_chars:
     
 create_normal_target:
     
-    get_hll_global $P0, ['smart';'makefile';'target'], $S0
+    get_hll_global $P0, ['smart';'makefile';'target'], name
     if null $P0 goto create_new_makefile_target
     .return ($P0)
     
 create_new_makefile_target:
     
     target = new 'MakefileTarget'
-    setattribute target, 'object', name
+    setattribute target, 'object', name_pmc
 
     ## the first rule should defines the number-one target
     unless is_target goto donot_change_number_one_target
@@ -350,10 +341,10 @@ create_new_makefile_target:
 donot_change_number_one_target:
     
     ## store the new target object
-    set_hll_global ['smart';'makefile';'target'], $S0, target
+    set_hll_global ['smart';'makefile';'target'], name, target
 
     ##print "target: '"
-    ##print $S0
+    ##print name
     ##print "'\n"
     
     .return(target)
