@@ -194,6 +194,7 @@ got_temporary_implicit_rule_target:
     patterns_array_created:
     $S0 = target.'object'()
     push patterns, $S0
+    ##say $S0
     goto iterate_targets
     
 multi_target_rule_not_all_patterns:
@@ -297,6 +298,7 @@ no_actions:
 #     print name
 #     print "\n"
     unless is_target goto create_normal_target
+    
 create_temporary_target_for_implicit_rule:
     $I0 = length $S0
     $I1 = 0 # iterator number
@@ -315,8 +317,7 @@ end_loop_target_name_chars:
     ## If the '%' appears only one in the name, the rule is a pattern rule
     unless $I2 == 1 goto create_normal_target
 #     print "pattern: "
-#     print name
-#     print "\n"
+#     say name
     ## This new MakefileTarget object hold by '$P0' is never stored by
     ## set_hll_global, because it's a pattern-rule-target.
     $P0 = new 'MakefileTarget'

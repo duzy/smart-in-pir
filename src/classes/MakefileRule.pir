@@ -60,25 +60,34 @@ iterate_patterns:
     $I0 = index $S0, "%"
     if $I0 < 0 goto got_bad_pattern
     prefix = substr $S0, 0, $I0
+#     print "prefix: "
+#     say prefix
     inc $I0
     $I1 = length $S0
     $I1 = $I1 - $I0
     suffix = substr $S0, $I0, $I1
+#     print "suffix: "
+#     say suffix
+    if prefix == "" goto no_check_prefix
     $I0 = index object, prefix
     ##if $I0 < 0 goto iterate_patterns
     if $I0 != 0 goto iterate_patterns
+no_check_prefix:
     $I1 = length object
     $I2 = length suffix
     $I1 = $I1 - $I2
+    if suffix == "" goto no_check_suffix
     $I2 = index object, suffix, $I1
     ##if $I1 < 0 goto iterate_patterns
     if $I1 != $I2 goto iterate_patterns
+no_check_suffix:
     $I0 = length prefix
     $I1 = $I1 - $I0
     stem = substr object, $I0, $I1
 #     print "stem: "
 #     print stem
-#     print "\n"
+#     print "; "
+#     say $S0
     goto end_matching ## done!
     ##goto iterate_patterns
 got_bad_pattern:
