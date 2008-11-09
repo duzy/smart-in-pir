@@ -165,75 +165,112 @@ no_number_one_target:
     .local pmc patterns
 
     get_hll_global rule, ['smart';'makefile';'rule'], match
-    unless null rule goto got_rule_object
+    unless null rule goto rule_object_existed
     rule = new 'MakefileRule'
     rule.'match'( match )
 
-#     print "rule: '"
-#     print match
-#     print "'\n"
-    $P0 = new 'Iterator', targets
+    .local pmc iter, target
+    iter = new 'Iterator', targets
 iterate_targets:
-    unless $P0 goto end_iterate_targets
-    $P1 = shift $P0
-    $P2 = getattribute $P1, 'rule'
-    if null $P2 goto not_temporary_pattern_rule_target
+    unless iter goto end_iterate_targets
+    target = shift iter
+
+    ## test for the 'rule' attribute, if
+    $P2 = getattribute target, 'rule'
+    if null $P2 goto got_normal_target
     $S0 = typeof $P2
-    unless $S0 == "String" goto not_temporary_pattern_rule_target
+    unless $S0 == "String" goto got_normal_target
     $S0 = $P2
-    unless $S0 == "pattern" goto not_temporary_pattern_rule_target
-    ## pattern rule tested...
+    if $S0 == "pattern" goto got_temporary_implicit_rule_target
+
+got_normal_target:
+    unless null patterns goto multi_target_rule_not_all_patterns
+    setattribute target, 'rule', rule
+    goto iterate_targets
+   
+got_temporary_implicit_rule_target:
     unless null patterns goto patterns_array_created
     patterns = new 'ResizableStringArray'
-patterns_array_created:
-    ## push the 'object' of $P1(MakefileTarget) to the 'patterns' array
-    $S0 = $P1.'object'()
-#     print "pattern: '"
-#     print $S0
-#     print "'\n"
+    patterns_array_created:
+    $S0 = target.'object'()
     push patterns, $S0
     goto iterate_targets
-not_temporary_pattern_rule_target:
-    unless null patterns goto multi_target_rule_not_all_patterns
-    setattribute $P1, 'rule', rule
-    goto iterate_targets
+    
 multi_target_rule_not_all_patterns:
     ## get some rule looks like " a.%.b BAD a.%.h: foobar"
-    print "smart: ** Bad pattern rule '"
-    print match
-    print "'\n"
+    $S0 = "smart: ** mixed implicit and normal rules: '"
+    $S0 .= match
+    $S0 .= "'\n"
+    print $S0
     exit -1
 end_iterate_targets:
 
-    unless null patterns goto not_a_pattern_rule
-    setattribute rule, 'patterns', patterns
-    goto init_prerequsite_list
-not_a_pattern_rule:
+    ## storing rules: implicit rules is stored in the list "smart;makefile;@<%>"
+    ## normal rules: could leave without storing
     
-#     print "store-rule: '"
-#     print match
-#     print "' \n"
+    if null patterns goto not_a_implicit_rule
+    setattribute rule, 'patterns', patterns
+    ## should save implicit rule somewhere else
+    .local pmc implict_rules
+    implict_rules = get_hll_global ['smart';'makefile'], "@<%>"
+    unless null implict_rules goto got_implict_rule_list
+    implict_rules = new 'ResizablePMCArray'
+    set_hll_global ['smart';'makefile'], "@<%>", implict_rules
+  got_implict_rule_list:
+    ## TODO: think about the ordering of implicit rules, should I use unshift
+    ## instead of push?
+    push implict_rules, rule
+    goto init_prerequsite_list
+
+not_a_implicit_rule:
+    ## only normal rule should be stored as HLL global in "smart;makefile;rule"
+    ## or without storing normal rules should be ok
     set_hll_global ['smart';'makefile';'rule'], match, rule
 
-got_rule_object:
+rule_object_existed:
     getattribute patterns, rule, 'patterns'
     
 init_prerequsite_list:
     if null prerequisites goto no_prerequisites
 
-    ## TODO: if pattern-rule, the prerequisites should be pattern-strings
+    ## TODO: if implicit-rule, the prerequisites should be pattern-strings
     .local pmc iter, cont
     iter = new 'Iterator', prerequisites
     cont = rule.'prerequisites'()
+    unless null patterns goto iterate_implicit_prerequisites
 iterate_prerequisites:
     unless iter goto end_iterate_prerequisites
     $P0 = shift iter
     push cont, $P0
     goto iterate_prerequisites
 end_iterate_prerequisites:
+    goto init_prerequsite_list_done
     
+iterate_implicit_prerequisites:
+    unless iter goto end_iterate_implicit_prerequisites
+    $P0 = shift iter
+    $S0 = $P0.'object'()
+    $I0 = index $S0, "%"
+    unless $I0 < 0 goto got_implicit_prerequisite
+#     print "rule: non-pattern prerequisite '"
+#     print $S0
+#     print "'\n"
+    push cont, $P0
+    goto iterate_implicit_prerequisites
+got_implicit_prerequisite:
+#     print "rule: pattern prerequisite '"
+#     print $S0
+#     print "'\n"
+    push cont, $S0
+    ## TODO: should I unset the HLL global target named by $S0??
+    goto iterate_implicit_prerequisites
+end_iterate_implicit_prerequisites:
+    goto init_prerequsite_list_done
+
+init_prerequsite_list_done:
 no_prerequisites:
-    
+
+    ## store actions in the rule object
     if null actions goto no_actions
     rule.'actions'( actions )
 no_actions:
@@ -242,22 +279,25 @@ no_actions:
 .end
 
 =item <'!bind-makefile-target'(IN name, OPT is_rule)>
-        Create or bind(if existed) 'name' to a makefile target object.
+    Create or bind(if existed) 'name' to a makefile target object.
+
+    While target is updating(C<MakefileTarget::update>), implicit targets will
+    be created on the fly, and the created implicit targets will be stored.
 =cut
 .sub '!bind-makefile-target'
     .param pmc name
-    .param int is_rule           ## is target declaraed as rule?
+    .param int is_target           ## is target declaraed as rule?
     .local pmc target
     
     set $S0, name
     
 #     print "rule: "
-#     print is_rule
+#     print is_target
 #     print ", "
 #     print name
 #     print "\n"
-    unless is_rule goto create_normal_target
-create_temporary_target_for_pattern_rule:
+    unless is_target goto create_normal_target
+create_temporary_target_for_implicit_rule:
     $I0 = length $S0
     $I1 = 0 # iterator number
     $I2 = 0 # '%' sign counter
@@ -302,7 +342,7 @@ create_new_makefile_target:
     setattribute target, 'object', name
 
     ## the first rule should defines the number-one target
-    unless is_rule goto donot_change_number_one_target
+    unless is_target goto donot_change_number_one_target
     get_hll_global $P0, ['smart';'makefile'], '$<0>'
     unless null $P0 goto donot_change_number_one_target
     set_hll_global ['smart';'makefile'], '$<0>', target

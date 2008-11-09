@@ -133,7 +133,6 @@ method makefile_rule($/) {
         $c.push( PAST::Val.new( :value(1), :returns('Integer') ) );
         $pack_targets.push( PAST::Op.new( $t, $c, :pasttype('bind'),
                                           :name('bind-makefile-target-variable') ) );
-#        $pack_targets.push( PAST::Val.new(:value($name), :returns('Strings')) );
     }
 
     my $pack_prerequisites := PAST::Op.new( :pasttype('call'),
@@ -152,7 +151,6 @@ method makefile_rule($/) {
         $c.push( PAST::Val.new( :value(0), :returns('Integer') ) );
         $pack_prerequisites.push( PAST::Op.new( $p, $c, :pasttype('bind'),
                                                 :name('bind-makefile-target-variable') ) );
-#        $pack_prerequisites.push(PASTH::Val.new(:value(~$_), :returns("String")));
     }
 
     my $pack_actions := PAST::Op.new( :pasttype('call'),

@@ -37,15 +37,63 @@ got_rule:
     .return ($P0)
 .end
 
-=item <match_target(IN target)>
-    Returns 1 if the rule matches the specific target, 0 otherwise.
+=item <match_pattern(IN target)>
+    Returns the stem match with one the patterns.
 =cut
-.sub 'match_target' :method
+.sub 'match_patterns' :method
     .param pmc target
-    $S0 = target.'name'()
-    $S1 = self.'match'()
-    $I0 = $S0 == $S1
-    .return ($I0)
+    .local string object, stem
+    .local pmc patterns
+    patterns = getattribute self, 'patterns'
+    stem = ""
+    if null patterns goto end_matching
+
+    object = target.'object'()
+    
+    .local pmc pattern, iter
+    .local string prefix, suffix
+    iter = new 'Iterator', patterns
+iterate_patterns:
+    unless iter goto end_iterate_patterns
+    pattern = shift iter
+    $S0 = pattern
+    $I0 = index $S0, "%"
+    if $I0 < 0 goto got_bad_pattern
+    prefix = substr $S0, 0, $I0
+    inc $I0
+    $I1 = length $S0
+    $I1 = $I1 - $I0
+    suffix = substr $S0, $I0, $I1
+    $I0 = index object, prefix
+    ##if $I0 < 0 goto iterate_patterns
+    if $I0 != 0 goto iterate_patterns
+    $I1 = length object
+    $I2 = length suffix
+    $I1 = $I1 - $I2
+    $I2 = index object, suffix, $I1
+    ##if $I1 < 0 goto iterate_patterns
+    if $I1 != $I2 goto iterate_patterns
+    $I0 = length prefix
+    $I1 = $I1 - $I0
+    stem = substr object, $I0, $I1
+#     print "stem: "
+#     print stem
+#     print "\n"
+    goto end_matching ## done!
+    ##goto iterate_patterns
+got_bad_pattern:
+    $S1 = "smart: ** Not an pattern string '"
+    $S1 .= $S0
+    $S1 .= "' in rule '"
+    $S0 = self.'match'()
+    $S1 .= $S0
+    $S1 .= "'. Stop.\n"
+    print $S1
+    exit -1
+end_iterate_patterns:
+    
+end_matching:
+    .return (stem)
 .end
 
 =item <execute_actions()>
