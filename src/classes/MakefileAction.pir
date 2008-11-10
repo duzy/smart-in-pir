@@ -78,7 +78,7 @@ no_echo:
     concat $S1, $S0
     concat $S1, "' failed with exit code '"
     concat $S1, $S2
-    concat $S1, "'"
+    concat $S1, "'\n"
     print $S1
     exit -1
     

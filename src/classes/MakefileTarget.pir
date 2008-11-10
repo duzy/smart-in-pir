@@ -113,7 +113,7 @@ no_rule_found:
     $S1 = self.'object'()
     $S0 .= $S1
     $S0 .= "', needed by '"
-    $S0 .= "'. Stop."
+    $S0 .= "'. Stop.\n"
     print $S0
     exit -1
 .end
@@ -684,10 +684,10 @@ report_no_rule_error:
     $S2 = requestor.'object'()
     $S0 .= "', needed by '"
     $S0 .= $S2
-    $S0 .= "'. Stop."
+    $S0 .= "'. Stop.\n"
     goto report_no_rule_error_done
     report_no_rule_error_no_specific_requestor:
-    $S0 .= "'. Stop."
+    $S0 .= "'. Stop.\n"
     report_no_rule_error_done:
     print $S0
     exit -1
