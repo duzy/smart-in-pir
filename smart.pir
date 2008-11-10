@@ -43,17 +43,56 @@ object.
     .local pmc new_args
     .local pmc iter
     .local string command_name, target
-
-    new_args = new 'ResizablePMCArray'
     
     command_name = shift args
+    new_args = new 'ResizablePMCArray'
     push new_args, command_name
-    
-    $I0 = args
-    if $I0 == 0 goto guess_files
+
+    .local int argc
+    argc = args
+    if argc == 0 goto guess_files
     
     .local string arg
-
+    .local pmc iter
+    iter = new 'Iterator', args
+loop_args:
+    unless iter goto end_loop_args
+    arg = shift iter
+    
+check_arg_0:
+    unless arg == "-f" goto check_arg_1
+    unless iter goto check_arg_1_bad
+    $S0 = shift iter
+    $P0 = new 'String'
+    $P0 = $S0
+    push new_args, $P0
+    goto done ###????????
+    goto check_arg_end
+check_arg_1:
+#     unless arg == "-h" goto check_arg_1
+#     goto check_arg_end
+# check_arg_2:
+#     unless arg == "-f" goto check_arg_1
+#     goto check_arg_end
+# check_arg_3:
+#     unless arg == "-f" goto check_arg_1
+#     goto check_arg_end
+# check_arg_4:
+#     unless arg == "-f" goto check_arg_1
+#     goto check_arg_end
+# check_arg_5:
+#     unless arg == "-f" goto check_arg_1
+#     goto check_arg_end
+check_arg_end:
+    goto loop_args
+    
+check_arg_1_bad:
+    $S0 = "smart: No argument for '-f', it requires one argument."
+    say $S0
+    exit -1
+    
+end_loop_args:
+    
     ## TODO: support more arguments
     
     goto done
@@ -92,9 +131,7 @@ done:
     .local pmc arguments
     
     smart = compreg 'smart'
-    
     arguments = 'parse_command_line_arguments'(args)
-
     $P1 = smart.'command_line'(arguments)
 .end
 
