@@ -10,7 +10,7 @@ B =
 all: foobar
 
 foobar: $(T) $(A) $(B)
-	@echo "ok, $@, prerequisites:$^"
+	@echo "ok, $@, prerequisites:[$^]"
 
 %.t: head
 	@echo "ok, target:$@, stem:$*"

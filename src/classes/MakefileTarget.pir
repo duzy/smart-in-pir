@@ -7,7 +7,7 @@
 #
 
 .namespace ['MakefileTarget']
-.sub '__init_class' :anon :init :load
+.sub "__init_class" :anon :init :load
     newclass $P0, 'MakefileTarget'
     addattribute $P0, 'object'  ## the filename of the object 
     addattribute $P0, 'member'  ## for Archive target, indicates the member name
@@ -20,7 +20,7 @@
 =item <object()>
     Returns the object file updated by the target.
 =cut
-.sub 'object' :method
+.sub "object" :method
     getattribute $P0, self, 'object'
     unless null $P0 goto got_object
     $P0 = new 'String'
@@ -34,7 +34,7 @@ got_object:
 =item <member()>
     Returns the member name of the target.
 =cut
-.sub 'member' :method
+.sub "member" :method
     getattribute $P0, self, 'member'
     unless null $P0 goto got_member
     $P0 = new 'String'
@@ -45,7 +45,7 @@ got_member:
     .return($S0)
 .end
 
-.sub 'updated' :method
+.sub "updated" :method
     .param int updated          :optional
     .param int has_updated      :opt_flag
     unless has_updated goto return_only
@@ -65,7 +65,9 @@ got_updated:
     .return(updated)
 .end
 
-.sub 'out_of_date' :method
+=item <out_of_date()>
+=cut
+.sub "out_of_date" :method
     .local pmc rule
     getattribute rule, self, 'rule'
     if null rule goto no_rule_found
@@ -125,6 +127,9 @@ no_rule_found:
     setattribute .var, "items", $P1
 .endm
 
+=item
+    Separate directory and file parts of the object name.
+=cut
 .sub "!get<?D?F>" :anon
     .param string name_D
     .param string name_F
@@ -177,6 +182,9 @@ loop_tag_end:
     .return (var_D, var_F)
 .end
 
+=item
+    Setup automatic variables for updating the target.
+=cut
 .sub ".!setup-automatic-variables" :anon
     .param pmc self
     .local pmc rule, prerequisites
@@ -216,7 +224,7 @@ no_stem:
     $I0 = exists prerequisites[0]
     unless $I0 goto var2_no_prerequisites
     $P1 = prerequisites[0]
-    $S0 = '.!get-object-of-prerequisite'( self, $P1 )
+    $S0 = '.!calculate-object-of-prerequisite'( self, $P1 )
     if $S0 == "" goto var2_done
     push array, $S0
 var2_no_prerequisites:
@@ -239,7 +247,7 @@ var2_done:
 loop_prerequisites:
     unless $P1 goto end_loop_prerequisites
     $P0 = shift $P1       ## $P0, $P1 used
-    $S1 = '.!get-object-of-prerequisite'( self, $P0 ) ## $S1 used
+    $S1 = '.!calculate-object-of-prerequisite'( self, $P0 ) ## $S1 used
 
     ## skip empty object, e.g. variable prerequisite will returns empty
     if $S1 == "" goto loop_prerequisites
@@ -339,9 +347,12 @@ var7_got_empty_stem:
     set_hll_global ['smart';'makefile';'variable'], '*F', var23
 .end
 
+=item
+   Unset all automatic varables.
+=cut
 .sub ".!clear-automatic-variables" :anon
     .param pmc self
-    .local pmc empty
+    .local pmc empty ## null
     #empty = new 'String'
     #empty = ''
     set_hll_global ['smart';'makefile';'variable'], '@', empty
@@ -374,7 +385,7 @@ var7_got_empty_stem:
     A prerequisite could be a MakefileTarget or an implicit prerequisite which
     is an pattern-string -- contains one "%".
 =cut
-.sub ".!get-object-of-prerequisite" :anon
+.sub ".!calculate-object-of-prerequisite" :anon
     .param pmc self
     .param pmc prerequisite
     .local string stem
@@ -392,20 +403,13 @@ var7_got_empty_stem:
     if null $P0 goto invalid_stem
     stem = $P0
     if stem == "" goto invalid_stem
+    
     $S1 = substr $S0, 0, $I0
     $I0 = length $S0
     $I0 = $I0 - $I1
     $S2 = substr $S0, $I1, $I0
     $S1 .= stem
     $S1 .= $S2
-    
-#     print "pattern: "
-#     print $S0
-#     print "; stem: "
-#     print stem
-#     print "; object: "
-#     print $S1
-#     print "\n"
     
     .return ($S1)
     
@@ -419,7 +423,7 @@ got_variable_prerequisite:
     $I0 = prerequisite.'count'()
     if $I0 <= 0 goto got_variable_prerequisite_done
     $S0 = prerequisite.'expand'()
-got_variable_prerequisite_done:
+    got_variable_prerequisite_done:
     .return ($S0)
     
     
@@ -436,18 +440,19 @@ invalid_stem: ## another internal error
     die $S1 ## it's an internal error!
 .end
 
+=item
+=cut
 .sub ".!update-variable-prerequisite" :anon
     .param pmc self
     .param pmc var
-    $S0 = var.'expand'()
-#     print "prerequisite: "
-#     say $S0 #var
-
-    .local int update_count
-    update_count = 0
-
+    .param pmc requestor
+    
+    .local int update_count, newer_count
     .local string object_name
     .local pmc objects, object, iter
+    update_count = 0
+    newer_count = 0
+    $S0 = var.'expand'()
     objects = split " ", $S0
     iter = new 'Iterator', objects
 iterate_objects:
@@ -465,24 +470,39 @@ iterate_objects:
     set_hll_global ['smart';'makefile';'target'], object_name, object
     
 got_stored_target_object:
-    $I0 = object.'update'()
+    ($I0, $I1) = object.'update'()
+    if $I1 <= 0 goto no_inc_newer_counter
+    newer_count += $I1
+    no_inc_newer_counter:
     if $I0 <= 0 goto iterate_objects
     update_count += $I0
     goto iterate_objects
 end_iterate_objects:
 
 update_done:
-    .return (update_count)
+    .return (update_count, newer_count)
 .end
 
-=item <update()>
-    Update the target, returns 1 if succeed, 0 otherwise.
+=item <update(OPT requestor)>
+    Update the target if neccesary.
+
+    The argument 'requestor' is optional, telling some other target which
+    make the update request on the target('self'). If this argument is emitted,
+    we can make the judgement that the target itself is act as a prerequisite
+    of some other target.
+
+    The return value of this method is tuple '(%1, %2)', which the '%1' means
+    how many prerequisites are updated, '%2' tells how many prerequsites are
+    newer than the target.
 =cut
-.sub 'update' :method
+.sub "update" :method
+    .param pmc requestor        :optional
+    .param int requestor_flag   :opt_flag
 #     $S0 = self.'object'()
 #     print "update: "
 #     say $S0
     
+    ## If the target itself has been updated, than nothing should be done.
     $I0 = self.'updated'()
     if $I0 goto no_need_update
     
@@ -493,24 +513,32 @@ update_done:
 we_got_the_rule:
     
     .local pmc prerequisites, prerequisite, iter
-    .local int update_count
+    .local int update_count, newer_count
     update_count = 0
+    newer_count = 0
     
     prerequisites = rule.'prerequisites'()
     iter = new 'Iterator', prerequisites
 iterate_prerequisites:
     unless iter goto end_iterate_prerequisites
     prerequisite = shift iter
+    
+    ## Check the type of prerequsite...
     $S0 = typeof prerequisite
     if $S0 == "MakefileVariable" goto got_variable_prerequisite
     unless $S0 == "String" goto got_non_implicit_prerequisite
     $S0 = prerequisite
     $I0 = index $S0, "%"
     if $I0 < 0 goto invalid_implicit_prerequisite
-    $S1 = '.!get-object-of-prerequisite'( self, prerequisite )
+    inc $I0
+    $I0 = index $S0, "%", $I0
+    unless $I0 < 0 goto invalid_implicit_prerequisite
+    
+got_implicit_prerequsite:
+    $S1 = '.!calculate-object-of-prerequisite'( self, prerequisite )
 #     print "implicit: "
-#     print $S1
-#     print "\n"
+#     say $S1
+    ## Get stored prerequsite, or create a new one if none existed.
     get_hll_global prerequisite, ['smart';'makefile';'target'], $S1
     unless null prerequisite goto got_stored_implicit_prerequisite
     prerequisite = new 'MakefileTarget'
@@ -518,28 +546,65 @@ iterate_prerequisites:
     $P1 = $S1
     setattribute prerequisite, 'object', $P1
     set_hll_global ['smart';'makefile';'target'], $S1,  prerequisite
+    
 got_stored_implicit_prerequisite:
 got_non_implicit_prerequisite:
 handle_on_normal_prerequisite: ## normal prerequisite: MakefileTarget object
+    ## Here, The 'prerequsite' is a 'MakefileTarget' object.
     $I0 = can prerequisite, 'update'
     unless $I0 goto invalid_target_object
-    $I0 = prerequisite.'update'()
+
+    ## Checking prerequsite-newer...
+    stat $I0, $S0, 0
+    unless $I0 goto skip_prerequsite_newer_checking
+    stat $I1, $S1, 0
+    unless $I1 goto skip_prerequsite_newer_checking
+    $S0 = self.'object'()
+    $S1 = prerequisite.'object'()
+    stat $I0, $S0, 6 # MODIFYTIME
+    stat $I1, $S1, 6 # MODIFYTIME
+    unless $I0 < $I1 goto prerequsite_is_older
+    inc newer_count
+    prerequsite_is_older:
+    skip_prerequsite_newer_checking:
+
+    ## Invoke the update method...
+    unless requestor_flag goto donot_have_specific_requestor_1
+    if null requestor goto donot_have_specific_requestor_1
+    ($I0, $I1) = prerequisite.'update'( requestor )
+    goto updated_by_specific_requestor_1
+    donot_have_specific_requestor_1:
+    ($I0, $I1) = prerequisite.'update'( self )
+    updated_by_specific_requestor_1:
+
+    ## Updatess the counter...
+    unless 0 < $I1 goto no_inc_newer_count_according_prerequsite_update
+    newer_count += $I1
+    no_inc_newer_count_according_prerequsite_update:
     unless 0 < $I0 goto iterate_prerequisites
     update_count += $I0
     goto iterate_prerequisites
-
+    
 got_variable_prerequisite:
-#     $S0 = "prerequisite: variable -> "
-#     $S1 = prerequisite.'expand'() #( "$" )
-#     $S0 .= $S1
-#     say $S0
+    ## Here, the 'prerequsite' is a 'MakefileVariable' object.
     $I0 = prerequisite.'count'()
     if $I0 <= 0 goto iterate_prerequisites
-    $I0 = '.!update-variable-prerequisite'( self, prerequisite )
+    
+    unless requestor_flag goto donot_have_specific_requestor_2
+    if null requestor goto donot_have_specific_requestor_2
+    ($I0, $I1) = '.!update-variable-prerequisite'( self, prerequisite, requestor )
+    goto updated_by_specific_requestor_2
+    donot_have_specific_requestor_2:
+    ($I0, $I1) = '.!update-variable-prerequisite'( self, prerequisite, self )
+    updated_by_specific_requestor_2:
+
+    unless 0 < $I1 goto variable_prerequsite_skip_inc_newer_counter
+    newer_count += $I1
+    variable_prerequsite_skip_inc_newer_counter:
     unless 0 < $I0 goto iterate_prerequisites
     update_count += $I0
     goto iterate_prerequisites
-
+    
 invalid_target_object:
     $S0 = "smart: *** Invalid prerequisite of type '"
     $S1 = typeof prerequisite
@@ -552,14 +617,22 @@ invalid_implicit_prerequisite:
     $S1 .= "'"
     die $S1
 end_iterate_prerequisites:
-
+    
+    ## If any prerequsites got updated, the target will be updated.
     if 0 < update_count goto do_update ## if any prerequisites updated
-
-#     $I0 = self.'out_of_date'()
-#     if $I0 goto do_update
-
+    
+    ## If the object of the target not extsted, the target will be updated.
+    $S0 = self.'object'()
+    stat $I0, $S0, 0 # EXISTS
+    if $I0 == 0 goto do_update
+    
+    ## If no prerequisites is updated but some of them is newer than the taget,
+    ## the target will be updated.
+    #$I0 = self.'out_of_date'()
+    #if $I0 goto do_update
+    
 no_need_update:
-    .return (0)
+    .return (0, newer_count)
     
 do_update:
     '.!setup-automatic-variables'( self )
@@ -567,7 +640,7 @@ do_update:
     '.!clear-automatic-variables'( self )
     self.'updated'( 1 )
     inc update_count
-    .return (update_count)
+    .return (update_count, newer_count)
 
 check_out_implicit_rules:
 #     $S0 = self.'object'()
@@ -597,15 +670,25 @@ end_iterate_implict_rules:
     goto we_got_the_rule
     
 no_rule_found:
+    ## If the object does not exists, it should report "no-rule-found" error.
     $S1 = self.'object'()
     $I0 = stat $S1, 0 # EXISTS
     unless $I0 goto report_no_rule_error
-    .return(0)
+    .return(0, newer_count)
+    
 report_no_rule_error:
     $S0 = "smart: ** No rule to make target '"
     $S0 .= $S1
+    unless requestor_flag goto report_no_rule_error_no_specific_requestor
+    if null requestor goto report_no_rule_error_no_specific_requestor
+    $S2 = requestor.'object'()
     $S0 .= "', needed by '"
-    $S0 .= "<TODO>'. Stop."
+    $S0 .= $S2
+    $S0 .= "'. Stop."
+    goto report_no_rule_error_done
+    report_no_rule_error_no_specific_requestor:
+    $S0 .= "'. Stop."
+    report_no_rule_error_done:
     print $S0
     exit -1
     

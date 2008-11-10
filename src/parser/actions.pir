@@ -216,8 +216,8 @@ end_iterate_targets:
     got_implict_rule_list:
     ## TODO: think about the ordering of implicit rules, should I use unshift
     ## instead of push?
-    print "implicit: "
-    say match
+#     print "implicit: "
+#     say match
     push implict_rules, rule
     goto init_prerequsite_list
 
