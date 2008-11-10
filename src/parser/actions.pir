@@ -33,7 +33,7 @@ end_chop:
     .param string name
     .param string sign
     .param pmc items :slurpy
-
+    
 #     print "update '"
 #     print name
 #     print "'\n"
@@ -50,7 +50,7 @@ end_chop:
     set_hll_global ['smart';'makefile';'variable'], name, var
     
 makefile_variable_exists:
-
+    
     if sign == "" goto done
     if sign == "+=" goto append_items
     
@@ -68,7 +68,7 @@ iterate_items:
     push $P2, $P1 #push var, $P1
     goto iterate_items
 iterate_items_end:
-
+    
 done:
     .return (var)
 .end
@@ -92,24 +92,35 @@ done:
 #     .return (var)
 # .end
 
-.sub "!update-makefile-number-one-target"
+.sub "!update-makefile-targets"
     .local pmc target
     get_hll_global target, ['smart';'makefile'], '$<0>'
     if null target goto no_number_one_target
     $I0 = target.'update'()
-    
+
+    .local string object
+
+    if 0 == $I0 goto nothing_updated
     if 0 < $I0 goto all_done
-    ##$S0 = target.'name'()
-    $S0 = target.'object'()
+    object = target.'object'()
     print "smart: '"
-    print $S0
+    print object
     print "' is up to date.\n"
     exit -1
+
+nothing_updated:
+    $S0 = "smart: Nothing to be done for '"
+    $S0 .= object
+    $S0 .= "'."
+    print $S0
+    .return()
     
 all_done:
-    print "smart: Done, "
-    print $I0
-    print " targets updated.\n"
+    $S1 = $I0
+    $S0 = "smart: Done, "
+    $S0 .= $S1
+    $S0 .= " targets updated.\n"
+    print $S0
     .return()
     
 no_number_one_target:
@@ -296,8 +307,7 @@ create_temporary_target_for_implicit_rule:
     $I0 = index name, "%"
     if $I0 < 0 goto create_normal_target
     ## If the '%' appears only one in the name, the rule is a pattern rule
-    $I1 = $I0
-    inc $I1
+    $I1 = $I0 + 1
     $I1 = index name, "%", $I1
     unless $I1 < 0 goto create_normal_target
 
@@ -367,9 +377,4 @@ command_echo_is_on:
     .return(action)
 .end
 
-.sub '!debug'
-    .param string info
-    print "debug: "
-    print info
-    print "\n"
-.end
+

@@ -33,7 +33,7 @@ method TOP($/, $key) {
         }
 
         # push last op to the block to active target updating
-        $past.push( PAST::Op.new( :name('!update-makefile-number-one-target'),
+        $past.push( PAST::Op.new( :name('!update-makefile-targets'),
           :pasttype('call'),
           :node( $/ )
         ) );

@@ -38,18 +38,64 @@ object.
     $P1.'commandline_prompt'('smart> ')
 .end
 
+.sub 'parse_command_line_arguments' :anon
+    .param pmc args
+    .local pmc new_args
+    .local pmc iter
+    .local string command_name, target
+
+    new_args = new 'ResizablePMCArray'
+    
+    command_name = shift args
+    push new_args, command_name
+    
+    $I0 = args
+    if $I0 == 0 goto guess_files
+    
+    .local string arg
+
+    ## TODO: support more arguments
+    
+    goto done
+    
+guess_files:
+    .local pmc filenames
+    filenames = new 'ResizableStringArray'
+    push filenames, "Smartfile"
+    push filenames, "smartfile"
+    push filenames, "GNUmakefile"
+    push filenames, "Makefile"
+    push filenames, "makefile"
+    iter = new 'Iterator', filenames
+iterate_filenames:
+    unless iter goto iterate_filenames_end
+    $S0 = shift iter
+    stat $I0, $S0, 0
+    unless $I0 goto iterate_filenames
+    $P0 = new 'String'
+    $P0 = $S0
+    push new_args, $P0
+    goto done
+iterate_filenames_end:
+
+done:
+    .return (new_args)
+.end
+
 =item main(args :slurpy)  :main
-
-Start compilation by passing any command line C<args>
-to the smart compiler.
-
+    Start compilation by passing any command line C<args>
+    to the smart compiler.
 =cut
-
 .sub 'main' :main
     .param pmc args
+    .local pmc smart
+    .local pmc arguments
+    
+    smart = compreg 'smart'
+    
+    arguments = 'parse_command_line_arguments'(args)
 
-    $P0 = compreg 'smart'
-    $P1 = $P0.'command_line'(args)
+    $P1 = smart.'command_line'(arguments)
 .end
 
 .include 'src/gen_builtins.pir'
