@@ -42,6 +42,8 @@ object.
     .param pmc args
     .local pmc iter
     .local string command_name, target
+    .local string smartfile
+    smartfile = ""
 
     ## save the command line name
     command_name = shift args
@@ -52,8 +54,7 @@ object.
     
     .local string arg
     .local pmc iter
-    .local string smartfile
-    smartfile = ""
+    arg = ""
     iter = new 'Iterator', args
 loop_args:
     unless iter goto end_loop_args
@@ -99,7 +100,7 @@ check_arg_targets:
     
 #     print "target: "
 #     say arg
-     
+    
     goto check_arg_end
 check_arg_end:
     goto loop_args
@@ -149,8 +150,14 @@ iterate_filenames_end:
 done:
     $P0 = new 'ResizablePMCArray'
     push $P0, command_name
+    if smartfile == "" goto no_smartfile_for_new_args
     push $P0, smartfile
+    ##no_smartfile_for_new_args:
     .return ($P0)
+no_smartfile_for_new_args:
+    $S0 = "smart: No targets specified and no Smartfile found. Stop.\n"
+    print $S0
+    exit -1
 .end
 
 =item main(args :slurpy)  :main
