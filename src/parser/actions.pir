@@ -113,9 +113,20 @@ iterate_command_line_targets:
     set_hll_global ['smart';'makefile';'target'], $S0, $P0
     got_command_line_target:
     $I0 = $P0.'update'()
-#     print $S0
-#     print ": "
-#     say $I0
+    if 0 < $I0 goto command_line_target_update_ok
+    $S1 = "smart: Nothing to be done for target '"
+    $S1 .= $S0
+    $S1 .= "'\n"
+    print $S1
+    goto iterate_command_line_targets
+    command_line_target_update_ok:
+    $S1 = "smart: Target '"
+    $S1 .= $S0
+    $S1 .= "' updated(totally "
+    $S2 = $I0
+    $S1 .= $S2
+    $S1 .= " objects).\n"
+    print $S1
     goto iterate_command_line_targets
 end_iterate_command_line_targets:
     .return ()

@@ -32,6 +32,8 @@ PCT           = $(BUILD_DIR)/runtime/parrot/library/PCT.pbc
 
 PMC_DIR       = src/pmc
 
+PBC_TO_EXE    = ../../pbc_to_exe
+
 all: smart.pbc
 
 SMART_GROUP = $(PMC_DIR)/smart_group$(LOAD_EXT)
@@ -55,6 +57,10 @@ BUILTINS_PIR = \
 
 # PMCS = smart
 # PMC_SOURCES = $(PMC_DIR)/smart.pmc
+
+smart: smart.pbc
+	@$(RM_RF) $@
+	$(PBC_TO_EXE) $<
 
 # the default target
 smart.pbc: $(PARROT) $(SOURCES)

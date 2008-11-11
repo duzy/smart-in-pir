@@ -83,8 +83,13 @@ got_updated:
     
 object_already_exists:
     .local int changetime
-    ##stat changetime, $S0, 7 # CHANGETIME
-    stat changetime, $S0, 6 # MODIFYTIME
+    stat changetime, $S0, 7 # CHANGETIME
+    #stat changetime, $S0, 6 # MODIFYTIME
+    
+    print "time: "
+    print $S0
+    print "->"
+    say changetime
 
     .local pmc prerequisites, prerequisite, iter
     prerequisites = rule.'prerequisites'()
@@ -95,8 +100,14 @@ iterate_prerequisites:
     $S1 = prerequisite.'object'()
     stat $I0, $S1, 0 # EXISTS
     unless $I0 goto out_of # prerequisite not exists
-    ##stat $I0, $S1, 7 # CHANGETIME
-    stat $I0, $S1, 6 # MODIFYTIME
+    stat $I0, $S1, 7 # CHANGETIME
+    #stat $I0, $S1, 6 # MODIFYTIME
+    
+    print "time: "
+    print $S1
+    print "->"
+    say $I0
+    
     $I0 = changetime < $I0
     if $I0 goto out_of
     $I0 = $P0.'out_of_date'()
@@ -258,10 +269,10 @@ loop_prerequisites:
     unless $I0 goto push_var3 # object not exists
     stat $I0, $S1, 0 # EXISTS
     unless $I0 goto end_var3
-    #stat $I0, $S0, 7 # CHANGETIME
-    #stat $I1, $S1, 7 # CHANGETIME
-    stat $I0, $S0, 6 # MODIFYTIME
-    stat $I1, $S1, 6 # MODIFYTIME
+    stat $I0, $S0, 7 # CHANGETIME
+    stat $I1, $S1, 7 # CHANGETIME
+    #stat $I0, $S0, 6 # MODIFYTIME
+    #stat $I1, $S1, 6 # MODIFYTIME
     $I0 = $I0 < $I1 # if newer...
     if $I0 goto push_var3
     goto end_var3
@@ -498,7 +509,7 @@ update_done:
 .sub "update" :method
     .param pmc requestor        :optional
     .param int requestor_flag   :opt_flag
-#     $S0 = self.'object'()
+    $S0 = self.'object'()
 #     print "update: "
 #     say $S0
     
@@ -554,17 +565,35 @@ handle_on_normal_prerequisite: ## normal prerequisite: MakefileTarget object
     $I0 = can prerequisite, 'update'
     unless $I0 goto invalid_target_object
 
+    $S0 = self.'object'()
+    $S1 = prerequisite.'object'()
+
     ## Checking prerequsite-newer...
     stat $I0, $S0, 0
     unless $I0 goto skip_prerequsite_newer_checking
     stat $I1, $S1, 0
     unless $I1 goto skip_prerequsite_newer_checking
-    $S0 = self.'object'()
-    $S1 = prerequisite.'object'()
-    stat $I0, $S0, 6 # MODIFYTIME
-    stat $I1, $S1, 6 # MODIFYTIME
+    stat $I0, $S0, 7 # CHANGETIME
+    stat $I1, $S1, 7 # CHANGETIME
+    #stat $I0, $S0, 6 # MODIFYTIME
+    #stat $I1, $S1, 6 # MODIFYTIME
+    
+#     print "time: "
+#     print $S0
+#     print "\t"
+#     say $I0
+#     print "    : "
+#     print $S1
+#     print "\t"
+#     say $I1
+
     unless $I0 < $I1 goto prerequsite_is_older
     inc newer_count
+#     print "    '"
+#     print $S0
+#     print "' out of date, "
+#     print newer_count
+#     print "\n"
     prerequsite_is_older:
     skip_prerequsite_newer_checking:
 
@@ -628,8 +657,7 @@ end_iterate_prerequisites:
     
     ## If no prerequisites is updated but some of them is newer than the taget,
     ## the target will be updated.
-    #$I0 = self.'out_of_date'()
-    #if $I0 goto do_update
+    if 0 < newer_count goto do_update
     
 no_need_update:
     .return (0, newer_count)

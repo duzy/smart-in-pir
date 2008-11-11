@@ -40,20 +40,20 @@ object.
 
 .sub 'parse_command_line_arguments' :anon
     .param pmc args
-    .local pmc new_args
     .local pmc iter
     .local string command_name, target
-    
-    command_name = shift args
-    new_args = new 'ResizablePMCArray'
-    push new_args, command_name
 
+    ## save the command line name
+    command_name = shift args
+    
     .local int argc
     argc = args
-    if argc == 0 goto guess_files
+    if argc == 0 goto guess_smartfile
     
     .local string arg
     .local pmc iter
+    .local string smartfile
+    smartfile = ""
     iter = new 'Iterator', args
 loop_args:
     unless iter goto end_loop_args
@@ -61,12 +61,11 @@ loop_args:
 
 check_arg_0:
     unless arg == "-f" goto check_arg_1
-    unless iter goto check_arg_1_bad
+    unless iter goto check_arg_0_bad
     $S0 = shift iter
-    $P0 = new 'String'
-    $P0 = $S0
-    push new_args, $P0
-    ##goto done ###????????
+    smartfile = $S0
+    stat $I0, smartfile, 0
+    unless $I0 goto check_arg_0_smartfile_not_existed
     goto check_arg_end
 check_arg_1:
     unless arg == "-h" goto check_arg_2
@@ -97,15 +96,23 @@ check_arg_targets:
     set_hll_global ['smart';'makefile'], "@<?>", $P0
     got_target_list_variable:
     push $P0, arg
+    
 #     print "target: "
 #     say arg
+     
     goto check_arg_end
 check_arg_end:
     goto loop_args
     
-check_arg_1_bad:
-    $S0 = "smart: No argument for '-f', it requires one argument."
-    say $S0
+check_arg_0_bad:
+    $S0 = "smart: No argument for '-f', it requires one argument.\n"
+    print $S0
+    exit -1
+check_arg_0_smartfile_not_existed:
+    $S0 = "smart: Smartfile '"
+    $S0 .= smartfile
+    $S0 .= "' not found.\n"
+    print $S0
     exit -1
 check_arg_unknown_flag:
     $S0 = "smart: Uknown command line flag '"
@@ -117,10 +124,11 @@ check_arg_unknown_flag:
 end_loop_args:
     
     ## TODO: support more arguments
-    
+
+    if smartfile == "" goto guess_smartfile
     goto done
     
-guess_files:
+guess_smartfile:
     .local pmc filenames
     filenames = new 'ResizableStringArray'
     push filenames, "Smartfile"
@@ -134,14 +142,15 @@ iterate_filenames:
     $S0 = shift iter
     stat $I0, $S0, 0
     unless $I0 goto iterate_filenames
-    $P0 = new 'String'
-    $P0 = $S0
-    push new_args, $P0
+    smartfile = $S0
     goto done
 iterate_filenames_end:
 
 done:
-    .return (new_args)
+    $P0 = new 'ResizablePMCArray'
+    push $P0, command_name
+    push $P0, smartfile
+    .return ($P0)
 .end
 
 =item main(args :slurpy)  :main

@@ -27,7 +27,6 @@ CLEANUPS = src/main.o \
   src/foo.o \
   src/bar.o \
 
-clean: testclean
+clean:
 	$(RM_RF) $(CLEANUPS)
-
 
