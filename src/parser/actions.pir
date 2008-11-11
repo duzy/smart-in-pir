@@ -94,7 +94,35 @@ done:
 
 .sub "!update-makefile-targets"
     .local pmc target
-    get_hll_global target, ['smart';'makefile'], '$<0>'
+    .local pmc targets
+    .local pmc iter
+    
+    ## the target list from command line arguments
+    get_hll_global targets, ['smart';'makefile'], "@<?>"
+    if null targets goto no_target_list_variable
+    iter = new 'Iterator', targets
+iterate_command_line_targets:
+    unless iter goto end_iterate_command_line_targets
+    $S0 = shift iter
+    get_hll_global $P0, ['smart';'makefile';'target'], $S0
+    unless null $P0 goto got_command_line_target
+    $P0 = new 'MakefileTarget'
+    $P1 = new 'String'
+    $P1 = $S0
+    setattribute $P0, 'object', $P1
+    set_hll_global ['smart';'makefile';'target'], $S0, $P0
+    got_command_line_target:
+    $I0 = $P0.'update'()
+#     print $S0
+#     print ": "
+#     say $I0
+    goto iterate_command_line_targets
+end_iterate_command_line_targets:
+    .return ()
+no_target_list_variable:
+
+    ## the number-one target from the Makefile(Smartfile)
+    get_hll_global target, ['smart';'makefile'], "$<0>"
     if null target goto no_number_one_target
     $I0 = target.'update'()
 

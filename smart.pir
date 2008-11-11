@@ -35,7 +35,7 @@ object.
     $P1.'parseactions'('smart::Grammar::Actions')
     
     $P1.'commandline_banner'("Smart Make for Parrot VM\n")
-    $P1.'commandline_prompt'('smart> ')
+    $P1.'commandline_prompt'("smart> ")
 .end
 
 .sub 'parse_command_line_arguments' :anon
@@ -58,7 +58,7 @@ object.
 loop_args:
     unless iter goto end_loop_args
     arg = shift iter
-    
+
 check_arg_0:
     unless arg == "-f" goto check_arg_1
     unless iter goto check_arg_1_bad
@@ -66,29 +66,52 @@ check_arg_0:
     $P0 = new 'String'
     $P0 = $S0
     push new_args, $P0
-    goto done ###????????
+    ##goto done ###????????
     goto check_arg_end
 check_arg_1:
-#     unless arg == "-h" goto check_arg_1
+    unless arg == "-h" goto check_arg_2
+    say "TODO: show command usage."
+    exit -1
+    goto check_arg_end
+check_arg_2:
+#     unless arg == "-f" goto check_arg_3
 #     goto check_arg_end
-# check_arg_2:
-#     unless arg == "-f" goto check_arg_1
+check_arg_3:
+#     unless arg == "-f" goto check_arg_4
 #     goto check_arg_end
-# check_arg_3:
-#     unless arg == "-f" goto check_arg_1
+check_arg_4:
+#     unless arg == "-f" goto check_arg_5
 #     goto check_arg_end
-# check_arg_4:
-#     unless arg == "-f" goto check_arg_1
+check_arg_5:
+#     unless arg == "-f" goto check_arg_else
 #     goto check_arg_end
-# check_arg_5:
-#     unless arg == "-f" goto check_arg_1
-#     goto check_arg_end
+check_arg_else:
+    $S0 = substr arg, 0, 1
+    if $S0 == "-" goto check_arg_unknown_flag
+    goto check_arg_targets
+    goto check_arg_end
+check_arg_targets:
+    get_hll_global $P0, ['smart';'makefile'], "@<?>"
+    unless null $P0 goto got_target_list_variable
+    $P0 = new 'ResizableStringArray'
+    set_hll_global ['smart';'makefile'], "@<?>", $P0
+    got_target_list_variable:
+    push $P0, arg
+#     print "target: "
+#     say arg
+    goto check_arg_end
 check_arg_end:
     goto loop_args
     
 check_arg_1_bad:
     $S0 = "smart: No argument for '-f', it requires one argument."
     say $S0
+    exit -1
+check_arg_unknown_flag:
+    $S0 = "smart: Uknown command line flag '"
+    $S0 .= arg
+    $S0 .= "'\n"
+    print $S0
     exit -1
     
 end_loop_args:
