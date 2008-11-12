@@ -9,7 +9,7 @@
 PARROT_ARGS =
 
 ## configuration settings
-BUILD_DIR     = /home/duzy/open/parrot
+BUILD_DIR     = /more/temp/parrot
 LOAD_EXT      = .so
 O             = .o
 
@@ -57,7 +57,6 @@ BUILTINS_PIR = \
 
 # PMCS = smart
 # PMC_SOURCES = $(PMC_DIR)/smart.pmc
-
 smart: smart.pbc
 	@$(RM_RF) $@
 	$(PBC_TO_EXE) $<

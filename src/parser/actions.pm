@@ -52,31 +52,30 @@ method empty_smart_statement($/) { make PAST::Op.new( :pirop('noop') ); }
 
 method makefile_variable_declaration($/) {
     my $var := PAST::Var.new(
-        #:name(~$<makefile_variable>),
-        :name( trim_spaces(~$<makefile_variable>) ),
+        :name( trim_spaces(~$<name>) ),
           :scope('package'),
           :namespace('smart::makefile::variable'),
           #:scope('lexical'),
           :viviself('Undef'),
           :lvalue(1),
-          :isdecl(1),
-          :node( $<makefile_variable> )
+          :isdecl(1)
     );
 
     my $ctr := PAST::Op.new( :pasttype('call'),
       :name('!update-makefile-variable'),
       :returns('MakefileVariable') );
-    for $<makefile_variable_value_list><makefile_variable_value_item> {
+    for $<makefile_variable_value_list><item> {
         $ctr.push( PAST::Val.new( :value( ~$_ ), :returns('String') ) );
     }
 
-    my $sign := ~$<makefile_variable_assign>;
+    my $sign := ~$<sign>;
     $ctr.unshift( PAST::Val.new( :value($sign), :returns('String') ) );
     $ctr.unshift( PAST::Val.new( :value($var.name()), :returns('String') ) );
 
     make PAST::Op.new( $var, $ctr,
                        :pasttype('bind'),
                        :name('bind-makefile-variable-variable'),
+                       :node( $/ )
                    );
 }
 
@@ -91,10 +90,10 @@ method makefile_variable_method_call($/) {
 method makefile_variable_ref($/) {
     my $name;
     if $<makefile_variable_ref1> {
-        $name := ~$<makefile_variable_ref1><makefile_variable_name1>;
+        $name := ~$<makefile_variable_ref1><name>;
     }
     elsif $<makefile_variable_ref2> {
-        $name := ~$<makefile_variable_ref2><makefile_variable_name2>;
+        $name := ~$<makefile_variable_ref2><name>;
     }
     my $var := PAST::Var.new( :name($name),
       :scope('package'),
@@ -120,7 +119,7 @@ method makefile_variable_ref($/) {
 method makefile_rule($/) {
     my $pack_targets := PAST::Op.new( :pasttype('call'),
       :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
-    for $<makefile_targets><makefile_target> {
+    for $<makefile_targets><item> {
         my $name := trim_spaces( ~$_ );
         my $t := PAST::Var.new( :name($name),
           :lvalue(0),
@@ -201,6 +200,31 @@ method makefile_rule_action($/) {
       :name('!create-makefile-action'), :node($/) );
     $past.push( PAST::Val.new( :value(~$/), :returns('String') ) );
     make $past;
+}
+
+method makefile_conditional_statement($/) {
+    our $?BLOCK;
+    my $arg1 := ~$<arg1>;
+    my $arg2 := ~$<arg2>;
+    my $stat := ~$<stat>;
+
+    if $stat eq 'ifeq' {
+        #$?BLOCK.push( $<> );
+    }
+    elsif ( $stat eq 'ifneq' ) {
+    }
+
+    for $<statement> {
+        $?BLOCK.push( $( $_ ) );
+    }
+    my $pir := "print 'args: '\n"
+    ~ "print %0\n"
+    ~ "say %1\n"
+    ;
+    my $p := PAST::Op.new( :inline($pir) );
+    $p.push( PAST::Val.new( :value(~$arg1), :returns('String') ) );
+    $p.push( PAST::Val.new( :value(~$arg2), :returns('String') ) );
+    make $p;
 }
 
 method smart_say_statement($/) {
