@@ -87,7 +87,8 @@ token makefile_variable_value_list {
 }
 
 token makefile_rule {
-    <makefile_targets> <[ \ \t ]>* ':' <[ \ \t ]>*
+    $<targets>=[ [ <makefile_target> <[ \ \t ]>* ]+ ]
+    <[ \ \t ]>* ':' <[ \ \t ]>*
     [ <makefile_prerequisite> <[ \ \t ]>* ]*
     [
      |[ ';' <[ \ \t ]>* <makefile_rule_action>
@@ -98,7 +99,11 @@ token makefile_rule {
     ]
     {*}
 }
-token makefile_targets { [ $<item>=[<-[ : \ \t \n ]>+] <[ \ \t ]>* ]+ }
+#      $<item>=[ <makefile_variable_ref> | [<-[ : \ \t \n ]>+] ]
+token makefile_target {
+    | <makefile_variable_ref> {*}
+    | <-[ : \ \t \n ]>+ {*}
+}
 token makefile_prerequisite {
     | <makefile_variable_ref> {*}
     | <-[ ; \ \t \n ]>+ {*}
@@ -162,6 +167,10 @@ token makefile_variable_ref {
     | <makefile_variable_ref2>
     ]
     {*}
+#    {{
+#    $S0 = match.text()
+#    say $S0
+#    }}
 }
 token makefile_variable_ref1 {
     '$'

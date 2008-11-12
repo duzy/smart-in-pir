@@ -7,7 +7,7 @@
 #
 
 .namespace ["smart";"Grammar";"Actions"]
-.sub 'trim_spaces'
+.sub "trim_spaces"
     .param string str
     .local int len, pos
 
@@ -29,7 +29,7 @@ end_chop:
 
 
 .namespace []
-.sub '!update-makefile-variable'
+.sub "!update-makefile-variable"
     .param string name
     .param string sign
     .param pmc items :slurpy
@@ -167,7 +167,7 @@ no_number_one_target:
     exit -1
 .end
 
-.sub '!pack-args-into-array'
+.sub "!pack-args-into-array"
     .param pmc args :slurpy
     .return (args)
 .end
@@ -198,7 +198,7 @@ no_number_one_target:
 =item <'!update-makefile-rule'(IN match, IN target, OPT deps, OPT actions)>
     Update the rule by 'match', created one if the rule is not existed.
 =cut
-.sub '!update-makefile-rule'
+.sub "!update-makefile-rule"
     .param string match
     .param pmc targets
     .param pmc prerequisites    :optional
@@ -220,10 +220,15 @@ iterate_targets:
     unless iter goto end_iterate_targets
     target = shift iter
 
+    $S0 = typeof target
+    print "typeof-target: "
+    say $S0
+    
     ## test for the 'rule' attribute, if
     $P0 = getattribute target, 'rule'
     if null $P0 goto got_normal_target
     $S0 = typeof $P0
+
     unless $S0 == "String" goto got_normal_target
     $S0 = $P0
     if $S0 == "pattern" goto got_temporary_implicit_rule_target
@@ -333,12 +338,18 @@ no_actions:
     While target is updating(C<MakefileTarget::update>), implicit targets will
     be created on the fly, and the created implicit targets will be stored.
 =cut
-.sub '!bind-makefile-target'
+.sub "!bind-makefile-target"
     .param pmc name_pmc
     .param int is_target           ## is target declaraed as rule?
     .local pmc target
     .local string name
     name = name_pmc
+
+#     print "target: "
+#     print name
+#     print "; "
+#     $S0 = typeof name_pmc
+#     say $S0
     
     unless is_target goto create_normal_target
     
@@ -393,7 +404,7 @@ donot_change_number_one_target:
     .return(target)
 .end
 
-.sub '!create-makefile-action'
+.sub "!create-makefile-action"
     .param pmc command
     .local pmc action
 
