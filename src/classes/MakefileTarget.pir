@@ -512,8 +512,6 @@ update_done:
     .param pmc requestor        :optional
     .param int requestor_flag   :opt_flag
     $S0 = self.'object'()
-#     print "update: "
-#     say $S0
     
     ## If the target itself has been updated, than nothing should be done.
     $I0 = self.'updated'()
@@ -566,10 +564,10 @@ handle_on_normal_prerequisite: ## normal prerequisite: MakefileTarget object
     ## Here, The 'prerequsite' is a 'MakefileTarget' object.
     $I0 = can prerequisite, 'update'
     unless $I0 goto invalid_target_object
-
+    
     $S0 = self.'object'()
     $S1 = prerequisite.'object'()
-
+    
     ## Checking prerequsite-newer...
     stat $I0, $S0, 0
     unless $I0 goto skip_prerequsite_newer_checking
@@ -577,28 +575,12 @@ handle_on_normal_prerequisite: ## normal prerequisite: MakefileTarget object
     unless $I1 goto skip_prerequsite_newer_checking
     stat $I0, $S0, 7 # CHANGETIME
     stat $I1, $S1, 7 # CHANGETIME
-    #stat $I0, $S0, 6 # MODIFYTIME
-    #stat $I1, $S1, 6 # MODIFYTIME
     
-#     print "time: "
-#     print $S0
-#     print "\t"
-#     say $I0
-#     print "    : "
-#     print $S1
-#     print "\t"
-#     say $I1
-
     unless $I0 < $I1 goto prerequsite_is_older
     inc newer_count
-#     print "    '"
-#     print $S0
-#     print "' out of date, "
-#     print newer_count
-#     print "\n"
     prerequsite_is_older:
     skip_prerequsite_newer_checking:
-
+    
     ## Invoke the update method...
     unless requestor_flag goto donot_have_specific_requestor_1
     if null requestor goto donot_have_specific_requestor_1
@@ -607,7 +589,7 @@ handle_on_normal_prerequisite: ## normal prerequisite: MakefileTarget object
     donot_have_specific_requestor_1:
     ($I0, $I1) = prerequisite.'update'( self )
     updated_by_specific_requestor_1:
-
+    
     ## Updatess the counter...
     unless 0 < $I1 goto no_inc_newer_count_according_prerequsite_update
     newer_count += $I1
@@ -675,11 +657,8 @@ do_update:
     .return (update_count, newer_count)
 
 check_out_implicit_rules:
-#     $S0 = self.'object'()
-#     print "implicit: "
-#     say $S0
     .local pmc implict_rules, implicit_rule, iter
-    implict_rules = get_hll_global ['smart';'makefile'], "@<%>"
+    implict_rules = get_hll_global ['smart';'makefile'], "@[%]"
     if null implict_rules goto no_rule_found
     iter = new 'Iterator', implict_rules
 iterate_implict_rules:
@@ -692,9 +671,6 @@ iterate_implict_rules:
     $P1 = $S0
     setattribute self, 'rule', rule
     setattribute self, 'stem', $P1
-#     print "stem: "
-#     print $S0
-#     print "\n"
     ##goto iterate_implict_rules
 end_iterate_implict_rules:
     

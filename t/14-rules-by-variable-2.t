@@ -3,20 +3,24 @@
 FOO = foo
 
 all: $(FOO)
+	@echo "all: $^"
 
-$(FOO): foo.a
+$(FOO): foobar.a
+	@echo ">> $@, $(FOO)"
 
 %.a: %.b
 	@echo "$^ <- $@"
 
-%.b: %.c
+%.b: %.e
 	@echo "$^ <- $@"
 
-%.c: %.d
+%.e: %.d
 	@echo "$^ <- $@"
 
 %.d:
 	@echo "$^ <- $@"
 
+
+FOO += bar
 
 
