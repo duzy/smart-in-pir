@@ -150,7 +150,7 @@ no_target_list_variable:
 nothing_updated:
     $S0 = "smart: Nothing to be done for '"
     $S0 .= object
-    $S0 .= "'."
+    $S0 .= "'.\n"
     print $S0
     .return()
     
@@ -205,40 +205,75 @@ no_number_one_target:
     .param pmc actions          :optional
     .local pmc rule
     .local pmc patterns
-
+    .local pmc iter, target
+    
     get_hll_global rule, ['smart';'makefile';'rule'], match
     unless null rule goto rule_object_existed
     rule = new 'MakefileRule'
     rule.'match'( match )
-
+    
 #     print "rule: "
 #     say match
-
-    .local pmc iter, target
+    
     iter = new 'Iterator', targets
 iterate_targets:
     unless iter goto end_iterate_targets
     target = shift iter
-
-    $S0 = typeof target
-    print "typeof-target: "
-    say $S0
     
-    ## test for the 'rule' attribute, if
+    $S0 = typeof target
+    if $S0 == 'MakefileVariable' goto got_variable_target
+    
+    ## test for the 'rule' attribute, if it's an string with value 'pattern',
+    ## the target indicates an 'implicit target'.
     $P0 = getattribute target, 'rule'
     if null $P0 goto got_normal_target
     $S0 = typeof $P0
-
+    
     unless $S0 == "String" goto got_normal_target
     $S0 = $P0
-    if $S0 == "pattern" goto got_temporary_implicit_rule_target
+    if $S0 == "pattern" goto got_implicit_rule_temporary_target
 
 got_normal_target:
-    unless null patterns goto multi_target_rule_not_all_patterns
+    ## we got the normal target here, if the 'patterns' is null, an error
+    ## should be emitted, which means the user mixed the implicit and normal
+    ## target in one rule.
+    unless null patterns goto got_mixed_implicit_and_normal_rule
     setattribute target, 'rule', rule
     goto iterate_targets
-   
-got_temporary_implicit_rule_target:
+
+got_variable_target:
+    ## expand variable to obtain the target list, bind each target in the list
+    ## to the new created rule.
+    .local string target_name
+    $S0 = target.'expand'()
+    $P0 = split " ", $S0
+    iter = new 'Iterator', $P0
+    iterate_variable_expanded_targets:
+    unless iter goto end_iterate_variable_expanded_targets
+    target_name = shift iter
+    if target_name == "" goto iterate_variable_expanded_targets
+    get_hll_global target, ['smart';'makefile';'target'], target_name
+    unless null target goto variable_expanded_target_existed
+    target = new 'MakefileTarget'
+    $P1 = new 'String'
+    $P1 = target_name
+    setattribute target, 'object', $P1
+    set_hll_global ['smart';'makefile';'target'], target_name, target
+    variable_expanded_target_existed:
+    setattribute target, 'rule', rule
+#     print "target: '"
+#     print target_name
+#     print "' in "
+#     $S0 = rule.'match'()
+#     say $S0
+    goto iterate_variable_expanded_targets
+    end_iterate_variable_expanded_targets:
+    goto iterate_targets
+    
+got_implicit_rule_temporary_target:
+    ## if implicit rule, the target's 'object' attribute must be a pattern,
+    ## which contains one '%' sign, and the pattern string will be push back
+    ## to the 'patterns' array, the new created rule will keep it.
     unless null patterns goto patterns_array_created
     patterns = new 'ResizableStringArray'
     patterns_array_created:
@@ -248,7 +283,7 @@ got_temporary_implicit_rule_target:
 #     say $S0
     goto iterate_targets
     
-multi_target_rule_not_all_patterns:
+got_mixed_implicit_and_normal_rule:
     ## get some rule looks like " a.%.b BAD a.%.h: foobar"
     $S0 = "smart: ** mixed implicit and normal rules: '"
     $S0 .= match
@@ -256,7 +291,7 @@ multi_target_rule_not_all_patterns:
     print $S0
     exit -1
 end_iterate_targets:
-
+    
     ## storing rules: implicit rules is stored in the list "smart;makefile;@<%>"
     ## normal rules: could leave without storing
     
@@ -275,18 +310,18 @@ end_iterate_targets:
 #     say match
     push implict_rules, rule
     goto init_prerequsite_list
-
+    
 not_a_implicit_rule:
     ## only normal rule should be stored as HLL global in "smart;makefile;rule"
     ## or without storing normal rules should be ok
     set_hll_global ['smart';'makefile';'rule'], match, rule
-
+    
 rule_object_existed:
     getattribute patterns, rule, 'patterns'
     
 init_prerequsite_list:
     if null prerequisites goto no_prerequisites
-
+    
     ## TODO: if implicit-rule, the prerequisites should be pattern-strings
     .local pmc iter, cont
     iter = new 'Iterator', prerequisites

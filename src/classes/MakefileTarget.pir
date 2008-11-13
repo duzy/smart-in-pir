@@ -470,10 +470,12 @@ iterate_objects:
     unless iter goto end_iterate_objects
     object_name = shift iter
     if object_name == "" goto iterate_objects
-#     print "object: "
-#     say object_name
+#     print "object: '"
+#     print object_name
+#     print "'\n"
     get_hll_global object, ['smart';'makefile';'target'], object_name
     unless null object goto got_stored_target_object
+#     print "\tnew\n"
     object = new 'MakefileTarget'
     $P0 = new 'String'
     $P0 = object_name
@@ -489,7 +491,7 @@ got_stored_target_object:
     update_count += $I0
     goto iterate_objects
 end_iterate_objects:
-
+    
 update_done:
     .return (update_count, newer_count)
 .end
