@@ -669,6 +669,8 @@ do_update:
     $I0 = rule.'execute_actions'()
     '.!clear-automatic-variables'( self )
     self.'updated'( 1 )
+    ## TODO: if the object still not existed, some default actions should be
+    ##       invoked.
     inc update_count
     .return (update_count, newer_count)
 

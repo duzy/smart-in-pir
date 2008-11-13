@@ -10,10 +10,10 @@
 .sub '__init_class' :anon :init :load
     newclass $P0, 'MakefileRule'
     addattribute $P0, 'match'
+    ##addattribute $P0, 'targets'
     addattribute $P0, 'patterns' ## used only if the rule is a pattern rule
     addattribute $P0, 'prerequisites'
     addattribute $P0, 'actions'
-    ##addattribute $P0, 'targets'
 .end
 
 =item <rule()>
@@ -36,6 +36,7 @@ return_value_onle:
 got_rule:
     .return ($P0)
 .end
+
 
 =item <match_pattern(IN target)>
     Returns the stem match with one the patterns.
@@ -60,14 +61,10 @@ iterate_patterns:
     $I0 = index $S0, "%"
     if $I0 < 0 goto got_bad_pattern
     prefix = substr $S0, 0, $I0
-#     print "prefix: "
-#     say prefix
     inc $I0
     $I1 = length $S0
     $I1 = $I1 - $I0
     suffix = substr $S0, $I0, $I1
-#     print "suffix: "
-#     say suffix
     if prefix == "" goto no_check_prefix
     $I0 = index object, prefix
     ##if $I0 < 0 goto iterate_patterns
@@ -84,10 +81,6 @@ no_check_suffix:
     $I0 = length prefix
     $I1 = $I1 - $I0
     stem = substr object, $I0, $I1
-#     print "stem: "
-#     print stem
-#     print "; "
-#     say $S0
     goto end_matching ## done!
     ##goto iterate_patterns
 got_bad_pattern:
@@ -104,6 +97,7 @@ end_iterate_patterns:
 end_matching:
     .return (stem)
 .end
+
 
 =item <execute_actions()>
     Execute actions of the rule.
@@ -124,6 +118,7 @@ invalid_action_object:
 end_iterate_actions:
     .return(0)
 .end
+
 
 =item <prerequisites()>
     Returns the prerequisites of the rule.
@@ -149,6 +144,7 @@ got_prerequisites:
 invalid_arg:
     die "smart: *** Not an ResizablePMCArray object."
 .end
+
 
 =item <actions()>
     Returns the actions of the rule.

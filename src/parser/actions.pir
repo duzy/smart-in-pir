@@ -73,25 +73,6 @@ done:
     .return (var)
 .end
 
-# .sub '!bind-makefile-variable'
-#     .param string name
-#     .local pmc var
-    
-# #     print "bind: '"
-# #     print name
-# #     print "'\n"
-    
-#     get_hll_global var, ['smart';'makefile';'variable'], name
-#     unless null var goto done
-#     print "smart: ** Makefile variable '"
-#     print name
-#     print "' not declaraed. Stop.\n"
-#     exit -1
-    
-# done:
-#     .return (var)
-# .end
-
 .sub "!update-makefile-targets"
     .local pmc target
     .local pmc targets

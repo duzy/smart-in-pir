@@ -10,7 +10,6 @@
 
 .sub '__init_class' :anon :init :load
     newclass $P1, 'MakefileVariable'
-    #subclass $P1, 'ResizablePMCArray', 'MakefileVariable'
     addattribute $P1, 'name'
     addattribute $P1, 'items'
 .end
