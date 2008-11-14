@@ -45,6 +45,8 @@ got_member:
     .return($S0)
 .end
 
+=item
+=cut
 .sub "updated" :method
     .param int updated          :optional
     .param int has_updated      :opt_flag
@@ -101,12 +103,11 @@ iterate_prerequisites:
     stat $I0, $S1, 0 # EXISTS
     unless $I0 goto out_of # prerequisite not exists
     stat $I0, $S1, 7 # CHANGETIME
-    #stat $I0, $S1, 6 # MODIFYTIME
     
-    print "time: "
-    print $S1
-    print "->"
-    say $I0
+#     print "time: "
+#     print $S1
+#     print "->"
+#     say $I0
     
     $I0 = changetime < $I0
     if $I0 goto out_of
@@ -496,6 +497,7 @@ update_done:
     .return (update_count, newer_count)
 .end
 
+
 =item <update(OPT requestor)>
     Update the target if neccesary.
 
@@ -511,8 +513,7 @@ update_done:
 .sub "update" :method
     .param pmc requestor        :optional
     .param int requestor_flag   :opt_flag
-    $S0 = self.'object'()
-    
+
     ## If the target itself has been updated, than nothing should be done.
     $I0 = self.'updated'()
     if $I0 goto no_need_update
@@ -530,12 +531,16 @@ we_got_the_rule:
     
     prerequisites = rule.'prerequisites'()
     iter = new 'Iterator', prerequisites
+    print "prerequisites: (size) "
+    say prerequisites
 iterate_prerequisites:
     unless iter goto end_iterate_prerequisites
     prerequisite = shift iter
     
     ## Check the type of prerequsite...
     $S0 = typeof prerequisite
+    print "type: "
+    say $S0
     if $S0 == "MakefileVariable" goto got_variable_prerequisite
     unless $S0 == "String" goto got_non_implicit_prerequisite
     $S0 = prerequisite
@@ -567,6 +572,11 @@ handle_on_normal_prerequisite: ## normal prerequisite: MakefileTarget object
     
     $S0 = self.'object'()
     $S1 = prerequisite.'object'()
+
+    print "update: "
+    print $S0
+    print " -> "
+    say $S1
     
     ## Checking prerequsite-newer...
     stat $I0, $S0, 0

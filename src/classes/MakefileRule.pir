@@ -10,9 +10,9 @@
 .sub '__init_class' :anon :init :load
     newclass $P0, 'MakefileRule'
     addattribute $P0, 'match'
-    ##addattribute $P0, 'targets'
-    addattribute $P0, 'patterns' ## used only if the rule is a pattern rule
+    addattribute $P0, 'targets'
     addattribute $P0, 'prerequisites'
+    addattribute $P0, 'patterns' ## used only if the rule is a pattern rule
     addattribute $P0, 'actions'
 .end
 
@@ -20,14 +20,6 @@
     Returns the match string.
 =cut
 .sub 'match' :method
-    .param pmc value            :optional
-    .param int has_value        :opt_flag
-    
-    if has_value == 0 goto return_value_onle
-    setattribute self, 'match', value
-    .return()
-    
-return_value_onle:      
     getattribute $P0, self, 'match'
     unless null $P0 goto got_rule
     $P0 = new 'String'

@@ -163,14 +163,39 @@ no_number_one_target:
     .param pmc targets
     .param pmc prerequisites    :optional
     .param pmc actions          :optional
+    
     .local pmc rule
     .local pmc patterns
-    .local pmc iter, target
+    .local pmc target ## used as a temporary
+    .local pmc iter
+    .local pmc call_stack
+    .local string target_name
+    .local pmc out_cont
     
+    call_stack = new 'ResizableIntegerArray'
+
+    ## Retreive or create the 'rule' object, identified by 'match'
     get_hll_global rule, ['smart';'makefile';'rule'], match
     unless null rule goto the_rule_object_existed
+    local_branch call_stack, create_new_rule_object
+the_rule_object_existed:
+
+    local_branch call_stack, update_prerequsites
+    local_branch call_stack, update_actions
+
+    .return(rule)
+
+    ############
+    ## Local rountine 1
+create_new_rule_object:
     rule = new 'MakefileRule'
-    rule.'match'( match )
+    $P0 = new 'String'
+    $P0 = match
+    setattribute rule, 'match', $P0
+    $P0 = new 'ResizablePMCArray'
+    setattribute rule, 'targets', $P0
+    
+    out_cont = $P0
 
     ## Handle 'targets'. There are three kinds of target, normal target,
     ## variable target, implicit target(pattern). An normal target will be
@@ -178,11 +203,11 @@ no_number_one_target:
     ## first and converted on each item of it into normal targets.
     
     iter = new 'Iterator', targets
-    
+    ## Iterate 'targets'
 iterate_targets:
     unless iter goto end_iterate_targets
     target = shift iter
-
+    
     ## check to see if it's a MakefileVariable target
     $S0 = typeof target
     if $S0 == 'MakefileVariable' goto got_variable_target
@@ -195,26 +220,128 @@ iterate_targets:
     unless $S0 == "String" goto got_normal_target
     $S0 = $P0
     if $S0 == "pattern" goto got_implicit_rule_temporary_target
-
+    
     ## Choice 1
 got_normal_target:
     ## we got the normal target here, if the 'patterns' is null, an error
     ## should be emitted, which means the user mixed the implicit and normal
     ## target in one rule.
-    unless null patterns goto got_mixed_implicit_and_normal_rule
+    unless null patterns goto error_mixed_implicit_and_normal_rule
     setattribute target, 'rule', rule
+    push out_cont, target
     goto iterate_targets
-
+    
     ## Choice 2
 got_variable_target:
+    local_branch call_stack, expand_variable_target_and_convert_into_stored_normal_targets
+    goto iterate_targets
+    
+    ## Choice 3 -- Implicit target(pattern)
+got_implicit_rule_temporary_target:
+    ## if implicit rule, the target's 'object' attribute must be a pattern,
+    ## which contains one '%' sign, and the pattern string will be push back
+    ## to the 'patterns' array, the new created rule will keep it.
+    unless null patterns goto pattern_array_created
+    patterns = new 'ResizableStringArray'
+    pattern_array_created:
+    $S0 = target.'object'()
+    push patterns, $S0
+    goto iterate_targets
+    
+    ## Choice 4 -- Error
+error_mixed_implicit_and_normal_rule:
+    ## get some rule looks like " a.%.b BAD a.%.h: foobar"
+    $S0 = "smart: ** mixed implicit and normal rules: '"
+    $S0 .= match
+    $S0 .= "'\n"
+    print $S0
+    exit -1
+end_iterate_targets:
+    
+    unless null patterns goto store_implicit_rule
+    ## only normal rule should be stored as HLL global in "smart;makefile;rule"
+    ## or without storing normal rules should be ok
+    set_hll_global ['smart';'makefile';'rule'], match, rule
+    local_return call_stack
+
+    store_implicit_rule:
+    ## Store implicit rules in the list 'smart;makefile;@[%]'
+    setattribute rule, 'patterns', patterns
+    .local pmc implict_rules
+    implict_rules = get_hll_global ['smart';'makefile'], "@[%]"
+    unless null implict_rules goto implict_rule_list_existed
+    implict_rules = new 'ResizablePMCArray'
+    set_hll_global ['smart';'makefile'], "@[%]", implict_rules
+    implict_rule_list_existed:
+    ## TODO: think about the ordering of implicit rules, should I use unshift
+    ##       instead of push?
+    push implict_rules, rule
+    local_return call_stack
+
+    
+    ############
+    ## local routine 2
+update_prerequsites:
+    if null prerequisites goto update_prerequsites_done
+
+    iter = new 'Iterator', prerequisites
+    out_cont = rule.'prerequisites'()
+    unless null patterns goto iterate_implicit_prerequisites
+
+    ## normal prerequsites
+iterate_prerequisites: #############################
+    unless iter goto end_iterate_prerequisites
+    $P0 = shift iter
+    $S0 = typeof $P0
+    if $S0 == 'MakefileVariable' goto push_variable_prerequsite
+    push out_cont, $P0
+    goto iterate_prerequisites
+push_variable_prerequsite:
+    #target = $P0 ## for the sub routine
+    #local_branch call_stack, expand_variable_target_and_convert_into_stored_normal_targets
+    push out_cont, $P0
+    goto iterate_prerequisites
+end_iterate_prerequisites: #########################
+    goto update_prerequsites_done
+
+    ## implicit prerequsites
+iterate_implicit_prerequisites: ########################################
+    unless iter goto end_iterate_implicit_prerequisites
+    $P0 = shift iter
+    $S0 = $P0.'object'()
+    $I0 = index $S0, "%"
+    unless $I0 < 0 goto got_implicit_prerequisite ####
+    push out_cont, $P0
+    goto iterate_implicit_prerequisites
+    got_implicit_prerequisite: #######################
+    push out_cont, $S0
+    ## TODO: should I unset the HLL global target named by $S0??
+    goto iterate_implicit_prerequisites
+end_iterate_implicit_prerequisites: ####################################
+update_prerequsites_done:
+    local_return call_stack
+
+    
+    ############
+    ## local routine 3
+update_actions:
+    ## store actions in the rule object
+    if null actions goto no_actions
+    rule.'actions'( actions )
+    no_actions:
+    local_return call_stack
+    
+    
+    ############
+    ## local routine 4
+expand_variable_target_and_convert_into_stored_normal_targets:
     ## expand variable to obtain the target list, bind each target in the list
     ## to the new created rule.
-    .local string target_name
     $S0 = target.'expand'()
     $P0 = split " ", $S0
     iter = new 'Iterator', $P0
-    ## iterate items in the makefile variable
-    iterate_variable_expanded_targets: #################
+    ## iterate items in the makefile variable and convert each into target
+iterate_variable_expanded_targets: #################
     unless iter goto end_iterate_variable_expanded_targets
     target_name = shift iter
     if target_name == "" goto iterate_variable_expanded_targets
@@ -226,106 +353,19 @@ got_variable_target:
     $P1 = target_name
     setattribute target, 'object', $P1
     set_hll_global ['smart';'makefile';'target'], target_name, target
-    variable_expanded_target_existed: ##################
+variable_expanded_target_existed: ##################
     setattribute target, 'rule', rule
+    print "push: "
+    print target_name
+    print ", "
+    say out_cont
+    push out_cont, target
     goto iterate_variable_expanded_targets
-    end_iterate_variable_expanded_targets: #############
-    goto iterate_targets
+end_iterate_variable_expanded_targets: #############
+    local_return call_stack
+.end # sub "!update-makefile-rule"
 
-    ## Choice 3 -- Implicit target(pattern)
-got_implicit_rule_temporary_target:
-    ## if implicit rule, the target's 'object' attribute must be a pattern,
-    ## which contains one '%' sign, and the pattern string will be push back
-    ## to the 'patterns' array, the new created rule will keep it.
-    unless null patterns goto patterns_array_created
-    patterns = new 'ResizableStringArray'
-    patterns_array_created:
-    $S0 = target.'object'()
-    push patterns, $S0
-    goto iterate_targets
 
-    ## Choice 4 -- Error
-got_mixed_implicit_and_normal_rule:
-    ## get some rule looks like " a.%.b BAD a.%.h: foobar"
-    $S0 = "smart: ** mixed implicit and normal rules: '"
-    $S0 .= match
-    $S0 .= "'\n"
-    print $S0
-    exit -1
-end_iterate_targets:
-    
-    ## storing rules: implicit rules is stored in the list "smart;makefile;@[%]"
-    ## normal rules: could leave without storing
-    
-    if null patterns goto not_a_implicit_rule
-    
-    setattribute rule, 'patterns', patterns
-    .local pmc implict_rules
-    ## should save implicit rule somewhere else
-    implict_rules = get_hll_global ['smart';'makefile'], "@[%]"
-    unless null implict_rules goto got_implict_rule_list
-    implict_rules = new 'ResizablePMCArray'
-    set_hll_global ['smart';'makefile'], "@[%]", implict_rules
-    got_implict_rule_list:
-    ## TODO: think about the ordering of implicit rules, should I use unshift
-    ##       instead of push?
-    push implict_rules, rule
-    goto init_prerequsite_list
-    
-    not_a_implicit_rule:
-    ## only normal rule should be stored as HLL global in "smart;makefile;rule"
-    ## or without storing normal rules should be ok
-    set_hll_global ['smart';'makefile';'rule'], match, rule
-    
-the_rule_object_existed:
-    getattribute patterns, rule, 'patterns'
-    
-    ## Process the prerequsites...
-init_prerequsite_list:
-    if null prerequisites goto no_prerequisites
-
-    .local pmc iter, cont
-    iter = new 'Iterator', prerequisites
-    cont = rule.'prerequisites'()
-    unless null patterns goto iterate_implicit_prerequisites
-
-    ## normal prerequsites
-iterate_prerequisites: #############################
-    unless iter goto end_iterate_prerequisites
-    $P0 = shift iter
-    $S0 = typeof $P0
-    ## TODO: expand variable-prerequsite here, not in MakefileTarget's 'update'
-    push cont, $P0
-    goto iterate_prerequisites
-end_iterate_prerequisites: #########################
-    goto init_prerequsite_list_done
-
-    ## implicit prerequsites
-iterate_implicit_prerequisites: ########################################
-    unless iter goto end_iterate_implicit_prerequisites
-    $P0 = shift iter
-    $S0 = $P0.'object'()
-    $I0 = index $S0, "%"
-    unless $I0 < 0 goto got_implicit_prerequisite ####
-    push cont, $P0
-    goto iterate_implicit_prerequisites
-    got_implicit_prerequisite: #######################
-    push cont, $S0
-    ## TODO: should I unset the HLL global target named by $S0??
-    goto iterate_implicit_prerequisites
-end_iterate_implicit_prerequisites: ####################################
-    goto init_prerequsite_list_done
-
-init_prerequsite_list_done:
-no_prerequisites:
-
-    ## store actions in the rule object
-    if null actions goto no_actions
-    rule.'actions'( actions )
-no_actions:
-
-    .return(rule)
-.end
 
 =item <'!bind-makefile-target'(IN name, OPT is_rule)>
     Create or bind(if existed) 'name' to a makefile target object.
