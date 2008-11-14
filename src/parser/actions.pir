@@ -34,10 +34,6 @@ end_chop:
     .param string sign
     .param pmc items :slurpy
     
-#     print "update '"
-#     print name
-#     print "'\n"
-    
     .local pmc var
     get_hll_global var, ['smart';'makefile';'variable'], name
     unless null var goto makefile_variable_exists
@@ -74,6 +70,8 @@ done:
     .return (var)
 .end
 
+=item
+=cut
 .sub "!update-makefile-targets"
     .local pmc target
     .local pmc targets
@@ -165,7 +163,6 @@ no_number_one_target:
     .param pmc actions          :optional
     
     .local pmc rule
-    .local pmc patterns
     .local pmc target ## used as a temporary
     .local pmc iter
     .local pmc call_stack
@@ -173,7 +170,7 @@ no_number_one_target:
     .local pmc out_cont
     
     call_stack = new 'ResizableIntegerArray'
-
+    
     ## Retreive or create the 'rule' object, identified by 'match'
     get_hll_global rule, ['smart';'makefile';'rule'], match
     unless null rule goto the_rule_object_existed
@@ -182,12 +179,15 @@ the_rule_object_existed:
 
     local_branch call_stack, update_prerequsites
     local_branch call_stack, update_actions
-
+    
     .return(rule)
-
+    
     ############
     ## Local rountine 1
 create_new_rule_object:
+    .local int implicit
+    implicit = 0
+    
     rule = new 'MakefileRule'
     $P0 = new 'String'
     $P0 = match
@@ -196,7 +196,7 @@ create_new_rule_object:
     setattribute rule, 'targets', $P0
     
     out_cont = $P0
-
+    
     ## Handle 'targets'. There are three kinds of target, normal target,
     ## variable target, implicit target(pattern). An normal target will be
     ## stored, a variable target is a makefile variable which will be expanded
@@ -212,21 +212,27 @@ iterate_targets:
     $S0 = typeof target
     if $S0 == 'MakefileVariable' goto got_variable_target
     
-    ## test for the 'rule' attribute, if it's an string with value 'pattern',
-    ## the target indicates an 'implicit target'.
-    $P0 = getattribute target, 'rule'
-    if null $P0 goto got_normal_target
-    $S0 = typeof $P0
-    unless $S0 == "String" goto got_normal_target
-    $S0 = $P0
-    if $S0 == "pattern" goto got_implicit_rule_temporary_target
+#     ## test for the 'rule' attribute, if it's an string with value 'pattern',
+#     ## the target indicates an 'implicit target'.
+#     $P0 = getattribute target, 'rule'
+#     if null $P0 goto got_normal_target
+#     $S0 = typeof $P0
+#     unless $S0 == "String" goto got_normal_target
+#     $S0 = $P0
+#     if $S0 == "pattern" goto got_implicit_rule_temporary_target
+    target_name = target.'object'()
+    $I0 = index target_name, "%"
+    if $I0 < 0 goto got_normal_target
+    $I1 = $I0 + 1
+    $I1 = index target_name, "%", $I0
+    if $I1 < 0 goto got_implicit_rule_temporary_target
     
     ## Choice 1
 got_normal_target:
     ## we got the normal target here, if the 'patterns' is null, an error
     ## should be emitted, which means the user mixed the implicit and normal
     ## target in one rule.
-    unless null patterns goto error_mixed_implicit_and_normal_rule
+    if implicit goto error_mixed_implicit_and_normal_rule
     setattribute target, 'rule', rule
     push out_cont, target
     goto iterate_targets
@@ -241,11 +247,10 @@ got_implicit_rule_temporary_target:
     ## if implicit rule, the target's 'object' attribute must be a pattern,
     ## which contains one '%' sign, and the pattern string will be push back
     ## to the 'patterns' array, the new created rule will keep it.
-    unless null patterns goto pattern_array_created
-    patterns = new 'ResizableStringArray'
-    pattern_array_created:
-    $S0 = target.'object'()
-    push patterns, $S0
+    implicit = 1
+    $P0 = new 'Integer'
+    $P0 = 1
+    setattribute target, '%', $P0
     goto iterate_targets
     
     ## Choice 4 -- Error
@@ -258,7 +263,7 @@ error_mixed_implicit_and_normal_rule:
     exit -1
 end_iterate_targets:
     
-    unless null patterns goto store_implicit_rule
+    unless implicit goto store_implicit_rule
     ## only normal rule should be stored as HLL global in "smart;makefile;rule"
     ## or without storing normal rules should be ok
     set_hll_global ['smart';'makefile';'rule'], match, rule
@@ -266,7 +271,9 @@ end_iterate_targets:
 
     store_implicit_rule:
     ## Store implicit rules in the list 'smart;makefile;@[%]'
-    setattribute rule, 'patterns', patterns
+    $P0 = new 'Integer'
+    $P0 = implicit
+    setattribute rule, 'implicit', $P0
     .local pmc implict_rules
     implict_rules = get_hll_global ['smart';'makefile'], "@[%]"
     unless null implict_rules goto implict_rule_list_existed
@@ -277,7 +284,7 @@ end_iterate_targets:
     ##       instead of push?
     push implict_rules, rule
     local_return call_stack
-
+    
     
     ############
     ## local routine 2
@@ -286,7 +293,7 @@ update_prerequsites:
 
     iter = new 'Iterator', prerequisites
     out_cont = rule.'prerequisites'()
-    unless null patterns goto iterate_implicit_prerequisites
+    if implicit goto iterate_implicit_prerequisites
 
     ## normal prerequsites
 iterate_prerequisites: #############################
@@ -355,10 +362,10 @@ iterate_variable_expanded_targets: #################
     set_hll_global ['smart';'makefile';'target'], target_name, target
 variable_expanded_target_existed: ##################
     setattribute target, 'rule', rule
-    print "push: "
-    print target_name
-    print ", "
-    say out_cont
+#     print "push: "
+#     print target_name
+#     print ", "
+#     say out_cont
     push out_cont, target
     goto iterate_variable_expanded_targets
 end_iterate_variable_expanded_targets: #############
@@ -380,28 +387,27 @@ end_iterate_variable_expanded_targets: #############
     .local string name
     name = name_pmc
 
-    unless is_target goto create_normal_target
+#     unless is_target goto create_normal_target
     
-create_temporary_target_for_implicit_rule:
-    ## If the '%' appears only one in the name, the rule is a pattern rule
-    $I0 = index name, "%"
-    if $I0 < 0 goto create_normal_target
-    $I1 = $I0 + 1
-    $I1 = index name, "%", $I1
-    unless $I1 < 0 goto create_normal_target
-
-    ## This new MakefileTarget object hold by '$P0' is never stored by
-    ## set_hll_global, because it's a pattern-rule-target.
-    $P0 = new 'MakefileTarget'
-    setattribute $P0, 'object', name_pmc
-    ## and init $P0's "rule" attribute to a String with value "pattern",
-    ## this will tell that it's an temporary target, should not bind with any
-    ## new rule, and the new rule should use it as a 'pattern rule target',
-    ## this will avoid calculate '%' twise.
-    $P1 = new 'String'
-    $P1 = 'pattern'
-    setattribute $P0, 'rule', $P1
-    .return ($P0)
+# create_temporary_target_for_implicit_rule:
+#     ## If the '%' appears only one in the name, the rule is a pattern rule
+#     $I0 = index name, "%"
+#     if $I0 < 0 goto create_normal_target
+#     $I1 = $I0 + 1
+#     $I1 = index name, "%", $I1
+#     unless $I1 < 0 goto create_normal_target
+#     ## This new MakefileTarget object hold by '$P0' is never stored by
+#     ## set_hll_global, because it's a pattern-rule-target.
+#     $P0 = new 'MakefileTarget'
+#     setattribute $P0, 'object', name_pmc
+#     ## and init $P0's "rule" attribute to a String with value "pattern",
+#     ## this will tell that it's an temporary target, should not bind with any
+#     ## new rule, and the new rule should use it as a 'pattern rule target',
+#     ## this will avoid calculate '%' twise.
+#     $P1 = new 'String'
+#     $P1 = 'pattern'
+#     setattribute $P0, 'rule', $P1
+#     .return ($P0)
     
 create_normal_target:
     
@@ -413,7 +419,7 @@ create_new_makefile_target:
     
     target = new 'MakefileTarget'
     setattribute target, 'object', name_pmc
-
+    
     ## the first rule should defines the number-one target
     unless is_target goto donot_change_number_one_target
     get_hll_global $P0, ['smart';'makefile'], "$<0>"
@@ -427,6 +433,9 @@ donot_change_number_one_target:
     .return(target)
 .end
 
+
+=item
+=cut
 .sub "!create-makefile-action"
     .param pmc command
     .local pmc action

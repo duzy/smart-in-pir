@@ -129,7 +129,7 @@ method makefile_rule($/) {
       :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
     for $<makefile_rule_action> { $pack_actions.push( $( $_ ) ); }
 
-    my $match := ~$<targets>; #~$<makefile_target>;
+    my $match := ~$<targets>;
     $match := trim_spaces( $match );
     my $rule := PAST::Var.new( :lvalue(1), :viviself('Undef'),
       :scope('package'), :name($match), :namespace('smart::makefile::rule') );

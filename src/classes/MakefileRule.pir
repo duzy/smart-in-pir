@@ -7,19 +7,20 @@
 #
 
 .namespace ['MakefileRule']
-.sub '__init_class' :anon :init :load
+.sub "__init_class" :anon :init :load
     newclass $P0, 'MakefileRule'
     addattribute $P0, 'match'
     addattribute $P0, 'targets'
     addattribute $P0, 'prerequisites'
-    addattribute $P0, 'patterns' ## used only if the rule is a pattern rule
+#    addattribute $P0, 'patterns' ## used only if the rule is a pattern rule
     addattribute $P0, 'actions'
+    addattribute $P0, 'implicit'
 .end
 
 =item <rule()>
     Returns the match string.
 =cut
-.sub 'match' :method
+.sub "match" :method
     getattribute $P0, self, 'match'
     unless null $P0 goto got_rule
     $P0 = new 'String'
@@ -33,23 +34,27 @@ got_rule:
 =item <match_pattern(IN target)>
     Returns the stem match with one the patterns.
 =cut
-.sub 'match_patterns' :method
+.sub "match_patterns" :method
     .param pmc target
     .local string object, stem
-    .local pmc patterns
-    patterns = getattribute self, 'patterns'
-    stem = ""
-    if null patterns goto end_matching
+    .local pmc targets
 
+    $P0 = getattribute self, 'implicit'
+    $I0 = $P0
+    unless $I0 goto end_matching
+    
+    targets = getattribute self, 'targets'
+    stem = ""
+    
     object = target.'object'()
     
     .local pmc pattern, iter
     .local string prefix, suffix
-    iter = new 'Iterator', patterns
+    iter = new 'Iterator', targets
 iterate_patterns:
     unless iter goto end_iterate_patterns
     pattern = shift iter
-    $S0 = pattern
+    $S0 = pattern.'object'()
     $I0 = index $S0, "%"
     if $I0 < 0 goto got_bad_pattern
     prefix = substr $S0, 0, $I0
@@ -94,7 +99,7 @@ end_matching:
 =item <execute_actions()>
     Execute actions of the rule.
 =cut
-.sub 'execute_actions' :method
+.sub "execute_actions" :method
     .local pmc actions, iter
     actions = self.'actions'()
     iter = new 'Iterator', actions
@@ -115,7 +120,7 @@ end_iterate_actions:
 =item <prerequisites()>
     Returns the prerequisites of the rule.
 =cut
-.sub 'prerequisites' :method
+.sub "prerequisites" :method
     .param pmc prerequisites            :optional
     .param int has_prerequisites        :opt_flag
     
@@ -141,7 +146,7 @@ invalid_arg:
 =item <actions()>
     Returns the actions of the rule.
 =cut
-.sub 'actions' :method
+.sub "actions" :method
     .param pmc actions          :optional
     .param int has_actions      :opt_flag
     

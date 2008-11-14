@@ -172,6 +172,7 @@ no_smartfile_for_new_args:
     smart = compreg 'smart'
     arguments = 'parse_command_line_arguments'(args)
     $P1 = smart.'command_line'(arguments)
+    #$P1 = smart.'command_line'(args)
 .end
 
 .include 'src/gen_builtins.pir'

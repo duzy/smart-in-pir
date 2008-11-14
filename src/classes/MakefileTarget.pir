@@ -14,6 +14,7 @@
     addattribute $P0, 'rule'    ## the MakefileRule object
     addattribute $P0, 'stem'    ## used with implicit rule -- pattern
     addattribute $P0, 'updated' ## 1/0, wether the object has been updated
+    addattribute $P0, '%'       ## 1/0, 1 if it's an target pattern
 .end
 
 
@@ -531,16 +532,16 @@ we_got_the_rule:
     
     prerequisites = rule.'prerequisites'()
     iter = new 'Iterator', prerequisites
-    print "prerequisites: (size) "
-    say prerequisites
+#     print "prerequisites: (size) "
+#     say prerequisites
 iterate_prerequisites:
     unless iter goto end_iterate_prerequisites
     prerequisite = shift iter
     
     ## Check the type of prerequsite...
     $S0 = typeof prerequisite
-    print "type: "
-    say $S0
+#     print "type: "
+#     say $S0
     if $S0 == "MakefileVariable" goto got_variable_prerequisite
     unless $S0 == "String" goto got_non_implicit_prerequisite
     $S0 = prerequisite
