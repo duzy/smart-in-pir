@@ -5,3 +5,4 @@ void foo()
 {
   std::cout<<"foo";
 }
+

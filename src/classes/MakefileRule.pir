@@ -10,12 +10,12 @@
 .sub "__init_class" :anon :init :load
     newclass $P0, 'MakefileRule'
     addattribute $P0, 'match'
-    addattribute $P0, 'targets'
+    addattribute $P0, 'targets' ## if implicit, it's patterns
     addattribute $P0, 'prerequisites'
-#    addattribute $P0, 'patterns' ## used only if the rule is a pattern rule
     addattribute $P0, 'actions'
     addattribute $P0, 'implicit'
 .end
+
 
 =item <rule()>
     Returns the match string.
@@ -42,20 +42,27 @@ got_rule:
     $P0 = getattribute self, 'implicit'
     $I0 = $P0
     unless $I0 goto end_matching
-    
+
     targets = getattribute self, 'targets'
     stem = ""
     
     object = target.'object'()
     
+#     print "match-pattern-for: "
+#     say object
+    
     .local pmc pattern, iter
     .local string prefix, suffix
     iter = new 'Iterator', targets
+#     print "number-of-patterns: "
+#     say targets
 iterate_patterns:
     unless iter goto end_iterate_patterns
     pattern = shift iter
     $S0 = pattern.'object'()
     $I0 = index $S0, "%"
+#     print "rule-pattern: "
+#     say $S0
     if $I0 < 0 goto got_bad_pattern
     prefix = substr $S0, 0, $I0
     inc $I0
@@ -101,19 +108,24 @@ end_matching:
 =cut
 .sub "execute_actions" :method
     .local pmc actions, iter
+    .local int state, action_count
+    state = -1
+    action_count = 0
     actions = self.'actions'()
     iter = new 'Iterator', actions
+    action_count = actions
 iterate_actions:
     unless iter goto end_iterate_actions
     $P0 = shift iter
     $I1 = can $P0, 'execute'
     unless $I1 goto invalid_action_object
-    $P0.'execute'()
+    state = $P0.'execute'()
     goto iterate_actions
 invalid_action_object:
     die "smart: *** Got invalid action object."
 end_iterate_actions:
-    .return(0)
+    
+    .return(state, action_count)
 .end
 
 

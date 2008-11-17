@@ -50,8 +50,9 @@ got_member:
 =cut
 .sub "updated" :method
     .param int updated          :optional
-    .param int has_updated      :opt_flag
-    unless has_updated goto return_only
+    .param int updated_flag     :opt_flag
+    
+    unless updated_flag goto return_only
     $P0 = new 'Integer'
     $P0 = updated
     setattribute self, 'updated', $P0
@@ -89,10 +90,10 @@ object_already_exists:
     stat changetime, $S0, 7 # CHANGETIME
     #stat changetime, $S0, 6 # MODIFYTIME
     
-    print "time: "
-    print $S0
-    print "->"
-    say changetime
+#     print "time: "
+#     print $S0
+#     print "->"
+#     say changetime
 
     .local pmc prerequisites, prerequisite, iter
     prerequisites = rule.'prerequisites'()
@@ -403,7 +404,7 @@ var7_got_empty_stem:
     .param pmc prerequisite
     .local string stem
     $S0 = typeof prerequisite
-    if $S0 == "MakefileVariable" goto got_variable_prerequisite
+#     if $S0 == "MakefileVariable" goto got_variable_prerequisite
     unless $S0 == "String" goto got_normal_prerequisite
     $S0 = prerequisite
     $I0 = index $S0, "%"
@@ -431,13 +432,13 @@ got_normal_prerequisite:
     $S0 = prerequisite.'object'()
     .return ($S0)
 
-got_variable_prerequisite:
-    $S0 = ""
-    $I0 = prerequisite.'count'()
-    if $I0 <= 0 goto got_variable_prerequisite_done
-    $S0 = prerequisite.'expand'()
-    got_variable_prerequisite_done:
-    .return ($S0)
+# got_variable_prerequisite:
+#     $S0 = ""
+#     $I0 = prerequisite.'count'()
+#     if $I0 <= 0 goto got_variable_prerequisite_done
+#     $S0 = prerequisite.'expand'()
+#     got_variable_prerequisite_done:
+#     .return ($S0)
     
     
 invalid_implicit_prerequisite: ## it's an internal error!
@@ -496,7 +497,7 @@ end_iterate_objects:
     
 update_done:
     .return (update_count, newer_count)
-.end
+.end # sub ".!update-variable-prerequisite"
 
 
 =item <update(OPT requestor)>
@@ -507,42 +508,77 @@ update_done:
     we can make the judgement that the target itself is act as a prerequisite
     of some other target.
 
-    The return value of this method is tuple '(%1, %2)', which the '%1' means
-    how many prerequisites are updated, '%2' tells how many prerequsites are
-    newer than the target.
+    The return value of this method is tuple '(%1, %2, %3)', which the '%1'
+    means how many prerequisites are updated, '%2' tells how many prerequsites
+    are newer than the target, '%3' tells the number of actions executed of the
+    rule binded to the target.
 =cut
 .sub "update" :method
     .param pmc requestor        :optional
     .param int requestor_flag   :opt_flag
-
+    
     ## If the target itself has been updated, than nothing should be done.
     $I0 = self.'updated'()
-    if $I0 goto no_need_update
+    if $I0 goto return_without_execution
+    
+    .local pmc call_stack
+    call_stack = new 'ResizableIntegerArray'
     
     .local pmc rule
     getattribute rule, self, 'rule'
-    if null rule goto check_out_implicit_rules
+    unless null rule goto we_got_the_rule
+    local_branch call_stack, check_out_implicit_rules
     
 we_got_the_rule:
     
-    .local pmc prerequisites, prerequisite, iter
     .local int update_count, newer_count
     update_count = 0
     newer_count = 0
     
+    ## this will set 'update_count' and 'newer_count' variables
+    local_branch call_stack, check_and_update_prerequisites
+    
+    ## If any prerequsites got updated, the target will be updated.
+    if 0 < update_count goto execute_update_actions ## if any prerequisites updated
+    
+    ## If the object of the target not extsted, the target will be updated.
+    $S0 = self.'object'()
+    stat $I0, $S0, 0 # EXISTS
+    if $I0 == 0 goto execute_update_actions
+    
+    ## If no prerequisites is updated but some of them is newer than the taget,
+    ## the target will be updated.
+    if 0 < newer_count goto execute_update_actions
+    
+return_without_execution:
+    .return (0, newer_count, 0)
+    
+execute_update_actions:
+    '.!setup-automatic-variables'( self )
+    ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
+    '.!clear-automatic-variables'( self )
+    self.'updated'( 1 )
+    ## TODO: if the object still not existed, some default actions should be
+    ##       invoked.
+    inc update_count
+    .return (update_count, newer_count, $I1)
+    
+    
+    ######################
+    ## local routine: check_and_update_prerequisites
+check_and_update_prerequisites:
+    .local pmc prerequisites, prerequisite, iter
+    
     prerequisites = rule.'prerequisites'()
     iter = new 'Iterator', prerequisites
-#     print "prerequisites: (size) "
-#     say prerequisites
+    
 iterate_prerequisites:
     unless iter goto end_iterate_prerequisites
     prerequisite = shift iter
     
     ## Check the type of prerequsite...
     $S0 = typeof prerequisite
-#     print "type: "
-#     say $S0
-    if $S0 == "MakefileVariable" goto got_variable_prerequisite
+#     if $S0 == "MakefileVariable" goto got_variable_prerequisite
     unless $S0 == "String" goto got_non_implicit_prerequisite
     $S0 = prerequisite
     $I0 = index $S0, "%"
@@ -553,8 +589,6 @@ iterate_prerequisites:
     
 got_implicit_prerequsite:
     $S1 = '.!calculate-object-of-prerequisite'( self, prerequisite )
-#     print "implicit: "
-#     say $S1
     ## Get stored prerequsite, or create a new one if none existed.
     get_hll_global prerequisite, ['smart';'makefile';'target'], $S1
     unless null prerequisite goto got_stored_implicit_prerequisite
@@ -566,31 +600,24 @@ got_implicit_prerequsite:
     
 got_stored_implicit_prerequisite:
 got_non_implicit_prerequisite:
-handle_on_normal_prerequisite: ## normal prerequisite: MakefileTarget object
+handle_normal_prerequisite: ## normal prerequisite: MakefileTarget object
     ## Here, The 'prerequsite' is a 'MakefileTarget' object.
     $I0 = can prerequisite, 'update'
     unless $I0 goto invalid_target_object
     
     $S0 = self.'object'()
     $S1 = prerequisite.'object'()
-
-    print "update: "
-    print $S0
-    print " -> "
-    say $S1
+    
+    unless $S0 == $S1 goto process_the_prerequsite
+    local_branch call_stack, report_droped_recursive_dependency
+    goto iterate_prerequisites
+    process_the_prerequsite:
     
     ## Checking prerequsite-newer...
-    stat $I0, $S0, 0
-    unless $I0 goto skip_prerequsite_newer_checking
-    stat $I1, $S1, 0
-    unless $I1 goto skip_prerequsite_newer_checking
-    stat $I0, $S0, 7 # CHANGETIME
-    stat $I1, $S1, 7 # CHANGETIME
-    
-    unless $I0 < $I1 goto prerequsite_is_older
+    local_branch call_stack, compare_file_time ## this will use $S0 and $S1
+    unless $I0 goto invoke_update_on_prerequsite
     inc newer_count
-    prerequsite_is_older:
-    skip_prerequsite_newer_checking:
+    invoke_update_on_prerequsite:
     
     ## Invoke the update method...
     unless requestor_flag goto donot_have_specific_requestor_1
@@ -601,7 +628,7 @@ handle_on_normal_prerequisite: ## normal prerequisite: MakefileTarget object
     ($I0, $I1) = prerequisite.'update'( self )
     updated_by_specific_requestor_1:
     
-    ## Updatess the counter...
+    ## Updates the counter...
     unless 0 < $I1 goto no_inc_newer_count_according_prerequsite_update
     newer_count += $I1
     no_inc_newer_count_according_prerequsite_update:
@@ -609,25 +636,26 @@ handle_on_normal_prerequisite: ## normal prerequisite: MakefileTarget object
     update_count += $I0
     goto iterate_prerequisites
     
-got_variable_prerequisite:
-    ## Here, the 'prerequsite' is a 'MakefileVariable' object.
-    $I0 = prerequisite.'count'()
-    if $I0 <= 0 goto iterate_prerequisites
+# got_variable_prerequisite:
+#     die "update: should not be variable prerequsite here"
+#     ## Here, the 'prerequsite' is a 'MakefileVariable' object.
+#     $I0 = prerequisite.'count'()
+#     if $I0 <= 0 goto iterate_prerequisites
     
-    unless requestor_flag goto donot_have_specific_requestor_2
-    if null requestor goto donot_have_specific_requestor_2
-    ($I0, $I1) = '.!update-variable-prerequisite'( self, prerequisite, requestor )
-    goto updated_by_specific_requestor_2
-    donot_have_specific_requestor_2:
-    ($I0, $I1) = '.!update-variable-prerequisite'( self, prerequisite, self )
-    updated_by_specific_requestor_2:
-
-    unless 0 < $I1 goto variable_prerequsite_skip_inc_newer_counter
-    newer_count += $I1
-    variable_prerequsite_skip_inc_newer_counter:
-    unless 0 < $I0 goto iterate_prerequisites
-    update_count += $I0
-    goto iterate_prerequisites
+#     unless requestor_flag goto donot_have_specific_requestor_2
+#     if null requestor goto donot_have_specific_requestor_2
+#     ($I0, $I1) = '.!update-variable-prerequisite'( self, prerequisite, requestor )
+#     goto updated_by_specific_requestor_2
+#     donot_have_specific_requestor_2:
+#     ($I0, $I1) = '.!update-variable-prerequisite'( self, prerequisite, self )
+#     updated_by_specific_requestor_2:
+    
+#     unless 0 < $I1 goto variable_prerequsite_skip_inc_newer_counter
+#     newer_count += $I1
+#     variable_prerequsite_skip_inc_newer_counter:
+#     unless 0 < $I0 goto iterate_prerequisites
+#     update_count += $I0
+#     goto iterate_prerequisites
     
 invalid_target_object:
     $S0 = "smart: *** Invalid prerequisite of type '"
@@ -641,33 +669,33 @@ invalid_implicit_prerequisite:
     $S1 .= "'"
     die $S1
 end_iterate_prerequisites:
-    
-    ## If any prerequsites got updated, the target will be updated.
-    if 0 < update_count goto do_update ## if any prerequisites updated
-    
-    ## If the object of the target not extsted, the target will be updated.
-    $S0 = self.'object'()
-    stat $I0, $S0, 0 # EXISTS
-    if $I0 == 0 goto do_update
-    
-    ## If no prerequisites is updated but some of them is newer than the taget,
-    ## the target will be updated.
-    if 0 < newer_count goto do_update
-    
-no_need_update:
-    .return (0, newer_count)
-    
-do_update:
-    '.!setup-automatic-variables'( self )
-    $I0 = rule.'execute_actions'()
-    '.!clear-automatic-variables'( self )
-    self.'updated'( 1 )
-    ## TODO: if the object still not existed, some default actions should be
-    ##       invoked.
-    inc update_count
-    .return (update_count, newer_count)
+    local_return call_stack
 
+    ######################
+    ## local routine: compare_file_time
+    ##          IN: $S0, $S1
+    ##          OUT: $I0, $I1, $I2
+    ##     $I1 = file time of $S0 or -1 indicates not existed
+    ##     $I2 = file time of $S1 or -1 indicates not existed
+    ##     $I0 = $I1 < $I2
+compare_file_time:
+    ## Checking prerequsite-newer...
+    $I1 = -1
+    $I2 = -1
+    stat $I0, $S0, 0
+    unless $I0 goto compare_file_time_local_return
+    stat $I0, $S1, 0
+    unless $I0 goto compare_file_time_local_return
+    stat $I1, $S0, 7 # CHANGETIME
+    stat $I2, $S1, 7 # CHANGETIME
+    $I0 = $I1 < $I2
+compare_file_time_local_return:
+    local_return call_stack
+
+    ######################
+    ## local routine: check_out_implicit_rules
 check_out_implicit_rules:
+    unless null rule goto end_iterate_implict_rules
     .local pmc implict_rules, implicit_rule, iter
     implict_rules = get_hll_global ['smart';'makefile'], "@[%]"
     if null implict_rules goto no_rule_found
@@ -682,18 +710,16 @@ iterate_implict_rules:
     $P1 = $S0
     setattribute self, 'rule', rule
     setattribute self, 'stem', $P1
-    ##goto iterate_implict_rules
 end_iterate_implict_rules:
-    
     if null rule goto no_rule_found
-    goto we_got_the_rule
+    local_return call_stack
     
 no_rule_found:
-    ## If the object does not exists, it should report "no-rule-found" error.
+    ## If the object does not exists, it should report "no-rule-error" error.
     $S1 = self.'object'()
     $I0 = stat $S1, 0 # EXISTS
     unless $I0 goto report_no_rule_error
-    .return(0, newer_count)
+    .return(0, newer_count, 0)
     
 report_no_rule_error:
     $S0 = "smart: ** No rule to make target '"
@@ -710,9 +736,18 @@ report_no_rule_error:
     report_no_rule_error_done:
     print $S0
     exit -1
+
+report_droped_recursive_dependency:
+    $S2 = "smart Circular "
+    $S2 .= $S1
+    $S2 .= "<--"
+    $S2 .= $S0
+    $S2 .= " dependency. Droped.\n"
+    print $S2
+    local_return call_stack
     
 invalid_rule_object:
     $S0 = "smart: *** Invalid rule object"
     die $S0
-.end
+.end # sub "update"
 
