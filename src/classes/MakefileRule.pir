@@ -6,6 +6,14 @@
 #    $Id$
 #
 
+=head1
+
+MakefileRule is identified by '$[xx]', in which 'xx' should be the identifier.
+The '@[%]' variable holds the list of implicit rules.
+
+=cut
+
+
 .namespace ['MakefileRule']
 .sub "__init_class" :anon :init :load
     newclass $P0, 'MakefileRule'
@@ -159,15 +167,15 @@ invalid_arg:
     Returns the actions of the rule.
 =cut
 .sub "actions" :method
-    .param pmc actions          :optional
-    .param int has_actions      :opt_flag
+#     .param pmc actions          :optional
+#     .param int has_actions      :opt_flag
     
-    if has_actions == 0 goto returns_only
-    $S0 = typeof actions
-    $I0 = $S0 == 'ResizablePMCArray'
-    unless $I0 goto invalid_arg
-    setattribute self, 'actions', actions
-    .return()
+#     if has_actions == 0 goto returns_only
+#     $S0 = typeof actions
+#     $I0 = $S0 == 'ResizablePMCArray'
+#     unless $I0 goto invalid_arg
+#     setattribute self, 'actions', actions
+#     .return()
     
 returns_only:
     getattribute $P0, self, 'actions'

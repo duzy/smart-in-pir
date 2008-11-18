@@ -6,6 +6,15 @@
 #    $Id$
 #
 
+=head1
+
+MakefileTarget is identified by '$<xx>', in which 'xx' is the indentifier,
+The '$<0>' variable is the number-one target from the smartfile, the '@<?>'
+variable holds a list of target requested to be updated(normally they are
+coming from command-line).
+
+=cut
+
 .namespace ['MakefileTarget']
 .sub "__init_class" :anon :init :load
     newclass $P0, 'MakefileTarget'
@@ -31,6 +40,7 @@ got_object:
     $S0 = $P0
     .return($S0)
 .end
+
 
 =item <member()>
     Returns the member name of the target.
@@ -500,6 +510,8 @@ update_done:
 .end # sub ".!update-variable-prerequisite"
 
 
+######################################################################
+
 =item <update(OPT requestor)>
     Update the target if neccesary.
 
@@ -524,6 +536,7 @@ update_done:
     .local pmc call_stack
     call_stack = new 'ResizableIntegerArray'
     
+    .local pmc implict_rules, implicit_rule, iter ## used as temporary
     .local pmc rule
     getattribute rule, self, 'rule'
     unless null rule goto we_got_the_rule
@@ -537,7 +550,6 @@ we_got_the_rule:
     
     ## this will set 'update_count' and 'newer_count' variables
     local_branch call_stack, check_and_update_prerequisites
-    
     ## If any prerequsites got updated, the target will be updated.
     if 0 < update_count goto execute_update_actions ## if any prerequisites updated
     
@@ -557,18 +569,22 @@ execute_update_actions:
     '.!setup-automatic-variables'( self )
     ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
     '.!clear-automatic-variables'( self )
-    self.'updated'( 1 )
-    unless $I1 == 0 goto update_succeed
-    print "TODO: searching intermediate rules\n"
-    goto return_update
-update_succeed:
+    
+    unless 0 < $I1 goto skip_increase_update_count
+    self.'updated'( 1 ) ## TODO: think about this, should I?
     inc update_count
-return_update:
+    skip_increase_update_count:
+    
+    unless $I1 == 0 goto return_update_results
+    local_branch call_stack, try_chaining_rules_for_updating
+    
+return_update_results:
     .return (update_count, newer_count, $I1)
     
     
     ######################
     ## local routine: check_and_update_prerequisites
+    ##          IN: rule
 check_and_update_prerequisites:
     .local pmc prerequisites, prerequisite, iter
     
@@ -581,7 +597,7 @@ iterate_prerequisites:
     
     ## Check the type of prerequsite...
     $S0 = typeof prerequisite
-    unless $S0 == "String" goto got_non_implicit_prerequisite
+    unless $S0 == "String" goto handle_with_normal_prerequisite
     $S0 = prerequisite
     $I0 = index $S0, "%"
     if $I0 < 0 goto invalid_implicit_prerequisite
@@ -589,20 +605,18 @@ iterate_prerequisites:
     $I0 = index $S0, "%", $I0
     unless $I0 < 0 goto invalid_implicit_prerequisite
     
-got_implicit_prerequsite:
+handle_with_implicit_prerequsite:
     $S1 = '.!calculate-object-of-prerequisite'( self, prerequisite )
     ## Get stored prerequsite, or create a new one if none existed.
     get_hll_global prerequisite, ['smart';'makefile';'target'], $S1
-    unless null prerequisite goto got_stored_implicit_prerequisite
+    unless null prerequisite goto handle_with_normal_prerequisite
     prerequisite = new 'MakefileTarget'
     $P1 = new 'String'
     $P1 = $S1
     setattribute prerequisite, 'object', $P1
     set_hll_global ['smart';'makefile';'target'], $S1,  prerequisite
     
-got_stored_implicit_prerequisite:
-got_non_implicit_prerequisite:
-handle_normal_prerequisite: ## normal prerequisite: MakefileTarget object
+handle_with_normal_prerequisite: ## normal prerequisite: MakefileTarget object
     ## Here, The 'prerequsite' is a 'MakefileTarget' object.
     $I0 = can prerequisite, 'update'
     unless $I0 goto invalid_target_object
@@ -675,25 +689,26 @@ compare_file_time_local_return:
 
     ######################
     ## local routine: check_out_implicit_rules
+    ##          OUT: rule
 check_out_implicit_rules:
-    unless null rule goto end_iterate_implict_rules
-    .local pmc implict_rules, implicit_rule, iter
+    unless null rule goto check_out_implicit_rules_local_return
     implict_rules = get_hll_global ['smart';'makefile'], "@[%]"
     if null implict_rules goto no_rule_found
     iter = new 'Iterator', implict_rules
-iterate_implict_rules:
-    unless iter goto end_iterate_implict_rules
+check_out_implicit_rules_iterate:
+    unless iter goto check_out_implicit_rules_iterate_end
     implicit_rule = shift iter
     $S0 = implicit_rule.'match'()
-    if $S0 == "%" goto iterate_implict_rules ## skip match-anything rule
+    ## skip any match-anything rule
+    if $S0 == "%" goto check_out_implicit_rules_iterate
     $S0 = implicit_rule.'match_patterns'( self )
-    if $S0 == "" goto iterate_implict_rules
+    if $S0 == "" goto check_out_implicit_rules_iterate
     rule = implicit_rule
     $P1 = new 'String'
     $P1 = $S0
     setattribute self, 'rule', rule
     setattribute self, 'stem', $P1
-end_iterate_implict_rules:
+check_out_implicit_rules_iterate_end:
     if null rule goto no_rule_found
 check_out_implicit_rules_local_return:
     local_return call_stack
@@ -721,6 +736,8 @@ report_no_rule_error:
     print $S0
     exit -1
 
+    ##############
+    ## local routine: report_droped_recursive_dependency
 report_droped_recursive_dependency:
     $S2 = "smart Circular "
     $S2 .= $S1
@@ -728,6 +745,12 @@ report_droped_recursive_dependency:
     $S2 .= $S0
     $S2 .= " dependency. Droped.\n"
     print $S2
+    local_return call_stack
+
+    ##############
+    ## local routine: try_chaining_rules_for_updating
+try_chaining_rules_for_updating:
+    print "TODO: searching intermediate rules\n"
     local_return call_stack
     
 invalid_rule_object:

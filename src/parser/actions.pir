@@ -175,7 +175,7 @@ no_number_one_target:
     .local pmc iter
     .local pmc call_stack
     .local string target_name
-    .local pmc out_cont
+    .local pmc out_array
     .local int implicit
     
     implicit = 0    
@@ -194,7 +194,7 @@ no_number_one_target:
     .return(rule) ## returns the rule object
     
     ############
-    ## Local rountine 1
+    ## Local rountine: create_new_rule_object
 create_new_rule_object:
     implicit = 0
     
@@ -205,7 +205,7 @@ create_new_rule_object:
     $P0 = new 'ResizablePMCArray'
     setattribute rule, 'targets', $P0
     
-    out_cont = $P0
+    out_array = $P0
     
     ## Handle 'targets'. There are three kinds of target, normal target,
     ## variable target, implicit target(pattern). An normal target will be
@@ -236,7 +236,7 @@ got_normal_target:
     ## target in one rule.
     if implicit goto error_mixed_implicit_and_normal_rule
     setattribute target, 'rule', rule
-    push out_cont, target
+    push out_array, target
     goto iterate_targets
     
     ## Choice 2
@@ -254,7 +254,9 @@ got_implicit_rule_temporary_target:
     $P0 = 1
     setattribute target, '%', $P0
     setattribute target, 'rule', rule
-    push out_cont, target
+    push out_array, target ## TODO: skip pushing match-anything pattern target?
+    unless target_name == "%" goto iterate_targets
+    local_branch call_stack, store_match_anything_rule
     goto iterate_targets
     
     ## Choice 4 -- Error
@@ -291,6 +293,14 @@ store_implicit_rule:
     ##       instead of push?
     push implict_rules, rule
     local_return call_stack
+
+
+    ############
+    ## local routine: store_match_anything_rule
+store_match_anything_rule:
+    ## TODO: should store the match-anything rule?
+store_match_anything_rule_local_return:
+    local_return call_stack
     
     
     ############
@@ -299,7 +309,7 @@ update_prerequsites:
     if null prerequisites goto update_prerequsites_done
     
     iter = new 'Iterator', prerequisites
-    out_cont = rule.'prerequisites'()
+    out_array = rule.'prerequisites'()
     if implicit goto iterate_implicit_prerequisites
     
     ## normal prerequsites
@@ -308,13 +318,13 @@ iterate_prerequisites: #############################
     $P0 = shift iter
     $S0 = typeof $P0
     if $S0 == 'MakefileVariable' goto push_variable_prerequsite
-    push out_cont, $P0
+    push out_array, $P0
     goto iterate_prerequisites
 push_variable_prerequsite:
     target = $P0 ## for the sub routine
     #local_branch call_stack, expand_variable_target_and_convert_into_stored_normal_targets
     local_branch call_stack, expand_variable_prerequsite_and_convert_into_stored_normal_targets
-    #push out_cont, $P0
+    #push out_array, $P0
     goto iterate_prerequisites
 end_iterate_prerequisites: #########################
     goto update_prerequsites_done
@@ -326,10 +336,10 @@ iterate_implicit_prerequisites: ########################################
     $S0 = $P0.'object'()
     $I0 = index $S0, "%"
     unless $I0 < 0 goto got_implicit_prerequisite ####
-    push out_cont, $P0
+    push out_array, $P0
     goto iterate_implicit_prerequisites
     got_implicit_prerequisite: #######################
-    push out_cont, $S0
+    push out_array, $S0
     ## TODO: should I unset the HLL global target named by $S0??
     goto iterate_implicit_prerequisites
 end_iterate_implicit_prerequisites: ####################################
@@ -339,11 +349,13 @@ update_prerequsites_done:
     
     ############
     ## local routine: update_actions
+    ##          IN: rule, actions
 update_actions:
     ## store actions in the rule object
-    if null actions goto no_actions
-    rule.'actions'( actions )
-    no_actions:
+    if null actions goto update_actions_local_return
+    ##rule.'actions'( actions )
+    setattribute rule, 'actions', actions
+update_actions_local_return:
     local_return call_stack
     
     
@@ -360,7 +372,7 @@ store_number_one_target:
     $P1 = $P0[0]
     $S0 = $P1.'object'()
     set_hll_global ['smart';'makefile'], "$<0>", $P1
-    store_number_one_target_local_return:
+store_number_one_target_local_return:
     local_return call_stack
     
     
@@ -379,7 +391,7 @@ iterate_variable_expanded_targets: #################
     if target_name == "" goto iterate_variable_expanded_targets
     local_branch call_stack, obtain_target_by_target_name
     setattribute target, 'rule', rule
-    push out_cont, target
+    push out_array, target
     goto iterate_variable_expanded_targets
 end_iterate_variable_expanded_targets: #############
     local_return call_stack
@@ -397,7 +409,7 @@ iterate_variable_expanded_prerequsites: #################
     target_name = shift iter
     if target_name == "" goto iterate_variable_expanded_prerequsites
     local_branch call_stack, obtain_target_by_target_name
-    push out_cont, target
+    push out_array, target
     goto iterate_variable_expanded_prerequsites
 end_iterate_variable_expanded_prerequsites: #############
     local_return call_stack
