@@ -558,9 +558,12 @@ execute_update_actions:
     ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
     '.!clear-automatic-variables'( self )
     self.'updated'( 1 )
-    ## TODO: if the object still not existed, some default actions should be
-    ##       invoked.
+    unless $I1 == 0 goto update_succeed
+    print "TODO: searching intermediate rules\n"
+    goto return_update
+update_succeed:
     inc update_count
+return_update:
     .return (update_count, newer_count, $I1)
     
     
@@ -578,7 +581,6 @@ iterate_prerequisites:
     
     ## Check the type of prerequsite...
     $S0 = typeof prerequisite
-#     if $S0 == "MakefileVariable" goto got_variable_prerequisite
     unless $S0 == "String" goto got_non_implicit_prerequisite
     $S0 = prerequisite
     $I0 = index $S0, "%"
@@ -636,27 +638,6 @@ handle_normal_prerequisite: ## normal prerequisite: MakefileTarget object
     update_count += $I0
     goto iterate_prerequisites
     
-# got_variable_prerequisite:
-#     die "update: should not be variable prerequsite here"
-#     ## Here, the 'prerequsite' is a 'MakefileVariable' object.
-#     $I0 = prerequisite.'count'()
-#     if $I0 <= 0 goto iterate_prerequisites
-    
-#     unless requestor_flag goto donot_have_specific_requestor_2
-#     if null requestor goto donot_have_specific_requestor_2
-#     ($I0, $I1) = '.!update-variable-prerequisite'( self, prerequisite, requestor )
-#     goto updated_by_specific_requestor_2
-#     donot_have_specific_requestor_2:
-#     ($I0, $I1) = '.!update-variable-prerequisite'( self, prerequisite, self )
-#     updated_by_specific_requestor_2:
-    
-#     unless 0 < $I1 goto variable_prerequsite_skip_inc_newer_counter
-#     newer_count += $I1
-#     variable_prerequsite_skip_inc_newer_counter:
-#     unless 0 < $I0 goto iterate_prerequisites
-#     update_count += $I0
-#     goto iterate_prerequisites
-    
 invalid_target_object:
     $S0 = "smart: *** Invalid prerequisite of type '"
     $S1 = typeof prerequisite
@@ -703,6 +684,8 @@ check_out_implicit_rules:
 iterate_implict_rules:
     unless iter goto end_iterate_implict_rules
     implicit_rule = shift iter
+    $S0 = implicit_rule.'match'()
+    if $S0 == "%" goto iterate_implict_rules ## skip match-anything rule
     $S0 = implicit_rule.'match_patterns'( self )
     if $S0 == "" goto iterate_implict_rules
     rule = implicit_rule
@@ -712,6 +695,7 @@ iterate_implict_rules:
     setattribute self, 'stem', $P1
 end_iterate_implict_rules:
     if null rule goto no_rule_found
+check_out_implicit_rules_local_return:
     local_return call_stack
     
 no_rule_found:

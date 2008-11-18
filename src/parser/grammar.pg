@@ -94,8 +94,10 @@ token makefile_rule {
      |[ ';' <[ \ \t ]>* <makefile_rule_action>
         [ \n \t <makefile_rule_action> ]*
       ]
-     |[ \n \t <makefile_rule_action> ]*
-     |[ <.panic: "smart: * Bad rule format"> ]
+     |[
+        [ \n <[ \ ]>* [ [ '#' <-[ \n ]>* ] | [ '#{' <-[ } ]>* '}' ] ] ]*
+        [ \n \t <makefile_rule_action> ]*
+      ]
     ]
     {*}
 }

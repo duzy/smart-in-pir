@@ -61,7 +61,7 @@ got_echo_on:
 .sub 'execute' :method
     $S0 = self.'command'()
     $I0 = self.'echo_on'()
-
+    
     $S0 = 'expand'( $S0 )
     
     unless $I0 goto no_echo

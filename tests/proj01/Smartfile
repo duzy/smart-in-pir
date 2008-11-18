@@ -20,6 +20,7 @@ OBJECTS = src/main.o \
   src/bar.o \
 
 $(TARGET): $(OBJECTS)
+# ddddddddd
 	$(CXX) $^ -o $@
 
 %.o: %.cpp
@@ -31,6 +32,4 @@ CLEANUPS = $(TARGET) src/main.o \
 
 clean:
 	$(RM_RF) $(CLEANUPS)
-
-
 
