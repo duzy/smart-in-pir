@@ -98,7 +98,6 @@ got_updated:
 object_already_exists:
     .local int changetime
     stat changetime, $S0, 7 # CHANGETIME
-    #stat changetime, $S0, 6 # MODIFYTIME
     
 #     print "time: "
 #     print $S0
@@ -284,8 +283,6 @@ loop_prerequisites:
     unless $I0 goto end_var3
     stat $I0, $S0, 7 # CHANGETIME
     stat $I1, $S1, 7 # CHANGETIME
-    #stat $I0, $S0, 6 # MODIFYTIME
-    #stat $I1, $S1, 6 # MODIFYTIME
     $I0 = $I0 < $I1 # if newer...
     if $I0 goto push_var3
     goto end_var3

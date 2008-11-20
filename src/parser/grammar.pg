@@ -18,7 +18,9 @@ rule TOP {
 }
 
 token ws { <!ww> [ <comment> | \s+ ]* }
-token comment { [ '#{' <-[ } ]>* '}' ] | [ '#' \N* \n? ] }
+token comment { <comment_block> | [ '#' \N* \n? ] }
+token comment_block { '#{' <-[ } ]>* '}' }
+token ws_inline { <!ww> [ <comment_block> | <[ \ \t ]>* | [ '#' \N* ] ] }
 
 rule statement {
     | <empty_smart_statement> {*}               #= empty_smart_statement
@@ -87,19 +89,20 @@ token makefile_variable_value_list {
 }
 
 token makefile_rule {
-    $<targets>=[ [ <makefile_target> <[ \ \t ]>* ]+ ]
-    <[ \ \t ]>* ':' <[ \ \t ]>*
-    [ <makefile_prerequisite> <[ \ \t ]>* ]*
-    [
-     |[ ';' <[ \ \t ]>* <makefile_rule_action>
-        [ \n \t <makefile_rule_action> ]*
-      ]
-     |[
-        [ \n <[ \ ]>* [ [ '#' <-[ \n ]>* ] | [ '#{' <-[ } ]>* '}' ] ] ]*
-        [ \n \t <makefile_rule_action> ]*
-      ]
-    ]
-    {*}
+    |[ <makefile_special_rule> ] {*}
+    |[ $<targets>=[ [ <makefile_target> <[ \ \t ]>* ]+ ]
+       <[ \ \t ]>* ':' <[ \ \t ]>*
+       [ <makefile_prerequisite> <[ \ \t ]>* ]*
+       [
+         |[ ';' <[ \ \t ]>* <makefile_rule_action>
+            [ \n \t <makefile_rule_action> ]*
+          ]
+         |[
+            [ \n <[ \ ]>* [ [ '#' \N* ] | <.comment_block> ] ]*
+            [ \n \t <makefile_rule_action> ]*
+          ]
+       ]
+     ] {*}
 }
 #      $<item>=[ <makefile_variable_ref> | [<-[ : \ \t \n ]>+] ]
 token makefile_target {
@@ -111,6 +114,18 @@ token makefile_prerequisite {
     | <-[ ; \ \t \n ]>+ {*}
 }
 token makefile_rule_action { <-[ \n ]>* {*} }
+token makefile_special_rule {
+    <.ws_inline>
+    [
+    | $<name>=[ '.DEFAULTS' ]
+    | $<name>=[ '.SUFFIXES' ]
+    ]
+    <.ws_inline>
+    ':'
+    [ <.ws_inline> $<item>=[ <-[ \n \t \ ]>+ ] ]*
+    <.ws_inline>
+    \n {*}
+}
 
 rule makefile_conditional_statement {
     $<stat>=[ 'ifeq' | 'ifneq' ]

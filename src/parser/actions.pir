@@ -178,8 +178,8 @@ no_number_one_target:
     .local pmc out_array
     .local int implicit
     
-    implicit = 0    
     call_stack = new 'ResizableIntegerArray'
+    implicit = 0    
     
     ## Retreive or create the 'rule' object, identified by 'match'
     get_hll_global rule, ['smart';'makefile';'rule'], match
@@ -220,9 +220,13 @@ iterate_targets: ## Iterate 'targets'
     ## check to see if it's a MakefileVariable target
     $S0 = typeof target
     if $S0 == 'MakefileVariable' goto got_variable_target
-    
+
     ## check to see if it's an 'implicit target'.
     target_name = target.'object'()
+    
+    ## convert suffix rule if any, e.g: .c.o, .cpp.o
+    local_branch call_stack, convert_suffix_target_if_any
+    
     $I0 = index target_name, "%"
     if $I0 < 0 goto got_normal_target
     $I1 = $I0 + 1
@@ -294,6 +298,64 @@ store_implicit_rule:
     push implict_rules, rule
     local_return call_stack
 
+    #####################
+    ##  IN: target
+    ##  OUT: $I0        tells the suffix number, 1 or 2, 0 if not suffix target
+    ##       $S0        the first suffix
+    ##       $S1        the second suffix
+convert_suffix_target_if_any:
+    print "check-suffix: "
+    say target_name
+    $I0 = 0
+    $I1 = index target_name, "."
+    unless $I1 == 0 goto convert_suffix_target_if_any_done
+    $I1 = index target_name, ".", 1
+    unless $I1 < 0 goto convert_suffix_target_if_any_check_second_suffix
+    $I0 = 1 ## tells number of suffixes
+    $S0 = target_name ## only the first suffix
+    $S1 = "" 
+    ##print "suffix: "
+    ##say $S0
+    goto convert_suffix_target_if_any_check_suffixes
+convert_suffix_target_if_any_check_second_suffix:
+    unless 2 <= $I1 goto convert_suffix_target_if_any_done
+    $I2 = $I1 + 1
+    $I2 = index target_name, ".", $I2  ## no third "." should existed
+    unless $I2 < 0 goto convert_suffix_target_if_any_done
+    $I2 = length target_name
+    $I2 = $I2 - $I1
+    $I0 = 2 ## tells number of suffixes
+    $S0 = substr target_name, 0, $I1 ## the first suffix
+    $S1 = substr target_name, $I1, $I2 ## the second suffix
+    ##print "suffix: "
+    ##print $S0
+    ##print ", "
+    ##say $S1
+convert_suffix_target_if_any_check_suffixes:
+    .local pmc suffixes
+    get_hll_global suffixes, ['smart';'makefile';'rule'], ".SUFFIXES"
+    $P0 = new 'Iterator', suffixes
+    $I1 = 0
+convert_suffix_target_if_any_iterate_suffixes:
+    unless null $P0 goto convert_suffix_target_if_any_iterate_suffixes_done
+    $S3 = shift $P0
+    unless $I1 == 0 goto convert_suffix_target_if_any_iterate_suffixes_check_S1
+    unless $S0 == $S3 goto convert_suffix_target_if_any_iterate_suffixes_check_S1
+    inc $I1
+    convert_suffix_target_if_any_iterate_suffixes_check_S1:
+    if $I1 == $I0 goto convert_suffix_target_if_any_iterate_suffixes_done
+    unless $I1 == 1 goto convert_suffix_target_if_any_iterate_suffixes_check_next
+    unless $S1 == $S3 goto convert_suffix_target_if_any_iterate_suffixes_check_next
+    inc $I1
+    convert_suffix_target_if_any_iterate_suffixes_check_next:
+    if $I1 == $I0 goto convert_suffix_target_if_any_iterate_suffixes_done
+    goto convert_suffix_target_if_any_iterate_suffixes
+convert_suffix_target_if_any_iterate_suffixes_done:
+    null $P0
+    say $I1
+convert_suffix_target_if_any_done:
+    local_return call_stack
+
 
     ############
     ## local routine: store_match_anything_rule
@@ -322,9 +384,7 @@ iterate_prerequisites: #############################
     goto iterate_prerequisites
 push_variable_prerequsite:
     target = $P0 ## for the sub routine
-    #local_branch call_stack, expand_variable_target_and_convert_into_stored_normal_targets
     local_branch call_stack, expand_variable_prerequsite_and_convert_into_stored_normal_targets
-    #push out_array, $P0
     goto iterate_prerequisites
 end_iterate_prerequisites: #########################
     goto update_prerequsites_done
@@ -429,6 +489,57 @@ obtain_target_by_target_name:
 obtain_target_by_target_name_local_return:
     local_return call_stack
 .end # sub "!update-makefile-rule"
+
+
+
+.sub "!update-special-makefile-rule"
+    .param string name
+    .param pmc items    :slurpy
+
+    .local pmc call_stack
+    call_stack = new 'ResizableIntegerArray'
+
+check_if_SUFFIXES:
+    unless name == ".SUFFIXES" goto check_if_DEFAULT
+    local_branch call_stack, update_special_SUFFIXES
+    goto check_name_done
+check_if_DEFAULT:
+    unless name == ".DEFAULTS" goto check_name_done
+    local_branch call_stack, update_special_DEFAULTS
+    goto check_name_done
+check_name_done:
+
+    .return()
+
+    ######################
+    ## local routine: update_special_SUFFIXES
+update_special_SUFFIXES:
+    .local pmc suffixes
+    get_hll_global suffixes, ['smart';'makefile';'rule'], ".SUFFIXES"
+    unless null suffixes goto update_special_SUFFIXES__has_suffixes_rule
+    suffixes = new 'ResizableStringArray'
+    set_hll_global ['smart';'makefile';'rule'], ".SUFFIXES", suffixes
+    update_special_SUFFIXES__has_suffixes_rule:
+    $P0 = new 'Iterator', items
+update_special_SUFFIXES_iterate_items:
+    unless $P0 goto update_special_SUFFIXES_iterate_items_done
+    $P1 = shift $P0
+    push suffixes, $P1
+#     $S0 = $P1
+#     print "suffix: "
+#     say $S0
+    goto update_special_SUFFIXES_iterate_items
+update_special_SUFFIXES_iterate_items_done:
+    
+update_special_SUFFIXES_done:
+    local_return call_stack
+
+    ######################
+    ## local routine: update_special_DEFAULTS
+update_special_DEFAULTS:
+    local_return call_stack
+    
+.end # sub !update-special-makefile-rule
 
 
 
