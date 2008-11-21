@@ -46,18 +46,18 @@ got_rule:
     .param pmc target
     .local string object, stem
     .local pmc targets
-
+    
     $P0 = getattribute self, 'implicit'
     $I0 = $P0
     unless $I0 goto end_matching
-
+    
     targets = getattribute self, 'targets'
     stem = ""
     
     object = target.'object'()
     
-#     print "match-pattern-for: "
-#     say object
+#     print "match-pattern-for: " ##!!!!!!!!!!
+#     say object ##!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     .local pmc pattern, iter
     .local string prefix, suffix

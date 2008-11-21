@@ -226,6 +226,7 @@ iterate_targets: ## Iterate 'targets'
     
     ## convert suffix rule if any, e.g: .c.o, .cpp.o
     local_branch call_stack, convert_suffix_target_if_any
+    ##say target_name #!!!!!!!!
     
     $I0 = index target_name, "%"
     if $I0 < 0 goto got_normal_target
@@ -281,8 +282,6 @@ store_rule_object:
     local_return call_stack
     
 store_implicit_rule:
-#     print "store-implicit-rule: "
-#     say match
     .local pmc implict_rules
     ## Store implicit rules in the list 'smart;makefile;@[%]'
     $P0 = new 'Integer'
@@ -304,56 +303,95 @@ store_implicit_rule:
     ##       $S0        the first suffix
     ##       $S1        the second suffix
 convert_suffix_target_if_any:
-    print "check-suffix: "
-    say target_name
     $I0 = 0
     $I1 = index target_name, "."
-    unless $I1 == 0 goto convert_suffix_target_if_any_done
+    unless $I1 == 0 goto convert_suffix_target_if_any__done
     $I1 = index target_name, ".", 1
-    unless $I1 < 0 goto convert_suffix_target_if_any_check_second_suffix
+    unless $I1 < 0 goto convert_suffix_target_if_any__check_second_suffix
     $I0 = 1 ## tells number of suffixes
     $S0 = target_name ## only the first suffix
     $S1 = "" 
-    ##print "suffix: "
-    ##say $S0
-    goto convert_suffix_target_if_any_check_suffixes
-convert_suffix_target_if_any_check_second_suffix:
-    unless 2 <= $I1 goto convert_suffix_target_if_any_done
+    
+    $S3 = $S0
+    local_branch call_stack, convert_suffix_target_if_any__check_suffixes
+    unless $I1 goto convert_suffix_target_if_any__done
+    
+    local_branch call_stack, conver_suffix_target_1
+    goto convert_suffix_target_if_any__done
+    
+convert_suffix_target_if_any__check_second_suffix:
+    unless 2 <= $I1 goto convert_suffix_target_if_any__done
     $I2 = $I1 + 1
     $I2 = index target_name, ".", $I2  ## no third "." should existed
-    unless $I2 < 0 goto convert_suffix_target_if_any_done
+    unless $I2 < 0 goto convert_suffix_target_if_any__done
     $I2 = length target_name
     $I2 = $I2 - $I1
     $I0 = 2 ## tells number of suffixes
     $S0 = substr target_name, 0, $I1 ## the first suffix
     $S1 = substr target_name, $I1, $I2 ## the second suffix
-    ##print "suffix: "
-    ##print $S0
-    ##print ", "
-    ##say $S1
-convert_suffix_target_if_any_check_suffixes:
+    
+    $S3 = $S0
+    local_branch call_stack, convert_suffix_target_if_any__check_suffixes
+    unless $I1 goto convert_suffix_target_if_any__done
+    
+    $S3 = $S1
+    local_branch call_stack, convert_suffix_target_if_any__check_suffixes
+    unless $I1 goto convert_suffix_target_if_any__done
+    
+    local_branch call_stack, conver_suffix_target_2
+    
+convert_suffix_target_if_any__done:
+    local_return call_stack
+    
+    #############
+    ##  IN: $S3
+    ##  OUT: $I1
+convert_suffix_target_if_any__check_suffixes:
     .local pmc suffixes
     get_hll_global suffixes, ['smart';'makefile';'rule'], ".SUFFIXES"
     $P0 = new 'Iterator', suffixes
     $I1 = 0
-convert_suffix_target_if_any_iterate_suffixes:
-    unless null $P0 goto convert_suffix_target_if_any_iterate_suffixes_done
-    $S3 = shift $P0
-    unless $I1 == 0 goto convert_suffix_target_if_any_iterate_suffixes_check_S1
-    unless $S0 == $S3 goto convert_suffix_target_if_any_iterate_suffixes_check_S1
+convert_suffix_target_if_any__iterate_suffixes:
+    unless $P0 goto convert_suffix_target_if_any__iterate_suffixes_done
+    $S4 = shift $P0
+    unless $S4 == $S3 goto convert_suffix_target_if_any__iterate_suffixes
     inc $I1
-    convert_suffix_target_if_any_iterate_suffixes_check_S1:
-    if $I1 == $I0 goto convert_suffix_target_if_any_iterate_suffixes_done
-    unless $I1 == 1 goto convert_suffix_target_if_any_iterate_suffixes_check_next
-    unless $S1 == $S3 goto convert_suffix_target_if_any_iterate_suffixes_check_next
-    inc $I1
-    convert_suffix_target_if_any_iterate_suffixes_check_next:
-    if $I1 == $I0 goto convert_suffix_target_if_any_iterate_suffixes_done
-    goto convert_suffix_target_if_any_iterate_suffixes
-convert_suffix_target_if_any_iterate_suffixes_done:
+convert_suffix_target_if_any__iterate_suffixes_done:
     null $P0
-    say $I1
-convert_suffix_target_if_any_done:
+convert_suffix_target_if_any__check_suffixes__done:
+    local_return call_stack
+
+    ############
+    ##  IN: $S0
+    ##  OUT: $I1
+conver_suffix_target_1:
+#     print "one-suffix-rule: "
+#     say $S0
+    target_name = "%"
+    $P3 = new 'String'
+    $P3 = target_name
+    setattribute target, 'object', $P3
+    $S2 = "%"
+    $S2 .= $S0 ## implicit:  %.$S0
+    unshift prerequisites, $S2
+    local_return call_stack
+    
+    ############
+    ##  IN: $S0, $S1
+    ##  OUT: $I1
+conver_suffix_target_2:
+#     print "two-suffix-rule: "
+#     print $S0
+#     print ", "
+#     say $S1
+    target_name = "%"
+    target_name .= $S1
+    $P3 = new 'String'
+    $P3 = target_name
+    setattribute target, 'object', $P3
+    $S2 = "%"
+    $S2 .= $S0 ## implicit: %.$S0
+    unshift prerequisites, $S2
     local_return call_stack
 
 
@@ -361,14 +399,14 @@ convert_suffix_target_if_any_done:
     ## local routine: store_match_anything_rule
 store_match_anything_rule:
     ## TODO: should store the match-anything rule?
-store_match_anything_rule_local_return:
+store_match_anything_rule__done:
     local_return call_stack
     
     
     ############
     ## local routine: update_prerequsites
 update_prerequsites:
-    if null prerequisites goto update_prerequsites_done
+    if null prerequisites goto update_prerequsites__done
     
     iter = new 'Iterator', prerequisites
     out_array = rule.'prerequisites'()
@@ -387,23 +425,45 @@ push_variable_prerequsite:
     local_branch call_stack, expand_variable_prerequsite_and_convert_into_stored_normal_targets
     goto iterate_prerequisites
 end_iterate_prerequisites: #########################
-    goto update_prerequsites_done
+    goto update_prerequsites__done
 
     ## implicit prerequsites
 iterate_implicit_prerequisites: ########################################
     unless iter goto end_iterate_implicit_prerequisites
     $P0 = shift iter
+    ## check the type to see if an "MakefileVariable" prerequsite
+    $S0 = typeof $P0
+    if $S0 == 'MakefileVariable' goto push_variable_prerequsite_2
+    ## check the validatity of the implicit prerequsite
+    unless $S0 == 'String' goto iterate_implicit_prerequisites__not_an_string
+    ## the prerequsite is String
+    $S0 = $P0
+    goto iterate_implicit_prerequisites__check_implicit_name
+iterate_implicit_prerequisites__not_an_string:
+    ## the prerequsite must be MakefileTarget
+    ##if $S0 == 'MakefileTarget' goto ERROR?
     $S0 = $P0.'object'()
+iterate_implicit_prerequisites__check_implicit_name:
     $I0 = index $S0, "%"
-    unless $I0 < 0 goto got_implicit_prerequisite ####
-    push out_array, $P0
+    if $I0 < 0 goto push_normal_prerequsite
+    inc $I0
+    $I0 = index $S0, "%", $I0 ## only one "%" could be existed in an implicit prerequsite
+    unless $I0 < 0 goto push_implicit_prerequisite
+push_normal_prerequsite:
+    push out_array, $P0 ## an normal prerequsite 
     goto iterate_implicit_prerequisites
-    got_implicit_prerequisite: #######################
-    push out_array, $S0
+push_implicit_prerequisite: ###########################
+    push out_array, $S0 ## an implicit prerequsite
     ## TODO: should I unset the HLL global target named by $S0??
+    print "implicit: " #!!!!!!!!!
+    say $S0 #!!!!!!!!!!!!!!!!!!!!
+    goto iterate_implicit_prerequisites
+push_variable_prerequsite_2:
+    target = $P0 ## for the sub routine
+    local_branch call_stack, expand_variable_prerequsite_and_convert_into_stored_normal_targets
     goto iterate_implicit_prerequisites
 end_iterate_implicit_prerequisites: ####################################
-update_prerequsites_done:
+update_prerequsites__done:
     local_return call_stack
     
     
@@ -530,13 +590,13 @@ update_special_SUFFIXES_iterate_items:
 #     say $S0
     goto update_special_SUFFIXES_iterate_items
 update_special_SUFFIXES_iterate_items_done:
-    
 update_special_SUFFIXES_done:
     local_return call_stack
 
     ######################
     ## local routine: update_special_DEFAULTS
 update_special_DEFAULTS:
+                                # TODO: implementation .DEFAULTS ...
     local_return call_stack
     
 .end # sub !update-special-makefile-rule
