@@ -11,7 +11,9 @@
 MakefileTarget is identified by '$<xx>', in which 'xx' is the indentifier,
 The '$<0>' variable is the number-one target from the smartfile, the '@<?>'
 variable holds a list of target requested to be updated(normally they are
-coming from command-line).
+coming from command-line), the '$<%>' variable holds the match-anything
+pattern target(from the match-anything rule), the '@<%>' holds a list of
+pattern targets(the match-anything rule is excluded).
 
 =cut
 
