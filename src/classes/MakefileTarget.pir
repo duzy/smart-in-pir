@@ -543,9 +543,10 @@ update_done:
     
 we_got_the_rule:
     
-    .local int update_count, newer_count
+    .local int update_count, newer_count, object_existed
     update_count = 0
     newer_count = 0
+    object_existed = 0
     
     ## this will set 'update_count' and 'newer_count' variables
     local_branch call_stack, check_and_update_prerequisites
@@ -554,8 +555,8 @@ we_got_the_rule:
     
     ## If the object of the target not extsted, the target will be updated.
     $S0 = self.'object'()
-    stat $I0, $S0, 0 # EXISTS
-    if $I0 == 0 goto execute_update_actions
+    stat object_existed, $S0, 0 # EXISTS
+    if object_existed == 0 goto execute_update_actions
     
     ## If no prerequisites is updated but some of them is newer than the taget,
     ## the target will be updated.
@@ -565,17 +566,25 @@ return_without_execution:
     .return (0, newer_count, 0)
     
 execute_update_actions:
+    $P0 = rule.'actions'()
+    $I0 = $P0
+    $I1 = 0
+    unless $I0 == 0 goto do_actions_execution
+    if object_existed goto return_update_results
+    local_branch call_stack, try_chaining_rules_for_updating
+    goto return_update_results
+    
+do_actions_execution:
     '.!setup-automatic-variables'( self )
     ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
     '.!clear-automatic-variables'( self )
+    
+    ## TODO: should check to see if the object existed
     
     unless 0 < $I1 goto skip_increase_update_count
     self.'updated'( 1 ) ## TODO: think about this, should I?
     inc update_count
     skip_increase_update_count:
-    
-    unless $I1 == 0 goto return_update_results
-    local_branch call_stack, try_chaining_rules_for_updating
     
 return_update_results:
     .return (update_count, newer_count, $I1)
@@ -734,7 +743,7 @@ report_no_rule_error:
     report_no_rule_error_done:
     print $S0
     exit -1
-
+    
     ##############
     ## local routine: report_droped_recursive_dependency
 report_droped_recursive_dependency:
@@ -745,11 +754,11 @@ report_droped_recursive_dependency:
     $S2 .= " dependency. Droped.\n"
     print $S2
     local_return call_stack
-
+    
     ##############
     ## local routine: try_chaining_rules_for_updating
 try_chaining_rules_for_updating:
-    print "TODO: searching intermediate rules\n"
+    print "TODO: No actions, should serach intermediate rules\n"
     local_return call_stack
     
 invalid_rule_object:

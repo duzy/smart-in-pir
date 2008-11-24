@@ -761,19 +761,21 @@ create_new_makefile_target:
 .sub "!create-makefile-action"
     .param pmc command
     .local pmc action
-
+    
     action = new 'MakefileAction'
-
+    
     set $S0, command
     substr $S1, $S0, 0, 1
     
     $I0 = $S1 != "@"
     action.'echo_on'( $I0 )
-
+    $I1 = $I0
+    
     $I0 = $S1 != "-"
     action.'ignore_error'( $I0 )
+    $I1 = and $I1, $I0
     
-    if $I0 goto command_echo_is_on
+    if $I1 goto command_echo_is_on
     $I0 = length $S0
     $I0 -= 1
     substr $S1, $S0, 1, $I0
