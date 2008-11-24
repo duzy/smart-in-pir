@@ -20,7 +20,7 @@ OBJECTS = src/main.o \
   src/bar.o \
 
 $(TARGET): $(OBJECTS)
-# ddddddddd
+# here-comment will be ignored
 	$(CXX) $^ -o $@
 
 %.o: %.cpp

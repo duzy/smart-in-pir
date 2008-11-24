@@ -12,6 +12,7 @@
     addattribute $P0, 'type'
     addattribute $P0, 'command'
     addattribute $P0, 'echo_on'
+    addattribute $P0, 'ignore_error'
 .end
 
 =item <command(OPT cmd)>
@@ -46,12 +47,29 @@ return_value_only:
     getattribute $P0, self, 'echo_on'
     
     unless null $P0 goto got_echo_on
-    
     $P0 = new 'Integer'
     $P0 = 1
     setattribute self, 'echo_on', $P0
     
 got_echo_on:
+    .return ($P0)
+.end
+
+.sub 'ignore_error' :method
+    .param pmc flag :optional
+    if null flag goto return_value_only
+    setattribute self, 'ignore_error', flag
+    .return()
+    
+return_value_only:
+    getattribute $P0, self, 'ignore_error'
+
+    unless null $P0 goto return_value
+    $P0 = new 'Integer'
+    $P0 = 0
+    setattribute self, 'ignore_error', $P0
+    
+return_value:
     .return ($P0)
 .end
 
@@ -70,6 +88,7 @@ got_echo_on:
 no_echo:
 
     spawnw $I0, $S0
+    $I1 = self.'ignore_error'()
     
     unless $I0 goto succeed
     
@@ -80,6 +99,8 @@ no_echo:
     concat $S1, $S2
     concat $S1, "'\n"
     print $S1
+    
+    if $I1 goto succeed
     exit -1
     
 succeed:

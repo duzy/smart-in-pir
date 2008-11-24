@@ -117,8 +117,19 @@ token makefile_rule_action { <-[ \n ]>* {*} }
 token makefile_special_rule {
     <.ws_inline>
     [
-    | $<name>=[ '.DEFAULTS' ]
+    | $<name>=[ '.PHONY' ]
     | $<name>=[ '.SUFFIXES' ]
+    | $<name>=[ '.DEFAULTS' ]
+    | $<name>=[ '.PRECIOUS' ]
+    | $<name>=[ '.INTERMEDIATE' ]
+    | $<name>=[ '.SECONDARY' ]
+    | $<name>=[ '.SECONDEXPANSION' ]
+    | $<name>=[ '.DELETE_ON_ERROR' ]
+    | $<name>=[ '.IGNORE' ]
+    | $<name>=[ '.LOW_RESOLUTION_TIME' ]
+    | $<name>=[ '.SILENT' ]
+    | $<name>=[ '.EXPORT_ALL_VARIABLES' ]
+    | $<name>=[ '.NOTPARALLEL' ]
     ]
     <.ws_inline>
     ':'

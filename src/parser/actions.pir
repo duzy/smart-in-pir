@@ -225,10 +225,10 @@ iterate_targets: ## Iterate 'targets'
     
     ## check to see if it's an 'implicit target'.
     target_name = target.'object'()
-    
+
     ## convert suffix rule if any, e.g: .c.o, .cpp.o
     local_branch call_stack, convert_suffix_target_if_any
-    ##say target_name #!!!!!!!!
+    #say target_name #!!!!!!!!
     
     $I0 = index target_name, "%"
     if $I0 < 0 goto got_normal_target
@@ -324,7 +324,7 @@ convert_suffix_target_if_any:
     goto convert_suffix_target_if_any__done
     
 convert_suffix_target_if_any__check_second_suffix:
-    unless 2 <= $I1 goto convert_suffix_target_if_any__done
+    unless 2 <= $I1 goto convert_suffix_target_if_any__done ## avoid ".."
     $I2 = $I1 + 1
     $I2 = index target_name, ".", $I2  ## no third "." should existed
     unless $I2 < 0 goto convert_suffix_target_if_any__done
@@ -333,7 +333,7 @@ convert_suffix_target_if_any__check_second_suffix:
     $I0 = 2 ## tells number of suffixes
     $S0 = substr target_name, 0, $I1 ## the first suffix
     $S1 = substr target_name, $I1, $I2 ## the second suffix
-    
+
     $S3 = $S0
     local_branch call_stack, convert_suffix_target_if_any__check_suffixes
     unless $I1 goto convert_suffix_target_if_any__done
@@ -362,6 +362,11 @@ convert_suffix_target_if_any__iterate_suffixes:
     inc $I1
 convert_suffix_target_if_any__iterate_suffixes_done:
     null $P0
+    if $I1 goto convert_suffix_target_if_any__check_suffixes__done
+    $S4 = "smart: Unknown suffix '"
+    $S4 .= $S3
+    $S4 .= "'\n"
+    print $S4
 convert_suffix_target_if_any__check_suffixes__done:
     local_return call_stack
 
@@ -369,8 +374,8 @@ convert_suffix_target_if_any__check_suffixes__done:
     ##  IN: $S0
     ##  OUT: $I1
 conver_suffix_target_1:
-#     print "one-suffix-rule: "
-#     say $S0
+    #print "one-suffix-rule: "   #!!!
+    #say $S0                     #!!!
     target_name = "%"
     $P3 = new 'String'
     $P3 = target_name
@@ -384,10 +389,10 @@ conver_suffix_target_1:
     ##  IN: $S0, $S1
     ##  OUT: $I1
 conver_suffix_target_2:
-#     print "two-suffix-rule: "
-#     print $S0
-#     print ", "
-#     say $S1
+    #print "two-suffix-rule: "   #!!!
+    #print $S0                   #!!! 
+    #print ", "                  #!!!
+    #say $S1                     #!!!
     target_name = "%"
     target_name .= $S1
     $P3 = new 'String'
@@ -566,17 +571,67 @@ obtain_target_by_target_name_local_return:
     .local pmc call_stack
     call_stack = new 'ResizableIntegerArray'
 
+check_if_PHONY:
+    unless name == ".PHONY" goto check_if_SUFFIXES
+    local_branch call_stack, update_special_PHONY
+    goto check_name_done
 check_if_SUFFIXES:
     unless name == ".SUFFIXES" goto check_if_DEFAULT
     local_branch call_stack, update_special_SUFFIXES
     goto check_name_done
 check_if_DEFAULT:
-    unless name == ".DEFAULTS" goto check_name_done
+    unless name == ".DEFAULTS" goto check_if_PRECIOUS
     local_branch call_stack, update_special_DEFAULTS
+    goto check_name_done
+check_if_PRECIOUS:
+    unless name == ".PRECIOUS" goto check_if_INTERMEDIATE
+    local_branch call_stack, update_special_PRECIOUS
+    goto check_name_done
+check_if_INTERMEDIATE:
+    unless name == ".INTERMEDIATE" goto check_if_SECONDARY
+    local_branch call_stack, update_special_INTERMEDIATE
+    goto check_name_done
+check_if_SECONDARY:
+    unless name == ".SECONDARY" goto check_if_SECONDEXPANSION
+    local_branch call_stack, update_special_SECONDARY
+    goto check_name_done
+check_if_SECONDEXPANSION:
+    unless name == ".SECONDEXPANSION" goto check_if_DELETE_ON_ERROR
+    local_branch call_stack, update_special_SECONDEXPANSION
+    goto check_name_done
+check_if_DELETE_ON_ERROR:
+    unless name == ".DELETE_ON_ERROR" goto check_if_IGNORE
+    local_branch call_stack, update_special_DELETE_ON_ERROR
+    goto check_name_done
+check_if_IGNORE:
+    unless name == ".IGNORE" goto check_if_LOW_RESOLUTION_TIME
+    local_branch call_stack, update_special_IGNORE
+    goto check_name_done
+check_if_LOW_RESOLUTION_TIME:
+    unless name == ".LOW_RESOLUTION_TIME" goto check_if_SILENT
+    local_branch call_stack, update_special_LOW_RESOLUTION_TIME
+    goto check_name_done
+check_if_SILENT:
+    unless name == ".SILENT" goto check_if_EXPORT_ALL_VARIABLES
+    local_branch call_stack, update_special_SILENT
+    goto check_name_done
+check_if_EXPORT_ALL_VARIABLES:
+    unless name == ".EXPORT_ALL_VARIABLES" goto check_if_NOTPARALLEL
+    local_branch call_stack, update_special_EXPORT_ALL_VARIABLES
+    goto check_name_done
+check_if_NOTPARALLEL:
+    unless name == ".NOTPARALLEL" goto check_name_done
+    local_branch call_stack, update_special_NOTPARALLEL
     goto check_name_done
 check_name_done:
 
     .return()
+
+    ######################
+    ## local routine: update_special_PHONY
+update_special_PHONY:
+    say "TODO: .PHONY rule..."
+    local_return call_stack
 
     ######################
     ## local routine: update_special_SUFFIXES
@@ -603,9 +658,69 @@ update_special_SUFFIXES_done:
     ######################
     ## local routine: update_special_DEFAULTS
 update_special_DEFAULTS:
-                                # TODO: implementation .DEFAULTS ...
+    say "TODO: .DEFAULTS rule..."
     local_return call_stack
-    
+
+    ######################
+    ## local routine: update_special_PRECIOUS
+update_special_PRECIOUS:
+    say "TODO: .PRECIOUS rule..."
+    local_return call_stack
+
+    ######################
+    ## local routine: update_special_INTERMEDIATE
+update_special_INTERMEDIATE:
+    say "TODO: .INTERMEDIATE rule..."
+    local_return call_stack
+
+    ######################
+    ## local routine: update_special_SECONDARY
+update_special_SECONDARY:
+    say "TODO: .SECONDARY rule..."
+    local_return call_stack
+
+    ######################
+    ## local routine: update_special_SECONDEXPANSION
+update_special_SECONDEXPANSION:
+    say "TODO: .SECONDEXPANSION rule..."
+    local_return call_stack
+
+    ######################
+    ## local routine: update_special_DELETE_ON_ERROR
+update_special_DELETE_ON_ERROR:
+    say "TODO: .DELETE_ON_ERROR rule..."
+    local_return call_stack
+
+    ######################
+    ## local routine: update_special_IGNORE
+update_special_IGNORE:
+    say "TODO: .IGNORE rule..."
+    local_return call_stack
+
+    ######################
+    ## local routine: update_special_LOW_RESOLUTION_TIME
+update_special_LOW_RESOLUTION_TIME:
+    say "TODO: .LOW_RESOLUTION_TIME rule..."
+    local_return call_stack
+
+    ######################
+    ## local routine: update_special_SILENT
+update_special_SILENT:
+    say "TODO: .SILENT rule..."
+    local_return call_stack
+
+    ######################
+    ## local routine: update_special_EXPORT_ALL_VARIABLES
+update_special_EXPORT_ALL_VARIABLES:
+    say "TODO: .EXPORT_ALL_VARIABLES rule..."
+    local_return call_stack
+
+    ######################
+    ## local routine: update_special_NOTPARALLEL
+update_special_NOTPARALLEL:
+    say "TODO: .NOTPARALLEL rule..."
+    local_return call_stack
+
 .end # sub !update-special-makefile-rule
 
 
@@ -638,7 +753,7 @@ create_new_makefile_target:
     set_hll_global ['smart';'makefile';'target'], name, target
     
     .return(target)
-.end
+.end # sub "!bind-makefile-target"
 
 
 =item
@@ -652,8 +767,11 @@ create_new_makefile_target:
     set $S0, command
     substr $S1, $S0, 0, 1
     
-    $I0 = $S1 != '@'
+    $I0 = $S1 != "@"
     action.'echo_on'( $I0 )
+
+    $I0 = $S1 != "-"
+    action.'ignore_error'( $I0 )
     
     if $I0 goto command_echo_is_on
     $I0 = length $S0
