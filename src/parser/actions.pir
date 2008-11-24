@@ -124,10 +124,11 @@ update_number_one_target:
     
     if $I0 <= 0 goto nothing_updated
     if 0 < $I0 goto all_done
-    
-    print "smart: '"
-    print object
-    print "' is up to date.\n"
+
+    $S0 = "smart: "
+    $S0 .= object
+    $S0 .= "' is up to date.\n"
+    print $S0
     exit -1
     
 nothing_updated:
@@ -185,7 +186,7 @@ no_number_one_target:
     get_hll_global rule, ['smart';'makefile';'rule'], match
     unless null rule goto update_prerequsites_and_actions_of_the_rule
     local_branch call_stack, create_new_rule_object
-    local_branch call_stack, store_number_one_target
+    local_branch call_stack, setup_number_one_target
     
     update_prerequsites_and_actions_of_the_rule:
     local_branch call_stack, update_prerequsites
@@ -193,8 +194,9 @@ no_number_one_target:
     
     .return(rule) ## returns the rule object
     
-    ############
+    ######################
     ## Local rountine: create_new_rule_object
+    ##          OUT: rule, implicit
 create_new_rule_object:
     implicit = 0
     
@@ -220,7 +222,7 @@ iterate_targets: ## Iterate 'targets'
     ## check to see if it's a MakefileVariable target
     $S0 = typeof target
     if $S0 == 'MakefileVariable' goto got_variable_target
-
+    
     ## check to see if it's an 'implicit target'.
     target_name = target.'object'()
     
@@ -254,6 +256,8 @@ got_implicit_rule_temporary_target:
     ## if implicit rule, the target's 'object' attribute must be a pattern,
     ## which contains one '%' sign, and the pattern string will be push back
     ## to the 'patterns' array, the new created rule will keep it.
+    #print "implicit-target: " #!!!!!!!!!!!!!!
+    #say target_name #!!!!!!!!!!!!!!!!!!!!!!!!
     implicit = 1
     $P0 = new 'Integer'
     $P0 = 1
@@ -266,7 +270,7 @@ got_implicit_rule_temporary_target:
     
     ## Choice 4 -- Error
 error_mixed_implicit_and_normal_rule:
-    ## get some rule looks like " a.%.b BAD a.%.h: foobar"
+    ## get some rule looks like "a.%.b BAD a.%.h: foobar"
     $S0 = "smart: ** mixed implicit and normal rules: '"
     $S0 .= match
     $S0 .= "'\n"
@@ -282,21 +286,21 @@ store_rule_object:
     local_return call_stack
     
 store_implicit_rule:
-    .local pmc implict_rules
+    .local pmc implicit_rules
     ## Store implicit rules in the list 'smart;makefile;@[%]'
     $P0 = new 'Integer'
     $P0 = 1 ##implicit
     setattribute rule, 'implicit', $P0
-    implict_rules = get_hll_global ['smart';'makefile'], "@[%]"
-    unless null implict_rules goto push_implict_rule
-    implict_rules = new 'ResizablePMCArray'
-    set_hll_global ['smart';'makefile'], "@[%]", implict_rules
+    implicit_rules = get_hll_global ['smart';'makefile'], "@[%]"
+    unless null implicit_rules goto push_implict_rule
+    implicit_rules = new 'ResizablePMCArray'
+    set_hll_global ['smart';'makefile'], "@[%]", implicit_rules
     push_implict_rule:
     ## TODO: think about the ordering of implicit rules, should I use unshift
     ##       instead of push?
-    push implict_rules, rule
+    push implicit_rules, rule
     local_return call_stack
-
+    
     #####################
     ##  IN: target
     ##  OUT: $I0        tells the suffix number, 1 or 2, 0 if not suffix target
@@ -408,8 +412,9 @@ store_match_anything_rule__done:
 update_prerequsites:
     if null prerequisites goto update_prerequsites__done
     
-    iter = new 'Iterator', prerequisites
     out_array = rule.'prerequisites'()
+    iter = new 'Iterator', prerequisites
+
     if implicit goto iterate_implicit_prerequisites
     
     ## normal prerequsites
@@ -448,15 +453,17 @@ iterate_implicit_prerequisites__check_implicit_name:
     if $I0 < 0 goto push_normal_prerequsite
     inc $I0
     $I0 = index $S0, "%", $I0 ## only one "%" could be existed in an implicit prerequsite
-    unless $I0 < 0 goto push_implicit_prerequisite
+    if $I0 < 0 goto push_implicit_prerequisite
 push_normal_prerequsite:
+    #print "normal-prerequsite-in-implicit-rule: " #!!!!!
+    #say $S0 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     push out_array, $P0 ## an normal prerequsite 
     goto iterate_implicit_prerequisites
 push_implicit_prerequisite: ###########################
+    #print "implicit-prerequsite: " #!!!!!!!!!
+    #say $S0 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     push out_array, $S0 ## an implicit prerequsite
     ## TODO: should I unset the HLL global target named by $S0??
-    print "implicit: " #!!!!!!!!!
-    say $S0 #!!!!!!!!!!!!!!!!!!!!
     goto iterate_implicit_prerequisites
 push_variable_prerequsite_2:
     target = $P0 ## for the sub routine
@@ -480,19 +487,19 @@ update_actions_local_return:
     
     
     ############
-    ## local routine: store_number_one_target
-store_number_one_target:
+    ## local routine: setup_number_one_target
+setup_number_one_target:
     ## the first rule should defines the number-one target
-    if implicit goto store_number_one_target_local_return
+    if implicit goto setup_number_one_target_local_return
     get_hll_global $P0, ['smart';'makefile'], "$<0>"
-    unless null $P0 goto store_number_one_target_local_return
+    unless null $P0 goto setup_number_one_target_local_return
     getattribute $P0, rule, 'targets'
     $I0 = exists $P0[0]
-    unless $I0 goto store_number_one_target_local_return
+    unless $I0 goto setup_number_one_target_local_return
     $P1 = $P0[0]
     $S0 = $P1.'object'()
     set_hll_global ['smart';'makefile'], "$<0>", $P1
-store_number_one_target_local_return:
+setup_number_one_target_local_return:
     local_return call_stack
     
     
