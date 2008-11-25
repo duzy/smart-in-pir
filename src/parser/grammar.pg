@@ -147,13 +147,11 @@ rule makefile_conditional_statement {
        [ | \' $<arg2>=[<-[ ' ]>*] \' <[ \ \t ]>*
          | \" $<arg2>=[<-[ " ]>*] \" <[ \ \t ]>* ]
     ]
-    $<content>=[ <statement>* ]
-    $<else>=[
-      [ 'else'
-        <statement>*
-      ]*
-    ]
-    [ 'endif' | <.panic: "no endif"> ]
+    <if_stat=statement>*
+    [ 'else'
+      <else_stat=statement>*
+    ]*
+    [ 'endif' | <.panic: "smart: * No 'endif'"> ]
     {*}
 }
 

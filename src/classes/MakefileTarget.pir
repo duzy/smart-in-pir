@@ -211,15 +211,15 @@ loop_tag_end:
     Setup automatic variables for updating the target.
 =cut
 .sub ".!setup-automatic-variables" :anon
-    .param pmc self
+    .param pmc target
     .local pmc rule, prerequisites
-    getattribute rule, self, "rule"
+    getattribute rule, target, "rule"
 
     prerequisites = rule.'prerequisites'()
 
     .local string stem
     stem = ""
-    $P0 = getattribute self, 'stem'
+    $P0 = getattribute target, 'stem'
     if null $P0 goto no_stem
     stem = $P0
 no_stem:
@@ -234,13 +234,13 @@ no_stem:
     ## var0 => $@
     array = new 'ResizablePMCArray'
     h["@"] = array
-    $S0 = self.'object'()
+    $S0 = target.'object'()
     push array, $S0
 
     ## var1 => $%
     array = new 'ResizablePMCArray'
     h["%"] = array
-    $S0 = self.'member'()
+    $S0 = target.'member'()
     push array, $S0
     
     ## var2 => $<
@@ -249,7 +249,7 @@ no_stem:
     $I0 = exists prerequisites[0]
     unless $I0 goto var2_no_prerequisites
     $P1 = prerequisites[0]
-    $S0 = '.!calculate-object-of-prerequisite'( self, $P1 )
+    $S0 = '.!calculate-object-of-prerequisite'( target, $P1 )
     if $S0 == "" goto var2_done
     push array, $S0
 var2_no_prerequisites:
@@ -268,11 +268,11 @@ var2_done:
     array = new 'ResizablePMCArray'
     h["+"] = array
     $P1 = new 'Iterator', prerequisites
-    $S0 = self.'object'() ## $S0 used
+    $S0 = target.'object'() ## $S0 used
 loop_prerequisites:
     unless $P1 goto end_loop_prerequisites
     $P0 = shift $P1       ## $P0, $P1 used
-    $S1 = '.!calculate-object-of-prerequisite'( self, $P0 ) ## $S1 used
+    $S1 = '.!calculate-object-of-prerequisite'( target, $P0 ) ## $S1 used
 
     ## skip empty object, e.g. variable prerequisite will returns empty
     if $S1 == "" goto loop_prerequisites
@@ -374,7 +374,7 @@ var7_got_empty_stem:
    Unset all automatic varables.
 =cut
 .sub ".!clear-automatic-variables" :anon
-    .param pmc self
+    .param pmc target
     .local pmc empty ## null
     #empty = new 'String'
     #empty = ''
@@ -494,8 +494,6 @@ iterate_objects:
     set_hll_global ['smart';'makefile';'target'], object_name, object
     
 got_stored_target_object:
-    ##($I0, $I1) = object.'update'()
-    #($I0, $I1) = object.'do-update'()
     ($I0, $I1) = 'update-target'( object, requestor )
     if $I1 <= 0 goto no_inc_newer_counter
     newer_count += $I1
@@ -556,6 +554,7 @@ we_got_the_rule:
     update_count = 0
     newer_count = 0
     object_existed = 0
+    stat object_existed, object, 0 # EXISTS
     
     ## this will set 'update_count' and 'newer_count' variables
     local_branch call_stack, check_and_update_prerequisites
@@ -563,9 +562,6 @@ we_got_the_rule:
     if 0 < update_count goto execute_update_actions ## if any prerequisites updated
     
     ## If the object of the target not extsted, the target will be updated.
-    #$S0 = target.'object'()
-    #stat object_existed, $S0, 0 # EXISTS
-    stat object_existed, object, 0 # EXISTS
     if object_existed == 0 goto execute_update_actions
     
     ## If no prerequisites is updated but some of them is newer than the taget,
@@ -656,7 +652,6 @@ handle_with_normal_prerequisite: ## normal prerequisite: MakefileTarget object
     invoke_update_on_prerequsite:
     
     ## Invoke the update method...
-    #($I0, $I1) = prerequisite.'update-target'( requestor )
     ($I0, $I1) = 'update-target'( prerequisite, requestor )
     
     ## Updates the counter...

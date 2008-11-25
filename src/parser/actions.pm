@@ -214,20 +214,39 @@ method makefile_conditional_statement($/) {
     my $arg1 := ~$<arg1>;
     my $arg2 := ~$<arg2>;
     my $stat := ~$<stat>;
+    my $cond := 0;
 
     if $stat eq 'ifeq' {
-        #$?BLOCK.push( $<> );
+        $cond := ( $arg1 eq $arg2 );
     }
-    elsif ( $stat eq 'ifneq' ) {
+    #elsif $stat eq 'ifneq' {
+    else {
+        $cond := ( $arg1 ne $arg2 );
     }
 
-    for $<statement> {
-        $?BLOCK.push( $( $_ ) );
+    my $pir;
+    #if $arg1 eq $arg2 {
+    if $cond {
+        $pir := "print 'args: (if)'\n"
+            ~ "print %0\n"
+            ~ "print ', '\n"
+            ~ "say %1\n"
+            ;
+        for $<if_stat> {
+            $?BLOCK.push( $( $_ ) );
+        }
     }
-    my $pir := "print 'args: '\n"
-    ~ "print %0\n"
-    ~ "say %1\n"
-    ;
+    else {
+        $pir := "print 'args: (else)'\n"
+            ~ "print %0\n"
+            ~ "print ', '\n"
+            ~ "say %1\n"
+            ;
+        for $<else_stat> {
+            $?BLOCK.push( $( $_ ) );
+        }
+    }
+
     my $p := PAST::Op.new( :inline($pir) );
     $p.push( PAST::Val.new( :value(~$arg1), :returns('String') ) );
     $p.push( PAST::Val.new( :value(~$arg2), :returns('String') ) );

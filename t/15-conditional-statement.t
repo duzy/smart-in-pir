@@ -2,11 +2,11 @@
 
 ifeq "abcd" "abcd"
   say "ok";
+else
+  say "failed";
 endif
 
-ifeq "abc"    "abc"
-  say "ok";
-  say "ok";
+ifeq 'abc'    "abc"
   say "ok";
 else
   say "failed";
@@ -21,11 +21,11 @@ endif
 ifneq "abc" "def"
   say "ok";
 else
-  say "false";
+  say "failed";
 endif
 
 ifeq (xyz,uvw)
-  say "false";
+  say "failed";
 else
   say "ok";
 endif
