@@ -449,7 +449,6 @@ got_normal_prerequisite:
 #     got_variable_prerequisite_done:
 #     .return ($S0)
     
-    
 invalid_implicit_prerequisite: ## it's an internal error!
     $S1 = "smart: ** Expecting a implicit prerequisite '"
     $S1 .= $S0
@@ -495,7 +494,9 @@ iterate_objects:
     set_hll_global ['smart';'makefile';'target'], object_name, object
     
 got_stored_target_object:
-    ($I0, $I1) = object.'update'()
+    ##($I0, $I1) = object.'update'()
+    #($I0, $I1) = object.'do-update'()
+    ($I0, $I1) = 'update-target'( object, requestor )
     if $I1 <= 0 goto no_inc_newer_counter
     newer_count += $I1
     no_inc_newer_counter:
@@ -525,19 +526,27 @@ update_done:
     rule binded to the target.
 =cut
 .sub "update" :method
-    .param pmc requestor        :optional
-    .param int requestor_flag   :opt_flag
+    ($I0, $I1, $I2) = 'update-target'( self, self )
+    .return ($I0, $I1, $I2)
+.end
+
+.sub "update-target" :anon
+    .param pmc target
+    .param pmc requestor
     
     ## If the target itself has been updated, than nothing should be done.
-    $I0 = self.'updated'()
+    $I0 = target.'updated'()
     if $I0 goto return_without_execution
     
     .local pmc call_stack
     call_stack = new 'ResizableIntegerArray'
     
+    .local string object
+    object = target.'object'()
+    
     .local pmc implict_rules, implicit_rule, iter ## used as temporary
     .local pmc rule
-    getattribute rule, self, 'rule'
+    getattribute rule, target, 'rule'
     unless null rule goto we_got_the_rule
     local_branch call_stack, check_out_implicit_rules
     
@@ -554,8 +563,9 @@ we_got_the_rule:
     if 0 < update_count goto execute_update_actions ## if any prerequisites updated
     
     ## If the object of the target not extsted, the target will be updated.
-    $S0 = self.'object'()
-    stat object_existed, $S0, 0 # EXISTS
+    #$S0 = target.'object'()
+    #stat object_existed, $S0, 0 # EXISTS
+    stat object_existed, object, 0 # EXISTS
     if object_existed == 0 goto execute_update_actions
     
     ## If no prerequisites is updated but some of them is newer than the taget,
@@ -575,14 +585,14 @@ execute_update_actions:
     goto return_update_results
     
 do_actions_execution:
-    '.!setup-automatic-variables'( self )
+    '.!setup-automatic-variables'( target )
     ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
-    '.!clear-automatic-variables'( self )
+    '.!clear-automatic-variables'( target )
     
     ## TODO: should check to see if the object existed
     
     unless 0 < $I1 goto skip_increase_update_count
-    self.'updated'( 1 ) ## TODO: think about this, should I?
+    target.'updated'( 1 ) ## TODO: think about this, should I?
     inc update_count
     skip_increase_update_count:
     
@@ -614,7 +624,7 @@ iterate_prerequisites:
     unless $I0 < 0 goto invalid_implicit_prerequisite
     
 handle_with_implicit_prerequsite:
-    $S1 = '.!calculate-object-of-prerequisite'( self, prerequisite )
+    $S1 = '.!calculate-object-of-prerequisite'( target, prerequisite )
     ## Get stored prerequsite, or create a new one if none existed.
     get_hll_global prerequisite, ['smart';'makefile';'target'], $S1
     unless null prerequisite goto handle_with_normal_prerequisite
@@ -629,11 +639,13 @@ handle_with_normal_prerequisite: ## normal prerequisite: MakefileTarget object
     $I0 = can prerequisite, 'update'
     unless $I0 goto invalid_target_object
     
-    $S0 = self.'object'()
+    #$S0 = target.'object'()
     $S1 = prerequisite.'object'()
     
-    unless $S0 == $S1 goto process_the_prerequsite
+    ## checking recursive...
+    unless object == $S1 goto process_the_prerequsite
     local_branch call_stack, report_droped_recursive_dependency
+    ##TODO:check recursive...
     goto iterate_prerequisites
     process_the_prerequsite:
     
@@ -644,13 +656,8 @@ handle_with_normal_prerequisite: ## normal prerequisite: MakefileTarget object
     invoke_update_on_prerequsite:
     
     ## Invoke the update method...
-    unless requestor_flag goto donot_have_specific_requestor_1
-    if null requestor goto donot_have_specific_requestor_1
-    ($I0, $I1) = prerequisite.'update'( requestor )
-    goto updated_by_specific_requestor_1
-    donot_have_specific_requestor_1:
-    ($I0, $I1) = prerequisite.'update'( self )
-    updated_by_specific_requestor_1:
+    #($I0, $I1) = prerequisite.'update-target'( requestor )
+    ($I0, $I1) = 'update-target'( prerequisite, requestor )
     
     ## Updates the counter...
     unless 0 < $I1 goto no_inc_newer_count_according_prerequsite_update
@@ -673,7 +680,7 @@ invalid_implicit_prerequisite:
     die $S1
 end_iterate_prerequisites:
     local_return call_stack
-
+    
     ######################
     ## local routine: compare_file_time
     ##          IN: $S0, $S1
@@ -709,13 +716,13 @@ check_out_implicit_rules_iterate:
     $S0 = implicit_rule.'match'()
     ## skip any match-anything rule
     if $S0 == "%" goto check_out_implicit_rules_iterate
-    $S0 = implicit_rule.'match_patterns'( self )
+    $S0 = implicit_rule.'match_patterns'( target )
     if $S0 == "" goto check_out_implicit_rules_iterate
     rule = implicit_rule
     $P1 = new 'String'
     $P1 = $S0
-    setattribute self, 'rule', rule
-    setattribute self, 'stem', $P1
+    setattribute target, 'rule', rule
+    setattribute target, 'stem', $P1
 check_out_implicit_rules_iterate_end:
     if null rule goto no_rule_found
 check_out_implicit_rules_local_return:
@@ -723,7 +730,7 @@ check_out_implicit_rules_local_return:
     
 no_rule_found:
     ## If the object does not exists, it should report "no-rule-error" error.
-    $S1 = self.'object'()
+    $S1 = target.'object'()
     $I0 = stat $S1, 0 # EXISTS
     unless $I0 goto report_no_rule_error
     .return(0, newer_count, 0)
@@ -731,7 +738,6 @@ no_rule_found:
 report_no_rule_error:
     $S0 = "smart: ** No rule to make target '"
     $S0 .= $S1
-    unless requestor_flag goto report_no_rule_error_no_specific_requestor
     if null requestor goto report_no_rule_error_no_specific_requestor
     $S2 = requestor.'object'()
     $S0 .= "', needed by '"
