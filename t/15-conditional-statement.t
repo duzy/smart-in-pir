@@ -1,5 +1,7 @@
 # -*- mode: makefile -*-
 
+say "1..5";
+
 ifeq "abcd" "abcd"
   say "ok";
 else

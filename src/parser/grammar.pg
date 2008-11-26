@@ -139,7 +139,7 @@ token makefile_special_rule {
 }
 
 rule makefile_conditional_statement {
-    $<stat>=[ 'ifeq' | 'ifneq' ]
+    $<csta>=['ifeq'|'ifneq']
     [
       |[ '(' $<arg1>=[<-[ , ) ]>*] ',' $<arg2>=[<-[ ) ]>*] ')' ]
       |[ | \' $<arg1>=[<-[ ' ]>*] \' <[ \ \t ]>*
