@@ -141,17 +141,34 @@ token makefile_special_rule {
 rule makefile_conditional_statement {
     $<csta>=['ifeq'|'ifneq']
     [
-      |[ '(' $<arg1>=[<-[ , ) ]>*] ',' $<arg2>=[<-[ ) ]>*] ')' ]
+      |[ '('
+         $<arg1>=[[<-[,)$]>|<.makefile_variable_ref>]*]
+         ','
+         $<arg2>=[[<-[)$]>|<.makefile_variable_ref>]*]
+         ')'
+       ]
       |[ | \' $<arg1>=[<-[ ' ]>*] \' <[ \ \t ]>*
          | \" $<arg1>=[<-[ " ]>*] \" <[ \ \t ]>* ]
        [ | \' $<arg2>=[<-[ ' ]>*] \' <[ \ \t ]>*
          | \" $<arg2>=[<-[ " ]>*] \" <[ \ \t ]>* ]
     ]
+    {{
+      '!push-makefile-variable-switch'( match )
+    }}
     <if_stat=statement>*
     [ 'else'
+      {{
+        get_hll_global $P0, ['smart';'Grammar';'Actions'], '$VAR_ON'
+        $I0 = $P0
+        $I0 = !$I0
+        $P0 = $I0
+        set_hll_global ['smart';'Grammar';'Actions'], '$VAR_ON', $P0
+      }}
       <else_stat=statement>*
     ]*
-    [ 'endif' | <.panic: "smart: * No 'endif'"> ]
+    [ 'endif' {{ '!pop-makefile-variable-switch'(match) }}
+      | <.panic: "smart: * No 'endif'">
+    ]
     {*}
 }
 

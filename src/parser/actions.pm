@@ -21,6 +21,7 @@ class smart::Grammar::Actions;
 method TOP($/, $key) {
     our $?BLOCK;
     our @?BLOCK;
+    our @VAR_SWITCHES;
 
     if $key eq 'enter' {
 	$?BLOCK := PAST::Block.new( :blocktype('declaration'), :node( $/ ) );
@@ -51,6 +52,26 @@ method statement($/, $key) {
 method empty_smart_statement($/) { make PAST::Op.new( :pirop('noop') ); }
 
 method makefile_variable_declaration($/) {
+    if 1 {
+        our $VAR_ON;
+        if $VAR_ON {
+        ## declare variable at parse stage
+        my $name := trim_spaces(~$<name>);
+        my $sign := ~$<sign>;
+        #my @items;
+        #for $<makefile_variable_value_list><item> {
+        #    @items.push( ~$_ );
+        #}
+        my @items := $<makefile_variable_value_list><item>;
+        declare_makefile_variable(
+            $name,
+            $sign,
+            @items
+        );
+        }
+        make PAST::Op.new( :pirop("noop") );
+    }
+    else {
     my $var := PAST::Var.new(
         :name( trim_spaces(~$<name>) ),
           :scope('package'),
@@ -77,6 +98,7 @@ method makefile_variable_declaration($/) {
                        :name('bind-makefile-variable-variable'),
                        :node( $/ )
                    );
+    }
 }
 
 method makefile_variable_method_call($/) {
@@ -210,10 +232,10 @@ method makefile_special_rule($/) {
 }
 
 method makefile_conditional_statement($/) {
-    our $?BLOCK;
+    #our $?BLOCK;
     my $stat := ~$<csta>;
-    my $arg1 := ~$<arg1>;
-    my $arg2 := ~$<arg2>;
+    my $arg1 := expand( ~$<arg1> );
+    my $arg2 := expand( ~$<arg2> );
     my $cond
         := (( $stat eq 'ifeq' ) && ( $arg1 eq $arg2 ))
         || (( $stat eq 'ifneq') && ( $arg1 ne $arg2 ))

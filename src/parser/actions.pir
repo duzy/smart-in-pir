@@ -29,10 +29,53 @@ end_chop:
 
 
 .namespace []
+
+.sub "!push-makefile-variable-switch"
+    .param pmc match
+    $S0 = match['csta']
+    $S1 = match['arg1']
+    $S2 = match['arg2']
+    $S1 = 'expand'( $S1 )
+    $S2 = 'expand'( $S2 )
+    get_hll_global $P0, ['smart';'Grammar';'Actions'], '$VAR_ON'
+    get_hll_global $P1, ['smart';'Grammar';'Actions'], '@VAR_SWITCHES'
+    
+    ## save the the previous $VAR_ON value
+    push $P1, $P0
+    
+    ## change new $VAR_ON vlaue
+    unless $S0 == 'ifeq' goto check_ifneq
+    $I0 = $S1 == $S2
+    goto check_done
+check_ifneq:
+    $I0 = $S1 != $S2
+check_done:
+    $P0 = $I0
+    set_hll_global ['smart';'Grammar';'Actions'], '$VAR_ON', $P0
+.end
+
+.sub "!pop-makefile-variable-switch"
+    .param pmc match
+    get_hll_global $P1, ['smart';'Grammar';'Actions'], '@VAR_SWITCHES'
+    pop $P0, $P1
+    set_hll_global ['smart';'Grammar';'Actions'], '$VAR_ON', $P0
+.end
+
+#.sub "!declare-makefile-variable"
+.sub "declare_makefile_variable"
+    .param string name
+    .param string sign
+    .param pmc items # :slurpy
+#     print name
+#     print sign
+#     say items
+    "!update-makefile-variable"( name, sign, items )
+.end
+
 .sub "!update-makefile-variable"
     .param string name
     .param string sign
-    .param pmc items :slurpy
+    .param pmc items :optional # :slurpy
     
     .local pmc var
     get_hll_global var, ['smart';'makefile';'variable'], name
@@ -46,7 +89,8 @@ end_chop:
     set_hll_global ['smart';'makefile';'variable'], name, var
     
 makefile_variable_exists:
-    
+
+    if null items goto done
     if sign == "" goto done
     if sign == "+=" goto append_items
     ## TODO: handle with '?=', ':='

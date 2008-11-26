@@ -187,6 +187,11 @@ no_smartfile_for_new_args:
 .sub '__init_internal_objects' :anon :load :init
     $P0 = new 'ResizablePMCArray'
     set_hll_global ['smart';'Grammar';'Actions'], '@?BLOCK', $P0
+    $P0 = new 'ResizablePMCArray'
+    set_hll_global ['smart';'Grammar';'Actions'], '@VAR_SWITCHES', $P0
+    $P0 = new 'Integer'
+    $P0 = 1
+    set_hll_global ['smart';'Grammar';'Actions'], '$VAR_ON', $P0
 .end
 
 
