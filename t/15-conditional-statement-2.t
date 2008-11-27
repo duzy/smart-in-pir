@@ -2,6 +2,8 @@
 
 say "1..4";
 
+VAR = "test"
+
 ifeq "abc" "def"
   VAR1 = "failed"
 else
@@ -11,7 +13,7 @@ endif
 ifneq "abcd" "xyz"
   VAR2 = "ok"
 else
-#  VAR2 = "failed"
+  VAR2 = "failed"
 endif
 
 ARG1 = "abc"

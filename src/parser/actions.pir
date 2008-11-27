@@ -50,6 +50,7 @@ end_chop:
 check_ifneq:
     $I0 = $S1 != $S2
 check_done:
+    $P0 = new 'Integer'
     $P0 = $I0
     set_hll_global ['smart';'Grammar';'Actions'], '$VAR_ON', $P0
 .end

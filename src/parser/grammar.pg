@@ -68,14 +68,14 @@ token makefile_variable_declaration {
 token makefile_variable_value_list {
     [
       |[ 
-         [ [ <[ \ \t ]> | <.comment> ]*
+         [ <.ws_inline>
            [ $<item>=[<-[ \ \t \\ \n ]>+] <[ \ \t ]>* ]* \\
            [ \n || <.panic: 'smart: * Suspicious continuation'> ]
          ]+
-         [ <[ \ \t ]> | <.comment> ]*
+         <.ws_inline>
          [ $<item>=[<-[ \ \t \\ \n ]>+] <[ \ \t ]>* ]*
        ]
-      |[ <[ \ \t ]>*
+      |[ <.ws_inline>
          [ $<item>=[<-[ \ \t \\ \n ]>+] <[ \ \t ]>* ]*
        ]
     ]
