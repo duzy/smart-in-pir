@@ -16,7 +16,10 @@
     if pos == 0 goto end_chop
 count_spaces:
     $S0 = substr str, pos, 1
-    unless $S0 == ' ' goto do_chop
+    $I0 = $S0 == " "
+    $I1 = $S0 == "\t"
+    $I0 = or $I0, $I1
+    unless $I0 goto do_chop
     dec pos
     goto count_spaces
 do_chop:

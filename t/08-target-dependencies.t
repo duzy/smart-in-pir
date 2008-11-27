@@ -2,7 +2,7 @@
 
 # NOTE: all targets should always be updated
 
-all: foobar
+all: foobar more
 	@ls -lh foo.txt bar.txt foobar.txt
 	@cat foobar.txt
 	@wc -l foobar.txt
@@ -24,3 +24,13 @@ bar.txt:
 	@echo "ok, update bar.txt"
 	@echo "bar" > bar.txt
 
+more: more1\
+  more2 \
+  more3 \
+  more4
+	@echo "ok, $^"
+
+more1:
+more2:
+more3:
+more4:

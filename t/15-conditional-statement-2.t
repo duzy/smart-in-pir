@@ -1,6 +1,6 @@
 # -*- mode: makefile -*-
 
-say "1..4";
+say "1..6";
 
 VAR = "test"
 
@@ -28,9 +28,18 @@ else
   VAR3 = "falied"
 endif
 
-ARG1 = "abc"
-ARG2 = "def"
-ifeq (x$(ARG1)x,x$(ARG2)x)
+OK = "ok"
+say $(OK);
+
+ifeq "$(OK)" '"ok"'
+  say "ok";
+else
+  say "failed";
+endif
+
+ARG3 = "abc"
+ARG4 = "def"
+ifeq (x$(ARG3)x,x$(ARG4)x)
   VAR4 = "falied"
 else
   VAR4 = "ok"

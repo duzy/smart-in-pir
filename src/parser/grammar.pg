@@ -28,6 +28,7 @@ rule statement {
     | <makefile_variable_declaration> {*}	#= makefile_variable_declaration
     | <makefile_rule> {*}                       #= makefile_rule
     | <makefile_conditional_statement> {*}      #= makefile_conditional_statement
+    | <makefile_include_statement> {*}          #= makefile_include_statement
 }
 
 token empty_smart_statement { <.ws> ';' {*} }
@@ -70,8 +71,10 @@ token makefile_variable_value_list {
       |[ 
          [ <.ws_inline>
            [[
-              | \" $<item>=[<-[ \ \t \\ \n \" ]>+] \"
-              | \' $<item>=[<-[ \ \t \\ \n \' ]>+] \'
+#              | \" $<item>=[<-[ \ \t \\ \n \" ]>+] \"
+#              | \' $<item>=[<-[ \ \t \\ \n \' ]>+] \'
+              | $<item>=[\" <-[ \" ]>+ \"]
+              | $<item>=[\' <-[ \' ]>+ \']
               | $<item>=[<-[ \ \t \\ \n ]>+]
             ]
             <.ws_inline> ]* \\
@@ -79,16 +82,20 @@ token makefile_variable_value_list {
          ]+
          <.ws_inline>
          [[
-            | \" $<item>=[<-[ \ \t \\ \n \" ]>+] \"
-            | \' $<item>=[<-[ \ \t \\ \n \' ]>+] \'
+#            | \" $<item>=[<-[ \ \t \\ \n \" ]>+] \"
+#            | \' $<item>=[<-[ \ \t \\ \n \' ]>+] \'
+            | $<item>=[\" <-[ \" ]>+ \"]
+            | $<item>=[\' <-[ \' ]>+ \']
             | $<item>=[<-[ \ \t \\ \n ]>+]
           ]
           <.ws_inline> ]*
        ]
       |[ <.ws_inline>
          [[
-            | \" $<item>=[<-[ \ \t \\ \n \" ]>+] \"
-            | \' $<item>=[<-[ \ \t \\ \n \' ]>+] \'
+#            | \" $<item>=[<-[ \ \t \\ \n \" ]>+] \"
+#            | \' $<item>=[<-[ \ \t \\ \n \' ]>+] \'
+            | $<item>=[\" <-[ \" ]>+ \"]
+            | $<item>=[\' <-[ \' ]>+ \']
             | $<item>=[<-[ \ \t \\ \n ]>+]
           ]
           <.ws_inline> ]*
@@ -113,11 +120,11 @@ token makefile_variable_value_list_item {
 
 token makefile_rule {
     |[ <makefile_special_rule> ] {*}
-    |[ $<targets>=[ [ <makefile_target> <[ \ \t ]>* ]+ ]
-       <[ \ \t ]>* ':' <[ \ \t ]>*
-       [ <makefile_prerequisite> <[ \ \t ]>* ]*
+    |[ $<targets>=[ [ <makefile_target> <.ws_inline> ]+ ]
+       <.ws_inline> ':' <.ws_inline> [\\\n <.ws_inline>]?
+       [ <makefile_prerequisite> <.ws_inline> [\\\n <.ws_inline>]? ]*
        [
-         |[ ';' <[ \ \t ]>* <makefile_rule_action>
+         |[ ';' <.ws_inline> <makefile_rule_action>
             [ \n \t <makefile_rule_action> ]*
           ]
          |[
@@ -134,7 +141,7 @@ token makefile_target {
 }
 token makefile_prerequisite {
     | <makefile_variable_ref> {*}
-    | <-[ ; \ \t \n ]>+ {*}
+    | <-[ ; \ \t \\ \n ]>+ {*}
 }
 token makefile_rule_action { <-[ \n ]>* {*} }
 token makefile_special_rule {
@@ -192,6 +199,11 @@ rule makefile_conditional_statement {
     [ 'endif' {{ '!pop-makefile-variable-switch'(match) }}
       | <.panic: "smart: * No 'endif'">
     ]
+    {*}
+}
+
+rule makefile_include_statement {
+    'include' \N+
     {*}
 }
 

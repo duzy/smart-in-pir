@@ -54,20 +54,16 @@ method empty_smart_statement($/) { make PAST::Op.new( :pirop('noop') ); }
 method makefile_variable_declaration($/) {
     if 1 {
         our $VAR_ON;
-        if $VAR_ON {
-        ## declare variable at parse stage
-        my $name := trim_spaces(~$<name>);
-        my $sign := ~$<sign>;
-        #my @items;
-        #for $<makefile_variable_value_list><item> {
-        #    @items.push( ~$_ );
-        #}
-        my @items := $<makefile_variable_value_list><item>;
-        declare_makefile_variable(
-            $name,
-            $sign,
-            @items
-        );
+        if ( $VAR_ON ) {
+            ## declare variable at parse stage
+            my $name := trim_spaces(~$<name>);
+            my $sign := ~$<sign>;
+            #my @items;
+            #for $<makefile_variable_value_list><item> {
+            #    @items.push( ~$_ );
+            #}
+            my @items := $<makefile_variable_value_list><item>;
+            declare_makefile_variable( $name, $sign, @items );
         }
         make PAST::Op.new( :pirop("noop") );
     }
@@ -263,6 +259,10 @@ method makefile_conditional_statement($/) {
 
         make $stmts;
     }
+}
+
+method makefile_include_statement($/) {
+    make PAST::Op.new( :inline('print "TODO: include statement\n"'), :node($/) );
 }
 
 method smart_say_statement($/) {
