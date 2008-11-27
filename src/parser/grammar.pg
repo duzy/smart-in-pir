@@ -69,14 +69,29 @@ token makefile_variable_value_list {
     [
       |[ 
          [ <.ws_inline>
-           [ $<item>=[<-[ \ \t \\ \n ]>+] <[ \ \t ]>* ]* \\
+           [[
+              | \" $<item>=[<-[ \ \t \\ \n \" ]>+] \"
+              | \' $<item>=[<-[ \ \t \\ \n \' ]>+] \'
+              | $<item>=[<-[ \ \t \\ \n ]>+]
+            ]
+            <.ws_inline> ]* \\
            [ \n || <.panic: 'smart: * Suspicious continuation'> ]
          ]+
          <.ws_inline>
-         [ $<item>=[<-[ \ \t \\ \n ]>+] <[ \ \t ]>* ]*
+         [[
+            | \" $<item>=[<-[ \ \t \\ \n \" ]>+] \"
+            | \' $<item>=[<-[ \ \t \\ \n \' ]>+] \'
+            | $<item>=[<-[ \ \t \\ \n ]>+]
+          ]
+          <.ws_inline> ]*
        ]
       |[ <.ws_inline>
-         [ $<item>=[<-[ \ \t \\ \n ]>+] <[ \ \t ]>* ]*
+         [[
+            | \" $<item>=[<-[ \ \t \\ \n \" ]>+] \"
+            | \' $<item>=[<-[ \ \t \\ \n \' ]>+] \'
+            | $<item>=[<-[ \ \t \\ \n ]>+]
+          ]
+          <.ws_inline> ]*
        ]
     ]
     
@@ -86,6 +101,14 @@ token makefile_variable_value_list {
 #    print $S0
 #    print "'\n"
 #    }}
+}
+token makefile_variable_value_list_item {
+    [
+      | \" <-[ \ \t \\ \n \" ]>+ \"
+      | \' <-[ \ \t \\ \n \' ]>+ \'
+      | <-[ \ \t \\ \n ]>+
+    ]
+    <.ws_inline>
 }
 
 token makefile_rule {
