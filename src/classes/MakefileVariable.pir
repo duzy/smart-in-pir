@@ -51,8 +51,6 @@ not_null:
     .local pmc gexpand
     .local string result, item
     
-    gexpand = get_root_global "expand"
-    
     result = ""
     item = ""
     items = self.'items'()
@@ -61,7 +59,7 @@ not_null:
 iterate_items:
     unless iter goto iterate_items_end
     item = shift iter
-    $S0 = gexpand( item ) ## invokes the builtin 'expand' routine
+    $S0 = '~expand-string'( item ) ## invokes the builtin 'expand' routine
     result .= $S0
     goto iterate_items
 iterate_items_end:

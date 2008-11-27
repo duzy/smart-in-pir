@@ -13,7 +13,12 @@ expand_variable -- Expand makefile variable.
 
 .namespace []
 
-.sub 'expand'
+.sub "expand"
+    .param string str
+    '~expand-string'( str )
+.end # sub "expand"
+
+.sub "~expand-string"
     .param string str
     .local string result
     .local string char, paren, name
@@ -201,10 +206,10 @@ error__unterminated_var:
     $S0 .= "'. Stop.\n"
     print $S0
     exit -1
-.end # sub 'expand'
+.end # sub "~expand-string"
 
 
-.sub '~expand'
+.sub '~expand~'
     .param string str
     .local string result
     .local string char, paren, name

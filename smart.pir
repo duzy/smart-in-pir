@@ -40,13 +40,16 @@ object.
 
 .sub 'parse_command_line_arguments' :anon
     .param pmc args
-    .local pmc iter
+    .local pmc iter, new_args
     .local string command_name, target
     .local string smartfile
     smartfile = ""
 
     ## save the command line name
     command_name = shift args
+
+    new_args = new 'ResizablePMCArray'
+    push new_args, command_name
     
     .local int argc
     argc = args
@@ -86,8 +89,9 @@ check_arg_5:
 #     unless arg == "-f" goto check_arg_else
 #     goto check_arg_end
 check_arg_else:
-    $S0 = substr arg, 0, 1
-    if $S0 == "-" goto check_arg_unknown_flag
+#     $S0 = substr arg, 0, 1
+#     if $S0 == "-" goto check_arg_unknown_flag
+    push new_args, arg
     goto check_arg_targets
     goto check_arg_end
 check_arg_targets:
@@ -125,7 +129,7 @@ check_arg_unknown_flag:
 end_loop_args:
     
     ## TODO: support more arguments
-
+    
     if smartfile == "" goto guess_smartfile
     goto done
     
@@ -135,8 +139,8 @@ guess_smartfile:
     push filenames, "Smartfile"
     push filenames, "smartfile"
     push filenames, "GNUmakefile"
-    push filenames, "Makefile"
     push filenames, "makefile"
+    push filenames, "Makefile"
     iter = new 'Iterator', filenames
 iterate_filenames:
     unless iter goto iterate_filenames_end
@@ -148,12 +152,10 @@ iterate_filenames:
 iterate_filenames_end:
 
 done:
-    $P0 = new 'ResizablePMCArray'
-    push $P0, command_name
     if smartfile == "" goto no_smartfile_for_new_args
-    push $P0, smartfile
+    push new_args, smartfile
     ##no_smartfile_for_new_args:
-    .return ($P0)
+    .return (new_args)
 no_smartfile_for_new_args:
     $S0 = "smart: No targets specified and no Smartfile found. Stop.\n"
     print $S0
