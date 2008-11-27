@@ -88,16 +88,27 @@ parse_and_expand_var__check_if_single_name:
     
 parse_and_expand_var__find_right_paren:
     #unless $I0 < len goto parse_and_expand_var__find_right_paren__end
-    unless $I0 < len goto parse_and_expand_var__error__unterminated_var
+    unless $I0 < len goto error__unterminated_var
     $S0 = substr str, $I0, 1
     if $S0 == paren goto parse_and_expand_var__find_right_paren__succeed
-    inc $I0
+    if $S0 == " " goto parse_and_expand_var__find_right_paren__check_if_callable_variable
+    inc $I0 ## go forward
+    goto parse_and_expand_var__find_right_paren
+parse_and_expand_var__find_right_paren__check_if_callable_variable:
+    $I1 = pos + 2
+    $I2 = $I0 - $I1
+    $S0 = substr str, $I1, $I2
+    inc $I0 ## skip the " "
+    local_branch call_stack, check_and_handle_callable_variable
+    #$I0 += $I1 ## skip to the right paren
+    #inc $I0 ## skip the right paren itself
+    $I0 = $I1 + 1 ## skip to the right paren
     goto parse_and_expand_var__find_right_paren
 parse_and_expand_var__find_right_paren__succeed:
     $I1 = $I0 - pos
-    $I0 = pos + 1
-    name = substr str, $I0, $I1
-    var_len = $I1 + 2
+    $I0 = pos + 2 ## skip the '$(' or '${'
+    var_len = $I1 - 2 ## skip the ')' or '}'
+    name = substr str, $I0, var_len
 parse_and_expand_var__find_right_paren__end:
     
 parse_and_expand_var__appending_result:
@@ -112,14 +123,64 @@ parse_and_expand_var__appending_result__do_expanding:
 parse_and_expand_var__done:
     local_return call_stack
 
-parse_and_expand_var__error__unterminated_var:
-    $I0 = $I0 - pos
-    $S1 = substr str, pos, $I0
-    $S0 = "smart: ** unterminated variable reference '"
-    $S0 .= $S1
-    $S0 .= "'. Stop.\n"
-    print $S0
-    exit -1
+    ######################
+    ## local routine: check_and_handle_callable_variable
+    ##          IN: $S0 (name), $I0 (the tail position of 'name', skipping the tail " "), paren
+    ##          OUT: $I1 (the position of the right paren)
+check_and_handle_callable_variable:
+    $I1 = index str, paren, $I0
+    if $I1 < 0 goto error__unterminated_var
+    $I2 = $I1 - $I0
+    $S1 = substr str, $I0, $I2 ## the arguments
+    unless $S0 == "shell" goto check_and_handle_callable_variable__check_2
+    local_branch call_stack, handle_callable_variable__shell
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_2:
+    unless $S0 == "call" goto check_and_handle_callable_variable__check_3
+    local_branch call_stack, handle_callable_variable__call
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_3:
+    unless $S0 == "wildcard" goto check_and_handle_callable_variable__check_4
+    local_branch call_stack, handle_callable_variable__wildcard
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_4:
+    ## got some thing else...
+    goto check_and_handle_callable_variable__done
+check_and_handle_callable_variable__check_done:
+
+    ## TODO: ???
+    
+check_and_handle_callable_variable__done:
+    local_return call_stack
+
+    ######################
+    ## local routine: handle_callable_variable__shell
+    ##          IN: $S1 (arguments)
+    ##          $S0 ('shell'), $I0, $I1 should not be used
+handle_callable_variable__shell:
+    $S2 = "TODO: append result of command '"
+    $S2 .= $S1
+    $S2 .= "'\n"
+    print $S2    
+    local_return call_stack
+
+    ######################
+    ## local routine: handle_callable_variable__call
+handle_callable_variable__call:
+    $S2 = "TODO: call another variable '"
+    $S2 .= $S1
+    $S2 .= "'\n"
+    print $S2    
+    local_return call_stack
+
+    ######################
+    ## local routine: handle_callable_variable__wildcard
+handle_callable_variable__wildcard:
+    $S2 = "TODO: wildcard files '"
+    $S2 .= $S1
+    $S2 .= "'\n"
+    print $S2    
+    local_return call_stack
 
     ######################
     ## local routine: report_null_variable
@@ -130,7 +191,17 @@ report_null_variable:
     concat $S0, "' undeclaraed.\n"
     print $S0
     local_return call_stack
-.end
+
+    ############################
+error__unterminated_var:
+    $I0 = $I0 - pos
+    $S1 = substr str, pos, $I0
+    $S0 = "smart: ** unterminated variable reference '"
+    $S0 .= $S1
+    $S0 .= "'. Stop.\n"
+    print $S0
+    exit -1
+.end # sub 'expand'
 
 
 .sub '~expand'

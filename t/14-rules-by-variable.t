@@ -14,6 +14,7 @@ foobar: $(T) $(A) $(B)
 
 %.t: head
 	@echo "ok, target:$@, stem:$*"
+	@echo $(shell uname)
 
 head:
 	@echo "1..9"
