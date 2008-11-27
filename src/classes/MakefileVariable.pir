@@ -48,6 +48,29 @@ not_null:
 .sub "expand" :method
     .local pmc items
     .local pmc iter
+    .local pmc gexpand
+    .local string result, item
+    
+    gexpand = get_root_global "expand"
+    
+    result = ""
+    item = ""
+    items = self.'items'()
+    iter = new 'Iterator', items
+    
+iterate_items:
+    unless iter goto iterate_items_end
+    item = shift iter
+    $S0 = gexpand( item ) ## invokes the builtin 'expand' routine
+    result .= $S0
+    goto iterate_items
+iterate_items_end:
+    .return(result)
+.end # sub "expand"
+
+.sub "~expand" :method
+    .local pmc items
+    .local pmc iter
     .local string result, item
     result = ""
     item = ""
