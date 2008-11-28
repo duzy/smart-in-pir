@@ -8,6 +8,7 @@ use warnings;
 use 5.008;
 
 use lib qw( . lib ../lib ../../lib ../../lib );
-use Parrot::Test::Harness language => 'smart',
-                          compiler => 'smart.pbc';
+#use Parrot::Test::Harness language => 'smart',
+#                          compiler => 'smart.pbc';
+use Smart::Test::Unit files => [ 't/*.t' ];
 

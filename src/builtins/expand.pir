@@ -7,7 +7,7 @@
 
 =head1
 
-expand_variable -- Expand makefile variable.
+expand -- Expand makefile variable.
 
 =cut
 
