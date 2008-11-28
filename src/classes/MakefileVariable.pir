@@ -14,6 +14,8 @@
     addattribute $P1, 'items'
 .end
 
+=item <name()>
+=cut
 .sub 'name' :method
     .local pmc name
     getattribute name, self, 'name'
@@ -24,6 +26,8 @@ has_name:
     .return(name)
 .end
 
+=item <items()>
+=cut
 .sub 'items' :method
     .local pmc items
     getattribute items, self, 'items'
@@ -35,16 +39,23 @@ not_null:
     .return (items)
 .end
 
+=item <count()>
+=cut
 .sub 'count' :method
     $P0 = self.'items'()
     set $I0, $P0
     .return ($I0)
 .end
 
+=item <cout()>
+=cut
 .sub 'count_deeply' :method
+    say "TODO: count item deeply..."
     .return (-1)
 .end
 
+=item <expand()>
+=cut
 .sub "expand" :method
     .local pmc items
     .local pmc iter
@@ -56,11 +67,13 @@ not_null:
     items = self.'items'()
     iter = new 'Iterator', items
     
-iterate_items:
     unless iter goto iterate_items_end
+iterate_items:
     item = shift iter
     $S0 = '~expand-string'( item ) ## invokes the builtin 'expand' routine
     result .= $S0
+    unless iter goto iterate_items_end
+    result .= " "
     goto iterate_items
 iterate_items_end:
     .return(result)
@@ -163,7 +176,7 @@ end_iterate_items:
 
 .sub 'value' :method
     $P0 = self.'items'()
-    $S0 = join ' ', $P0
+    $S0 = join " ", $P0
     .return ($S0)
 .end
 

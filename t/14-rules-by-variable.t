@@ -7,14 +7,17 @@ T = foo.t $(T2) bar.t $(T3)
 A =
 B =
 
+say $(T).expand();
+
 all: foobar
 
 foobar: $(T) $(A) $(B)
 	@echo "ok, $@, prerequisites:[$^]"
+	@echo $(shell uname)
+	@echo "$(T)"
 
 %.t: head
 	@echo "ok, target:$@, stem:$*"
-	@echo $(shell uname)
 
 head:
 	@echo "1..9"

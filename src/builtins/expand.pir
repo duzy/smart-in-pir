@@ -99,21 +99,26 @@ parse_and_expand_var__find_right_paren:
     if $S0 == " " goto parse_and_expand_var__find_right_paren__check_if_callable_variable
     inc $I0 ## go forward
     goto parse_and_expand_var__find_right_paren
+    
 parse_and_expand_var__find_right_paren__check_if_callable_variable:
     $I1 = pos + 2
     $I2 = $I0 - $I1
     $S0 = substr str, $I1, $I2
-    inc $I0 ## skip the " "
+    inc $I0 ## skip the " ", now the $I0 hold the start position of callable arguments
     local_branch call_stack, check_and_handle_callable_variable
-    #$I0 += $I1 ## skip to the right paren
-    #inc $I0 ## skip the right paren itself
+    if name == "" goto parse_and_expand_var__find_right_paren
+    ## $I1 is the position of the right paren, setted by the previous local_branch
     $I0 = $I1 + 1 ## skip to the right paren
-    goto parse_and_expand_var__find_right_paren
+    var_len = $I0 - pos
+    #goto parse_and_expand_var__find_right_paren
+    goto parse_and_expand_var__done
+    
 parse_and_expand_var__find_right_paren__succeed:
-    $I1 = $I0 - pos
-    $I0 = pos + 2 ## skip the '$(' or '${'
-    var_len = $I1 - 2 ## skip the ')' or '}'
-    name = substr str, $I0, var_len
+    var_len = $I0 - pos ## here $I0 is the position of the right paren, pos is the positon of "$"
+    $I1 = var_len - 2 ## minus the length of "${" or "$("
+    $I0 = pos + 2 ## $I0 is the start position of var-name now, skipping the '$(' or '${'
+    name = substr str, $I0, $I1
+    inc var_len ## var_len should include ')' or '}'
 parse_and_expand_var__find_right_paren__end:
     
 parse_and_expand_var__appending_result:
@@ -124,6 +129,7 @@ parse_and_expand_var__appending_result:
 parse_and_expand_var__appending_result__do_expanding:
     $S0 = $P0.'expand'()
     concat result, $S0 ## expanding well done!
+    goto parse_and_expand_var__done
     
 parse_and_expand_var__done:
     local_return call_stack
@@ -131,7 +137,7 @@ parse_and_expand_var__done:
     ######################
     ## local routine: check_and_handle_callable_variable
     ##          IN: $S0 (name), $I0 (the tail position of 'name', skipping the tail " "), paren
-    ##          OUT: $I1 (the position of the right paren)
+    ##          OUT: $I1 (the position of the right paren), name (modifying, "" if not callable)
 check_and_handle_callable_variable:
     $I1 = index str, paren, $I0
     if $I1 < 0 goto error__unterminated_var
@@ -150,10 +156,11 @@ check_and_handle_callable_variable__check_3:
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_4:
     ## got some thing else...
+    name = ""
     goto check_and_handle_callable_variable__done
 check_and_handle_callable_variable__check_done:
 
-    ## TODO: ???
+    name = $S0 ## store the callable name
     
 check_and_handle_callable_variable__done:
     local_return call_stack
