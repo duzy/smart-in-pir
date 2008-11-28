@@ -25,7 +25,7 @@ expand_variable -- Expand makefile variable.
     .local string char, paren, name
     .local int len, pos, var_len, cat_a
     .local pmc call_stack
-    
+
     call_stack = new 'ResizableIntegerArray'
     
     result = ""
@@ -118,7 +118,7 @@ parse_and_expand_var__find_right_paren__check_if_callable_variable:
     inc $I0 ## skip the " ", now the $I0 hold the start position of callable arguments
     local_branch call_stack, check_and_handle_callable_variable
     if name == "" goto parse_and_expand_var__find_right_paren
-    ## $I1 is the position of the right paren, setted by the previous local_branch
+    ## $I1 is the position of the right paren, set by the previous local_branch
     $I0 = $I1 + 1 ## skip to the right paren
     var_len = $I0 - pos
     goto parse_and_expand_var__done
@@ -143,7 +143,7 @@ parse_and_expand_var__appending_result__do_expanding:
     
 parse_and_expand_var__done:
     local_return call_stack
-
+    
     ######################
     ## local routine: check_and_handle_callable_variable
     ##          IN: $S0 (name), $I0 (the tail position of 'name', skipping the tail " "), paren
@@ -153,15 +153,33 @@ check_and_handle_callable_variable:
     if $I1 < 0 goto error__unterminated_var
     $I2 = $I1 - $I0
     $S1 = substr str, $I0, $I2 ## the arguments
+    print "callable: "
+    print $S0
+    print "("
+    print $S1
+    say ")"
 check_and_handle_callable_variable__check_1:
     unless $S0 == "subst"       goto check_and_handle_callable_variable__check_2
-
+    $I2 = index ",", $S1
+    $S2 = substr str, 0, $I2
+    $I3 = $I2
+    inc $I2 ## skip the first comma
+    $I2 = index ",", $S1, $I2
+    $I3 = $I2 - $I3
+    $S3 = substr str, $I2, $I3
+    inc $I2 ## skip the second comma
+    $I3 = length $S1
+    $I3 = $I3 - $I2
+    $S4 = substr str, $I2, $I3
+    $S1 = 'subst'( $S2, $S3, $S4 )
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_2:
     unless $S0 == "patsubst"    goto check_and_handle_callable_variable__check_3
+    $S1 = 'patsubst'( $S1 )
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_3:
     unless $S0 == "strip"       goto check_and_handle_callable_variable__check_4
+    
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_4:
     unless $S0 == "findstring"  goto check_and_handle_callable_variable__check_5
@@ -257,6 +275,7 @@ check_and_handle_callable_variable__check_32:
 check_and_handle_callable_variable__check_done:
 
     name = $S0 ## store the callable name
+    concat result, $S1 ## append the processed result
     
 check_and_handle_callable_variable__done:
     local_return call_stack
@@ -308,6 +327,7 @@ error__unterminated_var:
     $S0 .= $S1
     $S0 .= "'. Stop.\n"
     print $S0
+    say str
     exit -1
 .end # sub "~expand-string"
 
