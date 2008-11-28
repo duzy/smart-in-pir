@@ -15,7 +15,8 @@ expand_variable -- Expand makefile variable.
 
 .sub "expand"
     .param string str
-    '~expand-string'( str )
+    $S0 = '~expand-string'( str )
+    .return ($S0)
 .end # sub "expand"
 
 .sub "~expand-string"
@@ -52,7 +53,7 @@ loop_chars__end:
     local_branch call_stack, append_substring
     
     .return (result)
-
+    
     ######################
     ## local routine: append_substring
     ##          IN: str, cat_a, pos
