@@ -98,8 +98,18 @@ parse_and_expand_var__find_right_paren:
     $S0 = substr str, $I0, 1
     if $S0 == paren goto parse_and_expand_var__find_right_paren__succeed
     if $S0 == " " goto parse_and_expand_var__find_right_paren__check_if_callable_variable
+    if $S0 == ":" goto parse_and_expand_var__find_right_paren__check_patstring_pattern
     inc $I0 ## go forward
     goto parse_and_expand_var__find_right_paren
+
+parse_and_expand_var__find_right_paren__check_patstring_pattern:
+    say "TODO: variable patstring"
+    inc $I0
+    $I0 = index str, paren, $I0
+    var_len = $I0 - pos
+    inc var_len
+    goto parse_and_expand_var__find_right_paren
+    #goto parse_and_expand_var__done
     
 parse_and_expand_var__find_right_paren__check_if_callable_variable:
     $I1 = pos + 2
@@ -111,7 +121,6 @@ parse_and_expand_var__find_right_paren__check_if_callable_variable:
     ## $I1 is the position of the right paren, setted by the previous local_branch
     $I0 = $I1 + 1 ## skip to the right paren
     var_len = $I0 - pos
-    #goto parse_and_expand_var__find_right_paren
     goto parse_and_expand_var__done
     
 parse_and_expand_var__find_right_paren__succeed:
@@ -144,18 +153,104 @@ check_and_handle_callable_variable:
     if $I1 < 0 goto error__unterminated_var
     $I2 = $I1 - $I0
     $S1 = substr str, $I0, $I2 ## the arguments
-    unless $S0 == "shell" goto check_and_handle_callable_variable__check_2
-    local_branch call_stack, handle_callable_variable__shell
+check_and_handle_callable_variable__check_1:
+    unless $S0 == "subst"       goto check_and_handle_callable_variable__check_2
+
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_2:
-    unless $S0 == "call" goto check_and_handle_callable_variable__check_3
-    local_branch call_stack, handle_callable_variable__call
+    unless $S0 == "patsubst"    goto check_and_handle_callable_variable__check_3
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_3:
-    unless $S0 == "wildcard" goto check_and_handle_callable_variable__check_4
-    local_branch call_stack, handle_callable_variable__wildcard
+    unless $S0 == "strip"       goto check_and_handle_callable_variable__check_4
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_4:
+    unless $S0 == "findstring"  goto check_and_handle_callable_variable__check_5
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_5:
+    unless $S0 == "filter"      goto check_and_handle_callable_variable__check_6
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_6:
+    unless $S0 == "filter-out"  goto check_and_handle_callable_variable__check_7
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_7:
+    unless $S0 == "sort"        goto check_and_handle_callable_variable__check_8
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_8:
+    unless $S0 == "word"        goto check_and_handle_callable_variable__check_9
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_9:
+    unless $S0 == "words"       goto check_and_handle_callable_variable__check_10
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_10:
+    unless $S0 == "wordlist"    goto check_and_handle_callable_variable__check_11
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_11:
+    unless $S0 == "firstword"   goto check_and_handle_callable_variable__check_12
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_12:
+    unless $S0 == "lastword"    goto check_and_handle_callable_variable__check_13
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_13:
+    unless $S0 == "dir"         goto check_and_handle_callable_variable__check_14
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_14:
+    unless $S0 == "notdir"      goto check_and_handle_callable_variable__check_15
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_15:
+    unless $S0 == "suffix"      goto check_and_handle_callable_variable__check_16
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_16:
+    unless $S0 == "basename"    goto check_and_handle_callable_variable__check_17
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_17:
+    unless $S0 == "addsuffix"   goto check_and_handle_callable_variable__check_18
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_18:
+    unless $S0 == "addprefix"   goto check_and_handle_callable_variable__check_19
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_19:
+    unless $S0 == "join"        goto check_and_handle_callable_variable__check_20
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_20:
+    unless $S0 == "wildcard"    goto check_and_handle_callable_variable__check_21
+    local_branch call_stack, handle_callable_variable__wildcard
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_21:
+    unless $S0 == "realpath"    goto check_and_handle_callable_variable__check_22
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_22:
+    unless $S0 == "abspath"     goto check_and_handle_callable_variable__check_23
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_23:
+    unless $S0 == "error"       goto check_and_handle_callable_variable__check_24
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_24:
+    unless $S0 == "warning"     goto check_and_handle_callable_variable__check_25
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_25:
+    unless $S0 == "shell"       goto check_and_handle_callable_variable__check_26
+    local_branch call_stack, handle_callable_variable__shell
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_26:
+    unless $S0 == "origin"      goto check_and_handle_callable_variable__check_27
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_27:
+    unless $S0 == "flavor"      goto check_and_handle_callable_variable__check_28
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_28:
+    unless $S0 == "foreach"     goto check_and_handle_callable_variable__check_29
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_29:
+    unless $S0 == "call"        goto check_and_handle_callable_variable__check_30
+    local_branch call_stack, handle_callable_variable__call
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_30:
+    unless $S0 == "eval"        goto check_and_handle_callable_variable__check_31
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_31:
+    unless $S0 == "value"       goto check_and_handle_callable_variable__check_32
+    goto check_and_handle_callable_variable__check_done
+check_and_handle_callable_variable__check_32:
     ## got some thing else...
     name = ""
     goto check_and_handle_callable_variable__done
@@ -215,5 +310,4 @@ error__unterminated_var:
     print $S0
     exit -1
 .end # sub "~expand-string"
-
 

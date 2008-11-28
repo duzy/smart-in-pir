@@ -24,7 +24,8 @@ token ws_inline { <!ww> [ <comment_block> | <[ \ \t ]>* | [ '#' \N* ] ] }
 
 rule statement {
     | <empty_smart_statement> {*}               #= empty_smart_statement
-    | <smart_say_statement> {*}			#= smart_say_statement
+    | <smart_builtin_statement> {*}		#= smart_builtin_statement
+    | <smart_builtin_function> {*}              #= smart_builtin_function
     | <makefile_variable_declaration> {*}	#= makefile_variable_declaration
     | <makefile_rule> {*}                       #= makefile_rule
     | <makefile_conditional_statement> {*}      #= makefile_conditional_statement
@@ -207,9 +208,19 @@ rule makefile_include_statement {
     {*}
 }
 
-rule smart_say_statement {
-    'say' <expression> [ ',' <expression> ]*
+rule smart_builtin_statement {
+    $<name>=['say']
+    <expression> [ ',' <expression> ]*
     [ ';' || <.panic: 'smart: * Unterminated statement'> ]
+    {*}
+}
+
+rule smart_builtin_function {
+    $<name>=['expand'|'subst'|'patsubst']
+    '('
+    <expression> [ ',' <expression> ]*
+#    [ ';' || <.panic: 'smart: * Unterminated function'> ]
+    ')'
     {*}
 }
 
@@ -218,6 +229,7 @@ token term {
     | <value> {*}                                #= value
     | <makefile_variable_method_call> {*}        #= makefile_variable_method_call
     | <makefile_variable_ref> {*}		 #= makefile_variable_ref
+    | <smart_builtin_function> {*}               #= smart_builtin_function
 }
 
 rule value {

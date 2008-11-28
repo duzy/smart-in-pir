@@ -265,8 +265,18 @@ method makefile_include_statement($/) {
     make PAST::Op.new( :inline('print "TODO: include statement\n"'), :node($/) );
 }
 
-method smart_say_statement($/) {
-    my $past := PAST::Op.new( :name('say'), :pasttype('call'), :node( $/ ) );
+method smart_builtin_statement($/) {
+    my $name := ~$<name>;
+    my $past := PAST::Op.new( :name($name), :pasttype('call'), :node( $/ ) );
+    for $<expression> {
+        $past.push( $( $_ ) );
+    }
+    make $past;
+}
+
+method smart_builtin_function($/) {
+    my $name := ~$<name>;
+    my $past := PAST::Op.new( :name($name), :pasttype('call'), :node( $/ ) );
     for $<expression> {
         $past.push( $( $_ ) );
     }
