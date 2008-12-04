@@ -90,10 +90,15 @@ check_done:
     set_hll_global ['smart';'makefile';'variable'], name, var
     
 makefile_variable_exists:
-
+    
     if null items goto done
+    
+    .local pmc iter
+    
     if sign == "" goto done
+    #if sign == "?=" goto append_if_existed
     if sign == "+=" goto append_items
+    if sign == ":=" goto append_expansion
     ## TODO: handle with '?=', ':='
     
 assign_items:
@@ -101,15 +106,23 @@ assign_items:
     goto done
     
 append_items:
-    .local pmc iter
     iter = new 'Iterator', items
-iterate_items:
-    unless iter goto iterate_items_end
+append_items__iterate_items:
+    unless iter goto append_items__iterate_items_end
     $P1 = shift iter
     $P2 = var.'items'()
     push $P2, $P1 #push var, $P1
-    goto iterate_items
-iterate_items_end:
+    goto append_items__iterate_items
+append_items__iterate_items_end:
+    goto done
+
+append_expansion:
+    iter = new 'Iterator', items
+append_expansion__iterate_items:
+    unless iter goto append_expansion__iterate_items_end
+    goto append_expansion__iterate_items
+append_expansion__iterate_items_end:
+    goto done
     
 done:
     .return (var)
@@ -549,6 +562,16 @@ setup_number_one_target:
     $P1 = $P0[0]
     $S0 = $P1.'object'()
     set_hll_global ['smart';'makefile'], "$<0>", $P1
+    $P1 = new 'MakefileVariable'
+    $P2 = new 'String'
+    $P2 = ".DEFAULT_GOAL"
+    setattribute $P1, 'name', $P2
+    $P2 = new 'ResizableStringArray'
+    $P3 = new 'String'
+    $P3 = $S0
+    push $P2, $P3
+    setattribute $P1, 'items', $P2
+    set_hll_global ['smart';'makefile';'variable'], ".DEFAULT_GOAL", $P1
 setup_number_one_target_local_return:
     local_return call_stack
     

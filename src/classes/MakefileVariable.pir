@@ -12,11 +12,12 @@
     newclass $P1, 'MakefileVariable'
     addattribute $P1, 'name'
     addattribute $P1, 'items'
+    addattribute $P1, 'value'
 .end
 
 =item <name()>
 =cut
-.sub 'name' :method
+.sub "name" :method
     .local pmc name
     getattribute name, self, 'name'
     unless null name goto has_name
@@ -28,7 +29,7 @@ has_name:
 
 =item <items()>
 =cut
-.sub 'items' :method
+.sub "items" :method
     .local pmc items
     getattribute items, self, 'items'
     unless null items goto not_null
@@ -41,7 +42,7 @@ not_null:
 
 =item <count()>
 =cut
-.sub 'count' :method
+.sub "count" :method
     $P0 = self.'items'()
     set $I0, $P0
     .return ($I0)
@@ -49,7 +50,7 @@ not_null:
 
 =item <cout()>
 =cut
-.sub 'count_deeply' :method
+.sub "count_deeply" :method
     say "TODO: count item deeply..."
     .return (-1)
 .end
@@ -176,13 +177,13 @@ end_iterate_items:
     .return (result)
 .end
 
-.sub 'value' :method
+.sub "value" :method
     $P0 = self.'items'()
     $S0 = join " ", $P0
     .return ($S0)
 .end
 
-.sub 'join' :method
+.sub "join" :method
     .param string s
     $P0 = self.'items'()
     $S0 = join s, $P0

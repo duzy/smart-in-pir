@@ -8,6 +8,9 @@
 
 
 =head1 <subst(from,to,text)>
+
+subst -- Replace all substrings 'from' in text with 'to'.
+
 =cut
 .sub "subst"
     .param string from
@@ -29,7 +32,11 @@ loop_replacing_end:
     .return(text)
 .end
 
-=head1 <patsubst()>
+
+=head1 <patsubst(pattern1, pattern2, text)>
+
+patsubst -- Replace pattern %1 in the 'text' with pattern %2.
+
 =cut
 .sub "patsubst"
     .param string pat1
@@ -82,14 +89,12 @@ process_items:
 loop_items:
     item = shift iter
     if item == "" goto loop_items
-    #if item = "\t" goto loop_items
     $S0 = substr item, 0, prefix_len
     $I0 = length item
     $I1 = $I0 - suffix_len
     $S1 = substr item, $I1, suffix_len
     unless prefix == $S0 goto loop_items_skip
     unless suffix == $S1 goto loop_items_skip
-    #dec $I1
     $I1 -= prefix_len
     stem = substr item, prefix_len, $I1
     concat text, rep_prefix
@@ -108,9 +113,25 @@ loop_items_end:
     .return(text)
 .end
 
+
+=head1 <strip(text)>
+
+strip -- Remove heading and tailing spaces of text.
+
+=cut
 .sub "strip"
+    .param string text
+    
+    .return(text)
 .end
 
+
+=head1 <findstring(s,text)>
+
+findstring -- Returns 's' if it existed as a substring in 'text', or an empty
+              string will be returned.
+
+=cut
 .sub "findstring"
 .end
 
@@ -159,7 +180,12 @@ loop_items_end:
 .sub "join"
 .end
 
+=head1 <wildcard(pat)>
+=cut
 .sub "wildcard"
+    .param string pat
+    .local string result
+    .return(result)
 .end
 
 .sub "realpath"

@@ -69,7 +69,7 @@ token makefile_variable_declaration {
 #}
 token makefile_variable_value_list {
     [
-      <.ws_inline>
+      <.ws_inline> [\\\n]?
       [ $<item>=[<-[ \\ \n ]>+] [\\\n]? ]*
     ]
 }
@@ -218,7 +218,7 @@ rule smart_builtin_statement {
 }
 
 rule smart_builtin_function {
-    $<name>=['expand'|'subst'|'patsubst']
+    $<name>=['expand'|'subst'|'patsubst'|'strip']
     '('
     <expression> [ ',' <expression> ]*
 #    [ ';' || <.panic: 'smart: * Unterminated function'> ]

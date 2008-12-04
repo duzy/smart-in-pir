@@ -1,0 +1,31 @@
+## -*- mode: Makefile -*-
+## $Id$
+
+CXX = g++
+CXXFLAGS = 
+
+RM = rm
+RM_RF = $(RM) -rf
+
+SOURCES = $(wildcard src/*.cpp)
+OBJECTS = $(SOURCES:.cpp=.o)
+
+TARGET = foo
+
+#.DEFAULT_GOAL := $(TARGET)
+
+all:
+	@echo $(.DEFAULT_GOAL)
+
+clean:
+	@echo $(.DEFAULT_GOAL)
+	$(RM_RF) $(TARGET) $(OBJECTS)
+
+$(TARGET): $(OBJECTS)
+	$(CXX) $(LDFLAGS) $^ $(LOADLIBES) $() -o $@
+
+$(OBJECTS):%.o:%.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+
+
