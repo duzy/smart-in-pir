@@ -70,6 +70,8 @@ not_null:
     unless iter goto iterate_items_end
 iterate_items:
     item = shift iter
+#    print "item: " #!!!!!!!!!!!!!
+#    say item #!!!!!!!!!!!!!!!!!!!
     $S0 = '~expand-string'( item ) ## invokes the builtin 'expand' routine
     result .= $S0
     unless iter goto iterate_items_end

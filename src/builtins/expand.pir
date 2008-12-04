@@ -23,49 +23,54 @@ expand -- Expand makefile variable.
     .param string str
     .local string result
     .local string char, paren, name
-    .local int len, pos, var_len, cat_a
+    .local int len, pos, var_len, beg
+    .local int n
     .local pmc call_stack
 
     call_stack = new 'ResizableIntegerArray'
     
     result = ""
     len = length str
-    cat_a = 0 # the start position of substring to be appended
+    beg = 0 # the start position of substring to be appended
     pos = 0 # the end position of substring to be appended
+
+    #print "expand: " ##!!!!!!!!!!!!!
+    #say str
     
-loop_chars:
-    unless pos < len goto loop_chars__end
-    char = substr str, pos, 1
-    unless char == "$" goto loop_chars__handle_normal_char
+search_variable_sign:
+    $I0 = index str, "$", pos
+    if $I0 < 0 goto search_variable_sign_failed
     ## concat the substring before the "$" sign
+    pos = $I0 ## tells the end position of substring to be concated
     local_branch call_stack, append_substring
     ## parse and expand the variable indicated by "$"
     local_branch call_stack, parse_and_expand_var
-    pos += var_len
-    cat_a = pos
-    goto loop_chars
-loop_chars__handle_normal_char:
-    inc pos
-    goto loop_chars
-loop_chars__end:
+    pos += var_len ## skip the length of variable
+    beg = pos ## save the start position of substring
+    goto search_variable_sign
+search_variable_sign_failed:
+    pos = length str
+search_variable_sign_end:
     
     ## concat the last part of substring
     local_branch call_stack, append_substring
     
     .return (result)
+
     
     ######################
     ## local routine: append_substring
-    ##          IN: str, cat_a, pos
+    ##          IN: str, beg, pos
     ##          OUT: result (modifying)
 append_substring:
-    $I0 = pos - cat_a
+    $I0 = pos - beg
     if $I0 <= 0 goto append_substring__done
-    $S0 = substr str, cat_a, $I0
+    $S0 = substr str, beg, $I0
     concat result, $S0
 append_substring__done:
     local_return call_stack
 
+    
     ######################
     ## local routine: parse_and_expand_var
     ##          IN: str, pos, len
@@ -74,62 +79,55 @@ parse_and_expand_var:
     paren = ""
     name = ""
     var_len = 1 ## at less the length of "$"
-    $I0 = pos + 1 ## should skip the "$"
+    n = pos + 1 ## should skip the "$"
     
     ## check to see if '}' or ')' used as right paren
-    $S0 = substr str, $I0, 1
-    unless $S0 == "{" goto parse_and_expand_var__check_right_paren_more
+    $S0 = substr str, n, 1
+    unless $S0 == "{" goto parse_and_expand_var__check_right_paren_2
     paren = "}"
-    inc $I0
-    goto parse_and_expand_var__find_right_paren
-parse_and_expand_var__check_right_paren_more:
+    inc n
+    goto parse_and_expand_var____parsing
+parse_and_expand_var__check_right_paren_2:
     unless $S0 == "(" goto parse_and_expand_var__check_if_single_name
     paren = ")"
-    inc $I0
-    goto parse_and_expand_var__find_right_paren
+    inc n
+    goto parse_and_expand_var____parsing
 parse_and_expand_var__check_if_single_name:
     name = $S0
     var_len = 2
     goto parse_and_expand_var__appending_result
-    
-parse_and_expand_var__find_right_paren:
-    #unless $I0 < len goto parse_and_expand_var__find_right_paren__end
-    unless $I0 < len goto error__unterminated_var
-    $S0 = substr str, $I0, 1
-    if $S0 == paren goto parse_and_expand_var__find_right_paren__succeed
-    if $S0 == " " goto parse_and_expand_var__find_right_paren__check_if_callable_variable
-    if $S0 == ":" goto parse_and_expand_var__find_right_paren__check_patstring_pattern
-    inc $I0 ## go forward
-    goto parse_and_expand_var__find_right_paren
 
-parse_and_expand_var__find_right_paren__check_patstring_pattern:
-    say "TODO: variable patstring"
-    inc $I0
-    $I0 = index str, paren, $I0
-    var_len = $I0 - pos
-    inc var_len
-    goto parse_and_expand_var__find_right_paren
-    #goto parse_and_expand_var__done
-    
-parse_and_expand_var__find_right_paren__check_if_callable_variable:
-    $I1 = pos + 2
-    $I2 = $I0 - $I1
-    $S0 = substr str, $I1, $I2
-    inc $I0 ## skip the " ", now the $I0 hold the start position of callable arguments
-    local_branch call_stack, check_and_handle_callable_variable
-    if name == "" goto parse_and_expand_var__find_right_paren
-    ## $I1 is the position of the right paren, set by the previous local_branch
-    $I0 = $I1 + 1 ## skip to the right paren
-    var_len = $I0 - pos
+    ## Find the right paren and try parsing variable according it
+parse_and_expand_var____parsing:
+    unless n < len goto error__unterminated_var
+    $S0 = substr str, n, 1
+    if $S0 == paren goto parse_and_expand_var____parsing__succeed
+    if $S0 == ":" goto parse_and_expand_var____parsing__check_substitution_pattern
+    if $S0 == " " goto parse_and_expand_var____parsing__check_if_callable_variable
+    inc n ## step forward to parse
+    goto parse_and_expand_var____parsing
+
+parse_and_expand_var____parsing__check_substitution_pattern:
+    local_branch call_stack, parse_pattern_substitution
+    if name == "" goto parse_and_expand_var____parsing
+    var_len = n - pos
     goto parse_and_expand_var__done
     
-parse_and_expand_var__find_right_paren__succeed:
-    var_len = $I0 - pos ## here $I0 is the position of the right paren, pos is the positon of "$"
+parse_and_expand_var____parsing__check_if_callable_variable:
+    local_branch call_stack, check_and_handle_callable_variable
+    if name == "" goto parse_and_expand_var____parsing
+    ## $I1 is the position of the right paren, set by the previous local_branch
+    n = $I1 + 1 ## skip to the right paren
+    var_len = n - pos
+    goto parse_and_expand_var__done
+    
+parse_and_expand_var____parsing__succeed:
+    var_len = n - pos ## here n is the position of the right paren, pos is the positon of "$"
     $I1 = var_len - 2 ## minus the length of "${" or "$("
-    $I0 = pos + 2 ## $I0 is the start position of var-name now, skipping the '$(' or '${'
-    name = substr str, $I0, $I1
+    n = pos + 2 ## n is the start position of var-name now, skipping the '$(' or '${'
+    name = substr str, n, $I1
     inc var_len ## var_len should include ')' or '}'
-parse_and_expand_var__find_right_paren__end:
+parse_and_expand_var____parsing__end:
     
 parse_and_expand_var__appending_result:
     get_hll_global $P0, ['smart';'makefile';'variable'], name
@@ -143,35 +141,39 @@ parse_and_expand_var__appending_result__do_expanding:
     
 parse_and_expand_var__done:
     local_return call_stack
+
     
     ######################
     ## local routine: check_and_handle_callable_variable
-    ##          IN: $S0 (name), $I0 (the tail position of 'name', skipping the tail " "), paren
-    ##          OUT: $I1 (the position of the right paren), name (modifying, "" if not callable)
+    ##          IN: n (the end position of callable name),
+    ##              paren
+    ##          OUT: $I1 (the position of the right paren),
+    ##               name (modifying, "" if not callable)
 check_and_handle_callable_variable:
-    $I1 = index str, paren, $I0
+    $I1 = pos + 2 ## the start position of the callable name
+    $I2 = n - $I1 ## the callable name length
+    $S0 = substr str, $I1, $I2 ## the callable name
+    inc n ## skip the " "
+    ## Now 'n' holds the start position of callable arguments
+    $I1 = index str, paren, n ## calculates the end position of the variable
     if $I1 < 0 goto error__unterminated_var
-    $I2 = $I1 - $I0
-    $S1 = substr str, $I0, $I2 ## the arguments
-    print "callable: "
-    print $S0
-    print "("
-    print $S1
-    say ")"
+    
 check_and_handle_callable_variable__check_1:
     unless $S0 == "subst"       goto check_and_handle_callable_variable__check_2
-    $I2 = index ",", $S1
-    $S2 = substr str, 0, $I2
-    $I3 = $I2
+    $I2 = index str, ",", n
+    $I3 = $I2 - n
+    $S1 = substr str, n, $I3 ## argument one
     inc $I2 ## skip the first comma
-    $I2 = index ",", $S1, $I2
-    $I3 = $I2 - $I3
-    $S3 = substr str, $I2, $I3
+    n = $I2 ## step counter forward
+    $I2 = index str, ",", n
+    $I3 = $I2 - n
+    $S2 = substr str, n, $I3 ## argument two
     inc $I2 ## skip the second comma
-    $I3 = length $S1
-    $I3 = $I3 - $I2
-    $S4 = substr str, $I2, $I3
-    $S1 = 'subst'( $S2, $S3, $S4 )
+    n = $I2 ## step counter forward
+    $I2 = $I1 - n
+    $S3 = substr str, n, $I2
+    n = $I1 + 1 ## step counter forward
+    $S1 = 'subst'( $S1, $S2, $S3 )
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_2:
     unless $S0 == "patsubst"    goto check_and_handle_callable_variable__check_3
@@ -280,6 +282,50 @@ check_and_handle_callable_variable__check_done:
 check_and_handle_callable_variable__done:
     local_return call_stack
 
+
+    ######################
+    ## local routine: parse_pattern_substitution
+    ##          OUT: name (modifying)
+    ##               n (modifying, the position of the right paren)
+parse_pattern_substitution:
+    ## Parse patsubst variable like: $(VAR:.cpp=.o)
+    name = ""
+    $I0 = pos + 2
+    $I1 = n - $I0
+    $S0 = substr str, $I0, $I1 ## fetch the variable name
+    inc n ## skip the ":" character
+    $I0 = index str, "=", n
+    if $I0 < 0 goto parse_pattern_substitution____failed
+    $I1 = $I0 - n
+    $S1 = substr str, n, $I1
+    inc $I0 ## skip the "=" character
+    n = index str, paren, $I0 ## updating the 'n'
+    if n < 0 goto error__unterminated_var
+    $I1 = n - $I0
+    $S2 = substr str, $I0, $I1
+#     print "patsubst: " #!!!!!!!!!!!!!!!!!!!!!!
+#     print $S0
+#     print ": "
+#     print $S1
+#     print ", "
+#     say $S2
+    name = $S0
+    inc n ## skip the right paren
+    get_hll_global $P0, ['smart';'makefile';'variable'], name
+    if null $P0 goto parse_pattern_substitution____failed____null_var
+    $S3 = $P0.'expand'()
+    $S3 = 'patsubst'( $S1, $S2, $S3 )
+    concat result, $S3
+    goto parse_pattern_substitution__done
+parse_pattern_substitution____failed____null_var:
+    local_branch call_stack, report_null_variable    
+parse_pattern_substitution____failed:
+    name = ""
+    n = index str, paren, n
+    inc n ## skip the right paren
+parse_pattern_substitution__done:
+    local_return call_stack
+
     ######################
     ## local routine: handle_callable_variable__shell
     ##          IN: $S1 (arguments)
@@ -321,7 +367,7 @@ report_null_variable:
 
     ############################
 error__unterminated_var:
-    $I0 = $I0 - pos
+    $I0 = n - pos
     $S1 = substr str, pos, $I0
     $S0 = "smart: ** unterminated variable reference '"
     $S0 .= $S1

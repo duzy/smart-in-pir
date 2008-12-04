@@ -69,55 +69,57 @@ token makefile_variable_declaration {
 #}
 token makefile_variable_value_list {
     [
-      |[ 
-         [ <.ws_inline>
-           [[
-#              | \" $<item>=[<-[ \ \t \\ \n \" ]>+] \"
-#              | \' $<item>=[<-[ \ \t \\ \n \' ]>+] \'
-              | $<item>=[\" <-[ \" ]>+ \"]
-              | $<item>=[\' <-[ \' ]>+ \']
-              | $<item>=[<-[ \ \t \\ \n ]>+]
-            ]
-            <.ws_inline> ]* \\
-           [ \n || <.panic: 'smart: * Suspicious continuation'> ]
-         ]+
-         <.ws_inline>
-         [[
-#            | \" $<item>=[<-[ \ \t \\ \n \" ]>+] \"
-#            | \' $<item>=[<-[ \ \t \\ \n \' ]>+] \'
-            | $<item>=[\" <-[ \" ]>+ \"]
-            | $<item>=[\' <-[ \' ]>+ \']
-            | $<item>=[<-[ \ \t \\ \n ]>+]
-          ]
-          <.ws_inline> ]*
-       ]
-      |[ <.ws_inline>
-         [[
-#            | \" $<item>=[<-[ \ \t \\ \n \" ]>+] \"
-#            | \' $<item>=[<-[ \ \t \\ \n \' ]>+] \'
-            | $<item>=[\" <-[ \" ]>+ \"]
-            | $<item>=[\' <-[ \' ]>+ \']
-            | $<item>=[<-[ \ \t \\ \n ]>+]
-          ]
-          <.ws_inline> ]*
-       ]
+      <.ws_inline>
+      [ $<item>=[<-[ \\ \n ]>+] [\\\n]? ]*
     ]
-    
-#    {{
-#    $S0 = match.'text'()
-#    print "value: '"
-#    print $S0
-#    print "'\n"
-#    }}
 }
-token makefile_variable_value_list_item {
-    [
-      | \" <-[ \ \t \\ \n \" ]>+ \"
-      | \' <-[ \ \t \\ \n \' ]>+ \'
-      | <-[ \ \t \\ \n ]>+
-    ]
-    <.ws_inline>
-}
+# token makefile_variable_value_list {
+#     [
+#       |[ 
+#          [ <.ws_inline>
+#            [[
+#               | $<item>=[<-[ \ \t \\ \n $ ]>* '$(' <-[)]>+ ')']
+#               | $<item>=[<-[ \ \t \\ \n $ ]>* '${' <-[)]>+ '}']
+#               | $<item>=[\" <-[ \" ]>+ \"]
+#               | $<item>=[\' <-[ \' ]>+ \']
+#               | $<item>=[<-[ \ \t \\ \n ]>+]
+#             ]
+#             <.ws_inline> ]* \\
+#            [ \n || <.panic: 'smart: * Suspicious continuation'> ]
+#          ]+
+#          <.ws_inline>
+#          [[
+#             | $<item>=[<-[ \ \t \\ \n $ ]>* '$(' <-[)]>+ ')']
+#             | $<item>=[<-[ \ \t \\ \n $ ]>* '${' <-[)]>+ '}']
+#             | $<item>=[\" <-[ \" ]>+ \"]
+#             | $<item>=[\' <-[ \' ]>+ \']
+#             | $<item>=[<-[ \ \t \\ \n ]>+]
+#           ]
+#           <.ws_inline> ]*
+#        ]
+#       |[ <.ws_inline>
+#          [[
+#             | $<item>=[[<-[ \ \t \\ \n $ ]>* '$(' <-[)]>+ ')']+]
+#             | $<item>=[[<-[ \ \t \\ \n $ ]>* '${' <-[)]>+ '}']+]
+#             | $<item>=[\" <-[ \" ]>+ \"]
+#             | $<item>=[\' <-[ \' ]>+ \']
+#             | $<item>=[<-[ \ \t \\ \n ]>+]
+#           ]
+#           <.ws_inline> ]*
+#        ]
+#     ]
+# }
+
+# token makefile_variable_value_list_item {
+#     [
+#       |[ <-[ $ \ \t \\ \n ]>* '$(' <-[ ( ]> ')' ]+
+#       |[ <-[ $ \ \t \\ \n ]>* '${' <-[ ( ]> '}' ]+
+#       | \" <-[ \ \t \\ \n \" ]>+ \"
+#       | \' <-[ \ \t \\ \n \' ]>+ \'
+#       | <-[ \ \t \\ \n ]>+
+#     ]
+#     <.ws_inline>
+# }
 
 token makefile_rule {
     |[ <makefile_special_rule> ] {*}

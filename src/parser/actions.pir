@@ -70,9 +70,6 @@ check_done:
     .param string name
     .param string sign
     .param pmc items # :slurpy
-#     print name
-#     print sign
-#     say items
     "!update-makefile-variable"( name, sign, items )
 .end
 
@@ -223,8 +220,8 @@ no_number_one_target:
     .local pmc target ## used as a temporary
     .local pmc iter
     .local pmc call_stack
-    .local string target_name
     .local pmc out_array
+    .local string target_name
     .local int implicit
     
     call_stack = new 'ResizableIntegerArray'
