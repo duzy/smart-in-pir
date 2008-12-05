@@ -65,18 +65,10 @@ check_done:
     set_hll_global ['smart';'Grammar';'Actions'], '$VAR_ON', $P0
 .end
 
-#.sub "!declare-makefile-variable"
 .sub "declare_makefile_variable"
     .param string name
     .param string sign
     .param pmc items # :slurpy
-    "!update-makefile-variable"( name, sign, items )
-.end
-
-.sub "!update-makefile-variable"
-    .param string name
-    .param string sign
-    .param pmc items :optional # :slurpy
     
     .local pmc var
     get_hll_global var, ['smart';'makefile';'variable'], name
@@ -133,6 +125,17 @@ set_value:
 done:
     .return (var)
 .end
+
+
+=item
+=cut
+.sub "!get-makefile-variable-object"
+    .param string name
+    .local pmc var
+    get_hll_global var, ['smart';'makefile';'variable'], name
+    .return(var)
+.end # sub "!update-makefile-variable"
+
 
 =item
 =cut

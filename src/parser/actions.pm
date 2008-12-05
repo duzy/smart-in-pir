@@ -52,49 +52,19 @@ method statement($/, $key) {
 method empty_smart_statement($/) { make PAST::Op.new( :pirop('noop') ); }
 
 method makefile_variable_declaration($/) {
-    if 1 {
-        our $VAR_ON;
-        if ( $VAR_ON ) {
-            ## declare variable at parse stage
-            my $name := trim_spaces(~$<name>);
-            my $sign := ~$<sign>;
-            #my @items;
-            #for $<makefile_variable_value_list><item> {
-            #    @items.push( ~$_ );
-            #}
-            my @items := $<makefile_variable_value_list><item>;
-            declare_makefile_variable( $name, $sign, @items );
-        }
-        make PAST::Op.new( :pirop("noop") );
+    our $VAR_ON;
+    if ( $VAR_ON ) {
+        ## declare variable at parse stage
+        my $name := trim_spaces(~$<name>);
+        my $sign := ~$<sign>;
+        #my @items;
+        #for $<makefile_variable_value_list><item> {
+        #    @items.push( ~$_ );
+        #}
+        my @items := $<makefile_variable_value_list><item>;
+        declare_makefile_variable( $name, $sign, @items );
     }
-    else {
-    my $var := PAST::Var.new(
-        :name( trim_spaces(~$<name>) ),
-          :scope('package'),
-          :namespace('smart::makefile::variable'),
-          #:scope('lexical'),
-          :viviself('Undef'),
-          :lvalue(1),
-          :isdecl(1)
-    );
-
-    my $ctr := PAST::Op.new( :pasttype('call'),
-      :name('!update-makefile-variable'),
-      :returns('MakefileVariable') );
-    for $<makefile_variable_value_list><item> {
-        $ctr.push( PAST::Val.new( :value( ~$_ ), :returns('String') ) );
-    }
-
-    my $sign := ~$<sign>;
-    $ctr.unshift( PAST::Val.new( :value($sign), :returns('String') ) );
-    $ctr.unshift( PAST::Val.new( :value($var.name()), :returns('String') ) );
-
-    make PAST::Op.new( $var, $ctr,
-                       :pasttype('bind'),
-                       :name('bind-makefile-variable-variable'),
-                       :node( $/ )
-                   );
-    }
+    make PAST::Op.new( :pirop("noop") );
 }
 
 #method makefile_variable_value_list_item($/) {
@@ -125,10 +95,9 @@ method makefile_variable_ref($/) {
       :node($/)
     );
     my $binder := PAST::Op.new( :pasttype('call'),
-      :name('!update-makefile-variable'),
+      :name('!get-makefile-variable-object'),
       :returns('MakefileVariable') );
     $binder.push( PAST::Val.new( :value($var.name()), :returns('String') ) );
-    $binder.push( PAST::Val.new( :value(""), :returns('String') ) );
 
     make PAST::Op.new( $var, $binder,
                        :pasttype('bind'),
