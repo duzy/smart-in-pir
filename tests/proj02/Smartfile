@@ -15,7 +15,7 @@ TARGET = foo
 #.DEFAULT_GOAL := $(TARGET)
 
 all:
-	@echo $(.DEFAULT_GOAL)
+	@echo $(.DEFAULT_GOAL) $@
 
 clean:
 	@echo $(.DEFAULT_GOAL)

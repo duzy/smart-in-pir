@@ -67,9 +67,6 @@ method makefile_variable_declaration($/) {
     make PAST::Op.new( :pirop("noop") );
 }
 
-#method makefile_variable_value_list_item($/) {
-#}
-
 method makefile_variable_method_call($/) {
     my $past := PAST::Op.new( $( $<makefile_variable_ref> ),
         :name( ~$<ident> ), :pasttype( 'callmethod' ) );

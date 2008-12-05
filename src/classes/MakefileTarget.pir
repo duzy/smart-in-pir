@@ -149,8 +149,9 @@ no_rule_found:
     $P0 = .name
     $P1 = h[.name]
     setattribute .var, "name", $P0
-    setattribute .var, "items", $P1
+    setattribute .var, "value", $P1
 .endm
+
 
 =item
     Separate directory and file parts of the object name.
@@ -162,7 +163,9 @@ no_rule_found:
     .local pmc items_D, items_F
     items_D = new 'ResizablePMCArray'
     items_F = new 'ResizablePMCArray'
-    $P1 = getattribute src, 'items'
+    $P0 = getattribute src, 'value'
+    $S0 = $P0
+    $P1 = split " ", $S0
     $P2 = new 'Iterator', $P1
 loop_tag:
     unless $P2 goto loop_tag_end
@@ -197,15 +200,22 @@ loop_tag_end:
     var_D = new 'MakefileVariable'
     $P0 = new 'String'
     $P0 = name_D
+    $S1 = join " ", items_D
+    $P1 = new 'String'
+    $P1 = $S1
     setattribute var_D, "name" , $P0
-    setattribute var_D, "items", items_D
+    setattribute var_D, "value", $P1
     var_F = new 'MakefileVariable'
     $P0 = new 'String'
     $P0 = name_F
+    $S1 = join " ", items_F
+    $P1 = new 'String'
+    $P1 = $S1
     setattribute var_F, "name" , $P0
-    setattribute var_F, "items", items_F
+    setattribute var_F, "value", $P1
     .return (var_D, var_F)
 .end
+
 
 =item
     Setup automatic variables for updating the target.
@@ -227,31 +237,31 @@ no_stem:
     .local pmc var0, var1, var2, var3, var4, var5, var6, var7, var8, var9
     .local pmc var10, var11, var12, var13, var14, var15, var16, var17
     .local pmc var18, var19, var20, var21, var22, var23
-    .local pmc array, h
+    .local pmc value, h
 
     h = new 'Hash'
     
     ## var0 => $@
-    array = new 'ResizablePMCArray'
-    h["@"] = array
+    value = new 'String'
+    h["@"] = value
     $S0 = target.'object'()
-    push array, $S0
+    value = $S0
 
     ## var1 => $%
-    array = new 'ResizablePMCArray'
-    h["%"] = array
+    value = new 'String'
+    h["%"] = value
     $S0 = target.'member'()
-    push array, $S0
+    value = $S0
     
     ## var2 => $<
-    array = new 'ResizablePMCArray'
-    h["<"] = array
+    value = new 'String'
+    h["<"] = value
     $I0 = exists prerequisites[0]
     unless $I0 goto var2_no_prerequisites
     $P1 = prerequisites[0]
     $S0 = '.!calculate-object-of-prerequisite'( target, $P1 )
     if $S0 == "" goto var2_done
-    push array, $S0
+    value = $S0
 var2_no_prerequisites:
 var2_done:
 
@@ -259,6 +269,7 @@ var2_done:
     ## var4 => $^
     ## var5 => $+
     ## var6 => $|
+    .local pmc array
     array = new 'ResizablePMCArray'
     h["?"] = array
     array = new 'ResizablePMCArray'
@@ -273,7 +284,7 @@ loop_prerequisites:
     unless $P1 goto end_loop_prerequisites
     $P0 = shift $P1       ## $P0, $P1 used
     $S1 = '.!calculate-object-of-prerequisite'( target, $P0 ) ## $S1 used
-
+    
     ## skip empty object, e.g. variable prerequisite will returns empty
     if $S1 == "" goto loop_prerequisites
     
@@ -316,12 +327,29 @@ end_var5:
 end_var6:
     goto loop_prerequisites
 end_loop_prerequisites:
+    
+    array = h["?"]
+    $S0 = join " ", array
+    h["?"] = $S0
+    
+    array = h["^"]
+    $S0 = join " ", array
+    h["^"] = $S0
+    
+    array = h["|"]
+    $S0 = join " ", array
+    h["|"] = $S0
+    
+    array = h["+"]
+    $S0 = join " ", array
+    h["+"] = $S0
 
     ## var7 => $* , the stem
-    array = new 'ResizablePMCArray'
-    h["*"] = array
+    value = new 'String'
+    h["*"] = value
     if stem == "" goto var7_got_empty_stem
-    push array, stem
+    #push array, stem
+    value = stem
 var7_got_empty_stem:
 
     .MAKEFILE_VARIABLE( var0, "@", h )

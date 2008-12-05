@@ -110,17 +110,6 @@ token makefile_variable_value_list {
 #     ]
 # }
 
-# token makefile_variable_value_list_item {
-#     [
-#       |[ <-[ $ \ \t \\ \n ]>* '$(' <-[ ( ]> ')' ]+
-#       |[ <-[ $ \ \t \\ \n ]>* '${' <-[ ( ]> '}' ]+
-#       | \" <-[ \ \t \\ \n \" ]>+ \"
-#       | \' <-[ \ \t \\ \n \' ]>+ \'
-#       | <-[ \ \t \\ \n ]>+
-#     ]
-#     <.ws_inline>
-# }
-
 token makefile_rule {
     |[ <makefile_special_rule> ] {*}
     |[ $<targets>=[ [ <makefile_target> <.ws_inline> ]+ ]

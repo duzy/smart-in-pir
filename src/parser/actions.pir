@@ -68,8 +68,8 @@ check_done:
 .sub "declare_makefile_variable"
     .param string name
     .param string sign
-    .param pmc items # :slurpy
-    
+    .param pmc items
+
     .local pmc var
     get_hll_global var, ['smart';'makefile';'variable'], name
     unless null var goto makefile_variable_exists
@@ -85,22 +85,23 @@ check_done:
 makefile_variable_exists:
     
     if null items goto done
+    $S0 = typeof items
+    if $S0 == "Undef" goto done
     if sign == "" goto done
     
     .local pmc iter
     
     $S0 = ""
-iterate_items:
     iter = new 'Iterator', items
-    unless iter goto iterate_items__iterate_items_end
-iterate_items__iterate_items:
+    unless iter goto iterate_items_end
+iterate_items:
     $S1 = shift iter
     concat $S0, $S1
-    unless iter goto iterate_items__iterate_items_end
+    unless iter goto iterate_items_end
     concat $S0, " "
-    goto iterate_items__iterate_items
-iterate_items__iterate_items_end:
-    
+    goto iterate_items
+iterate_items_end:
+
     if $S0  == ""   goto done
     if sign == "="  goto set_value
     #if sign == "?=" goto assign_if_existed
@@ -110,7 +111,7 @@ iterate_items__iterate_items_end:
 assign_with_expansion:
     $S0 = 'expand'( $S0 )
     goto set_value
-
+    
 append_value:
     $S1 = var.'value'()
     concat $S1, " "
@@ -575,11 +576,9 @@ setup_number_one_target:
     $P2 = new 'String'
     $P2 = ".DEFAULT_GOAL"
     setattribute $P1, 'name', $P2
-    $P2 = new 'ResizableStringArray'
-    $P3 = new 'String'
-    $P3 = $S0
-    push $P2, $P3
-    setattribute $P1, 'items', $P2
+    $P2 = new 'String'
+    $P2 = $S0
+    setattribute $P1, 'value', $P2
     set_hll_global ['smart';'makefile';'variable'], ".DEFAULT_GOAL", $P1
 setup_number_one_target_local_return:
     local_return call_stack
