@@ -121,8 +121,43 @@ strip -- Remove heading and tailing spaces of text.
 =cut
 .sub "strip"
     .param string text
+    .local int len, pos1, pos2
+    .local string spaces
     
-    .return(text)
+    spaces = " \t"
+    len = length text
+    
+    pos1 = 0
+strip_head:
+    unless pos1 < len goto strip_head_end
+    $S0 = substr text, pos1, 1
+    $I0 = index spaces, $S0
+    if $I0 < 0 goto strip_head_end
+    inc pos1
+    goto strip_head
+strip_head_end:
+
+    pos2 = len - 1
+strip_tail:
+    unless 0 <= pos2 goto strip_tail_end
+    $S0 = substr text, pos2, 1
+    $I0 = index spaces, $S0
+    if $I0 < 0 goto strip_tail_end
+    dec pos2
+    goto strip_tail
+strip_tail_end:
+
+    $I0 = pos2 - pos1
+    inc $I0
+    $S0 = substr text, pos1, $I0
+
+#     print pos1
+#     print ", "
+#     print pos2
+#     print " => "
+#     say text
+    
+    .return($S0)
 .end
 
 

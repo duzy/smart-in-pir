@@ -55,7 +55,7 @@ method makefile_variable_declaration($/) {
     our $VAR_ON;
     if ( $VAR_ON ) {
         ## declare variable at parse stage
-        my $name := trim_spaces(~$<name>);
+        my $name := strip(~$<name>);
         my $sign := ~$<sign>;
         #my @items;
         #for $<makefile_variable_value_list><item> {
@@ -120,7 +120,7 @@ method makefile_rule($/) {
         for $<makefile_rule_action> { $pack_actions.push( $( $_ ) ); }
 
         my $match := ~$<targets>;
-        $match := trim_spaces( $match );
+        $match := strip( $match );
         my $rule := PAST::Var.new( :lvalue(1), :viviself('Undef'),
            :scope('package'), :name($match), :namespace('smart::makefile::rule') );
         my $rule_ctr := PAST::Op.new( :pasttype('call'),
@@ -142,7 +142,7 @@ method makefile_target($/) {
         make $( $<makefile_variable_ref> );
     }
     else {
-        my $name := trim_spaces( ~$/ );
+        my $name := strip( ~$/ );
         my $t := PAST::Var.new( :name($name),
           :lvalue(0),
           :isdecl(1),

@@ -323,7 +323,7 @@ end_var5:
     
     ## var6 => $|
     array = h["|"] # order-only??
-    #push array, $S1
+    push array, $S1
 end_var6:
     goto loop_prerequisites
 end_loop_prerequisites:
@@ -348,7 +348,6 @@ end_loop_prerequisites:
     value = new 'String'
     h["*"] = value
     if stem == "" goto var7_got_empty_stem
-    #push array, stem
     value = stem
 var7_got_empty_stem:
 

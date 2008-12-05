@@ -7,29 +7,6 @@
 #
 
 .namespace ["smart";"Grammar";"Actions"]
-.sub "trim_spaces"
-    .param string str
-    .local int len, pos
-
-    len = length str
-    pos = len - 1
-    if pos == 0 goto end_chop
-count_spaces:
-    $S0 = substr str, pos, 1
-    $I0 = $S0 == " "
-    $I1 = $S0 == "\t"
-    $I0 = or $I0, $I1
-    unless $I0 goto do_chop
-    dec pos
-    goto count_spaces
-do_chop:
-    $I0 = len - pos
-    dec $I0
-    chopn str, $I0
-end_chop:
-    .return (str)
-.end
-
 
 .namespace []
 

@@ -17,7 +17,7 @@ say "patsubst: ", patsubst(".t", ".o", $(TESTS));
 say "patsubst: ", patsubst(".c", ".t", $(TESTS));
 say "patsubst: ", patsubst(".t", ".c", $(TESTS));
 say "patsubst: ", patsubst("f%", "t%", $(TESTS));
-say "strip: ", strip("  		 abc  	 ");
+say "strip: ", strip('  		 abc  	 ');
 say expand("[$(T)]");
 say expand("[$(subst foo,bar,abc,foo,def,foo,xyz)]");
 say expand("[$(T2)]");

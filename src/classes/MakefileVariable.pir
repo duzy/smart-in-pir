@@ -11,7 +11,6 @@
 .sub '__init_class' :anon :init :load
     newclass $P1, 'MakefileVariable'
     addattribute $P1, 'name'
-#     addattribute $P1, 'items'
     addattribute $P1, 'value'
 .end
 
@@ -30,26 +29,31 @@ has_name:
 
 
 =item <items()>
+Returns an string array containing all items.
 =cut
 .sub "items" :method
-    .local pmc items
-    .local string value
-#     getattribute items, self, 'items'
-#     unless null items goto not_null
-#     #items = new 'ResizableStringArray'
-#     items = new 'ResizablePMCArray'
-#     setattribute self, 'items', items
-# not_null:
-    value = self.'value'()
-    items = split " ", value
-    .return (items)
+    .local pmc items, result, it
+    .local string str
+    str = self.'value'()
+    items = split " ", str
+    result = new 'ResizableStringArray'
+    it = new 'Iterator', items
+iterate_items:
+    unless it goto iterate_items_end
+    str = shift it
+    str = 'strip'( str )
+    if str == "" goto iterate_items
+    push result, str
+    goto iterate_items
+iterate_items_end:
+    .return (result)
 .end # sub "items"
+
 
 =item <count()>
 =cut
 .sub "count" :method
     $P0 = self.'items'()
-    #set $I0, $P0
     elements $I0, $P0
     .return ($I0)
 .end # sub "count"
@@ -66,26 +70,6 @@ has_name:
 =item <expand()>
 =cut
 .sub "expand" :method
-#     .local pmc items
-#     .local pmc iter
-#     .local pmc gexpand
-#     .local string result, item
-    
-#     result = ""
-#     item = ""
-#     items = self.'items'()
-#     iter = new 'Iterator', items
-    
-#     unless iter goto iterate_items_end
-# iterate_items:
-#     item = shift iter
-#     $S0 = '~expand-string'( item ) ## invokes the builtin 'expand' routine
-#     result .= $S0
-#     unless iter goto iterate_items_end
-#     result .= " "
-#     goto iterate_items
-# iterate_items_end:
-#     .return(result)
     .local string value, result
     value = self.'value'()
     result = '~expand-string'( value )
@@ -96,9 +80,6 @@ has_name:
 =item <value()>
 =cut
 .sub "value" :method
-#     $P0 = self.'items'()
-#     $S0 = join " ", $P0
-#     .return ($S0)
     .local pmc value
     getattribute value, self, 'value'
     if null value goto set_initial_value
