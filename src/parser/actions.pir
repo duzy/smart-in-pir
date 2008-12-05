@@ -81,6 +81,7 @@ check_done:
     .local pmc var
     get_hll_global var, ['smart';'makefile';'variable'], name
     unless null var goto makefile_variable_exists
+    if sign == "?=" goto done
     
     var = new 'MakefileVariable'
     $P0 = new 'String'
@@ -92,37 +93,42 @@ check_done:
 makefile_variable_exists:
     
     if null items goto done
+    if sign == "" goto done
     
     .local pmc iter
     
-    if sign == "" goto done
-    #if sign == "?=" goto append_if_existed
-    if sign == "+=" goto append_items
-    if sign == ":=" goto append_expansion
-    ## TODO: handle with '?=', ':='
-    
-assign_items:
-    setattribute var, 'items', items
-    goto done
-    
-append_items:
+    $S0 = ""
+iterate_items:
     iter = new 'Iterator', items
-append_items__iterate_items:
-    unless iter goto append_items__iterate_items_end
-    $P1 = shift iter
-    $P2 = var.'items'()
-    push $P2, $P1 #push var, $P1
-    goto append_items__iterate_items
-append_items__iterate_items_end:
-    goto done
+    unless iter goto iterate_items__iterate_items_end
+iterate_items__iterate_items:
+    $S1 = shift iter
+    concat $S0, $S1
+    unless iter goto iterate_items__iterate_items_end
+    concat $S0, " "
+    goto iterate_items__iterate_items
+iterate_items__iterate_items_end:
+    
+    if $S0  == ""   goto done
+    if sign == "="  goto set_value
+    #if sign == "?=" goto assign_if_existed
+    if sign == ":=" goto assign_with_expansion
+    if sign == "+=" goto append_value
+    
+assign_with_expansion:
+    $S0 = 'expand'( $S0 )
+    goto set_value
 
-append_expansion:
-    iter = new 'Iterator', items
-append_expansion__iterate_items:
-    unless iter goto append_expansion__iterate_items_end
-    goto append_expansion__iterate_items
-append_expansion__iterate_items_end:
-    goto done
+append_value:
+    $S1 = var.'value'()
+    concat $S1, " "
+    concat $S1, $S0
+    goto set_value
+    
+set_value:
+    $P0 = new 'String'
+    $P0 = $S0
+    setattribute var, 'value', $P0
     
 done:
     .return (var)
@@ -182,7 +188,7 @@ update_number_one_target:
     
     if $I0 <= 0 goto nothing_updated
     if 0 < $I0 goto all_done
-
+    
     $S0 = "smart: "
     $S0 .= object
     $S0 .= "' is up to date.\n"
