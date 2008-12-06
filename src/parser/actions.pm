@@ -106,6 +106,9 @@ method makefile_rule($/) {
     if ( $<makefile_special_rule> ) {
         make $( $<makefile_special_rule> );
     }
+    elsif $<static_targets> {
+        make PAST::Op.new( :inline('print "TODO: static pattern rule\n"') );
+    }
     else {
         my $pack_targets := PAST::Op.new( :pasttype('call'),
           :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
@@ -164,13 +167,16 @@ method makefile_prerequisite($/) {
         make $( $<makefile_variable_ref> );
     }
     else {
-        my $p := PAST::Var.new( :name(~$/),
-          :lvalue(0),
-          :isdecl(1),
-          :viviself('Undef'),
-          :scope('lexical') );
-        my $c := PAST::Op.new( :pasttype('call'),
-          :name('!bind-makefile-target'), :returns('MakefileTarget') );
+        my $p := PAST::Var.new(
+            :name(~$/),
+            :lvalue(0),
+            :isdecl(1),
+            :viviself('Undef'),
+            :scope('lexical') );
+        my $c := PAST::Op.new(
+            :pasttype('call'),
+            :name('!bind-makefile-target'),
+            :returns('MakefileTarget') );
         $c.push( PAST::Val.new( :value($p.name()), :returns('String') ) );
         $c.push( PAST::Val.new( :value(0), :returns('Integer') ) );
         make PAST::Op.new( $p, $c, :pasttype('bind'),

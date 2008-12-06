@@ -23,7 +23,6 @@ say expand("[$(subst foo,bar,abc,foo,def,foo,xyz)]");
 say expand("[$(T2)]");
 say expand("[$(T3)]");
 say expand("[$(T4)]");
-
 say expand("[$(TESTS:.t=.o)]");
 say expand("[$(TESTS:b%.t=t%.o)]");
 say expand("[$(TESTS:%.c=%.t)]");

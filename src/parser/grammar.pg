@@ -112,9 +112,19 @@ token makefile_variable_value_list {
 
 token makefile_rule {
     |[ <makefile_special_rule> ] {*}
-    |[ $<targets>=[ [ <makefile_target> <.ws_inline> ]+ ]
-       <.ws_inline> ':' <.ws_inline> [\\\n <.ws_inline>]?
-       [ <makefile_prerequisite> <.ws_inline> [\\\n <.ws_inline>]? ]*
+    |[ [
+         |[ $<static_targets>=[ [ <makefile_target> <.ws_inline> ]+ ]
+            ':' <.ws_inline>
+            $<target_pattern>=[<-[ : \n ]>+]
+            ':' <.ws_inline>
+            $<prereq_pattern>=[<-[ \\ \n ]>+]
+            [\\\n <.ws_inline>]?
+          ]
+         |[ $<targets>=[ [ <makefile_target> <.ws_inline> ]+ ]
+            ':' <.ws_inline> [\\\n <.ws_inline>]?
+            [ <makefile_prerequisite> <.ws_inline> [\\\n <.ws_inline>]? ]*
+          ]
+       ]
        [
          |[ ';' <.ws_inline> <makefile_rule_action>
             [ \n \t <makefile_rule_action> ]*

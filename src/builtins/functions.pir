@@ -150,7 +150,7 @@ strip_tail_end:
     $I0 = pos2 - pos1
     inc $I0
     $S0 = substr text, pos1, $I0
-
+    
 #     print pos1
 #     print ", "
 #     print pos2
