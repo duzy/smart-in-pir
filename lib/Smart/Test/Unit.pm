@@ -30,6 +30,7 @@ use warnings;
 #use 5.8;
 use Carp;
 use File::Spec;
+use Smart::Test;
 
 sub collect_files {
     my %options = @_;
@@ -41,7 +42,7 @@ sub collect_files {
 
     if ( $options{files} && ref $options{files} eq 'ARRAY' ) {
         my @patterns = @{ $options{files} };
-        @files = @map { glob( $_ ) } @patterns;
+        push @files, map { glob( $_ ) } @patterns;
     }
 
     return @files;
@@ -50,12 +51,18 @@ sub collect_files {
 sub import {
     my ( $class, %options ) = @_;
 
+    croak "Should tell the smart command\n"
+        unless my $smart = $options{smart};
+
     croak "Should tell the 'path' or 'files'\n"
         unless $options{path} or $options{files};
 
     exit unless my @files = collect_files( %options );
 
-    print map { "unit: " . $_ . "\n" } @files;
+    #print map { "unit: " . $_ . "\n" } @files;
+
+    my $tester = Smart::Test->new;
+    $tester->runtests( $smart, @files );
 }
 
 1;
