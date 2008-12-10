@@ -8,11 +8,11 @@ item4 item5\
 item6	item7	    item8\
 item9    	    item10\
 
-say 'ok $(A) = ', $(A);
-say 'ok $(A).name = ', $(A).name();
-say 'ok $(A).count = ', $(A).count();
-say 'fail $(A).count_deeply = ', $(A).count_deeply();
-say 'ok $(A).value = ', ${A}.value();
-say 'ok $(A).expand = ', ${A}.expand();
-say 'ok $(A).join = ', $(A).join(';');
+say 'check:(item1 item2 item3 item4 item5 item6	item7	    item8 item9    	    item10):', $(A);
+say 'check:name(A):', $(A).name();
+say 'check:count(10):', $(A).count();
+say 'check:value(item1 item2 item3 item4 item5 item6	item7	    item8 item9    	    item10):', ${A}.value();
+say 'check:expand(item1 item2 item3 item4 item5 item6	item7	    item8 item9    	    item10):', ${A}.expand();
+say 'check:join(item1;item2;item3;item4;item5;item6;item7;item8;item9;item10):', $(A).join(';');
 
+say 'todo: $(A).count_deeply()';
