@@ -55,6 +55,7 @@ iterate_items_end:
 .sub "count" :method
     $P0 = self.'items'()
     elements $I0, $P0
+    inc $I0 ## $I0 is zero based
     .return ($I0)
 .end # sub "count"
 

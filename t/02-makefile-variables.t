@@ -1,3 +1,5 @@
+# -*- mode: makefile -*-
+
 say '1..10';
 
 # Declare makefile-variables, compatible with GNU make

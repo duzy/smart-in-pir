@@ -94,6 +94,7 @@ append_value:
     $S1 = var.'value'()
     concat $S1, " "
     concat $S1, $S0
+    $S0 = $S1
     goto set_value
     
 set_value:

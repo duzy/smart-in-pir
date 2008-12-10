@@ -1,6 +1,6 @@
 # -*- mode: makefile -*-
 
-say '1..1';
+say '1..2';
 
 all:
 	@echo "ok: foobar (no echo)"

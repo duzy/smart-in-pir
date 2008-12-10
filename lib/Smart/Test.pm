@@ -1,7 +1,7 @@
 #
 #    Copyright 2008-11-22 DuzySoft.com, by Duzy Chan
 #    All rights reserved by Duzy Chan
-#    Email: <duzy@duzy.ws, duzy.chan@gmail.com>
+#    Email: <duzy@duzy.info, duzy.chan@gmail.com>
 #
 #    $Id$
 #
@@ -25,8 +25,9 @@ sub new {
     my ( $class )       = @_;
     my $self            = {};
     $self->{report}     = {};
+    $self->{report}->{total}    = 0;
     $self->{report}->{passed}   = 0;
-    $self->{report}->{failed}   = 0;
+    $self->{report}->{failed}   = [];
     $self->{report}->{ok}       = 0;
     $self->{report}->{check}    = 0;
     $self->{report}->{passed_check} = 0;
@@ -59,8 +60,10 @@ sub print_report {
     my $self            = shift;
     my @todos           = @{ $self->{report}->{todo} };
     my @failed_checks   = @{ $self->{report}->{failed_check} };
+    my @explicit_failes = @{ $self->{report}->{failed} };
+    my $total           = $self->{report}->{total};
     my $count_passed    = $self->{report}->{passed};
-    my $count_failed    = $self->{report}->{failed};
+    my $count_failed    = $#explicit_failes + 1;
     my $count_ok        = $self->{report}->{ok};
     my $count_check     = $self->{report}->{check};
     my $count_passed_checks = $self->{report}->{passed_check};
@@ -69,10 +72,11 @@ sub print_report {
     my $failed_checks   = join "\n", map { ' ' x 10 . $_ } @failed_checks;
     my $todo_list       = join "\n", map { ' ' x 10 . $_ } @todos;
     print<<____END_REPORT____;
+        Total: $total
         Total passed: $count_passed
         Explicit failed: $count_failed
         Explicit ok: $count_ok
-        Checks: $count_check
+        Total checks: $count_check
         Passed checks: $count_passed_checks
         Failed checks: $count_failed_checks
         Unimplemented features: $count_todo TODOs:
@@ -93,16 +97,20 @@ sub check_result {
     do {
 	for ( @result ) {
 	    if ( m{^ok} ) {
+                ++$report->{total};
                 ++$report->{ok};
                 ++$report->{passed};
 	    }
             elsif ( m{^fail} ) {
-                ++$report->{failed};
+                ++$report->{total};
+                push @{ $report->{failed} }, $_;
             }
             elsif ( m{^todo:(.*)} ) {
+                ++$report->{total};
                 push @{ $report->{todo} }, $1;
             }
-            elsif ( m{^check:.*\((.*)\):(.*)$} ) {
+            elsif ( m{^check:.*?\((.*)\):(.*)$} ) {
+                ++$report->{total};
                 ++$report->{check};
                 if ( $1 eq $2 ) {
                     ++$report->{passed};
@@ -110,7 +118,8 @@ sub check_result {
                 }
                 else {
                     chop;
-                    push @{ $report->{failed_check} }, $_; #"($1):$2";
+                    push @{ $report->{failed_check} }, "($1):$2";
+                    #push @{ $report->{failed_check} }, $_; #"($1):$2";
                     $ret = "failed:\n" unless $ret;
                     $ret .= "\t$_\n";
                 }
