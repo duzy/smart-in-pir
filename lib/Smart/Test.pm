@@ -36,6 +36,19 @@ sub new {
     return bless $self, $class;
 }
 
+sub _extract_test_args {
+    my $file = shift;
+    my $test_args;
+    open( TF, "<", $file ) or return $test_args;
+    my @lines = <TF>;
+    if ( grep { /\#\s*test-args\s*:\s*(.+)\n$/ } @lines ) {
+        print "args: $1\n";
+        return ($test_args = $1);
+    }
+    close TF;
+    return $test_args;
+}
+
 sub runtests {
     my $self = shift;
     my ( $smart, @files ) = @_;
@@ -43,6 +56,10 @@ sub runtests {
 
     for my $file ( @files ) {
         my $cmd = $smart . ' -f ' . $file;
+        if ( my $test_args = _extract_test_args( $file ) ) {
+            $cmd .= ' ' . $test_args;
+        }
+
         my @res = `$cmd`;
 	my $pat = $sw - length $file;
         #print map { $_ } @res, "\n";

@@ -32,7 +32,7 @@ D += d
 D += d
 
 report:
-	@echo "1..3"
+	@echo "1..4"
 	@echo "check:A(aaa):$(A)"
 	@echo "check:B(bbb):$(B)"
 	@echo "check:C(ccc):$(C)"

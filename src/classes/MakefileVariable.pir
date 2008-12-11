@@ -12,6 +12,7 @@
     newclass $P1, 'MakefileVariable'
     addattribute $P1, 'name'
     addattribute $P1, 'value'
+    addattribute $P1, 'origin' # tells where does the variable come from.
 .end
 
 
