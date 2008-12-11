@@ -17,3 +17,18 @@ say 'check:expand(item1  item2  item3  item4 item5 item6	item7	    item8 item9  
 say 'check:join(item1;item2;item3;item4;item5;item6;item7;item8;item9;item10):', $(A).join(';');
 
 say 'todo: $(A).count_deeply()';
+
+V1 = item1
+V2 = item0 $(V1) item2
+T = item
+V3 = $(V2) $(T)3 $T4
+
+say "check:value($(V2) $(T)3 $T4):", $(V3).value();
+say "check:expand(item0 item1 item2 item3 item4):", $(V3).expand();
+say "check:join($(V2);$(T)3;$T4):", $(V3).join(";");
+
+N = V3
+V = $($(N)) item5
+say "check:value($($(N)) item5):", $(V).value();
+say "check:expand(item0 item1 item2 item3 item4 item5):", $(V).expand();
+say "check:join($($(N));item5):", $(V).join(";");

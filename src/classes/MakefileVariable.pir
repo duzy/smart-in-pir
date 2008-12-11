@@ -33,19 +33,85 @@ Returns an string array containing all items.
 =cut
 .sub "items" :method
     .local pmc items, result, it
-    .local string str
+#     .local string str
+#     str = self.'value'()
+#     items = split " ", str
+#     result = new 'ResizableStringArray'
+#     it = new 'Iterator', items
+# iterate_items:
+#     unless it goto iterate_items_end
+#     str = shift it
+#     str = 'strip'( str )
+#     if str == "" goto iterate_items
+#     push result, str
+#     goto iterate_items
+# iterate_items_end:
+#     .return (result)
+    .local string str, spaces, item
+    .local int pos, len, n
+    spaces = " \t"
     str = self.'value'()
-    items = split " ", str
+    n = 0
+    pos = 0
+    len = length str
     result = new 'ResizableStringArray'
-    it = new 'Iterator', items
-iterate_items:
-    unless it goto iterate_items_end
-    str = shift it
-    str = 'strip'( str )
-    if str == "" goto iterate_items
-    push result, str
-    goto iterate_items
-iterate_items_end:
+iterate_chars:
+    unless pos < len goto iterate_chars_end
+    $S0 = substr str, pos, 1
+    if $S0 == "$" goto iterate_chars__skip_variable
+    
+    $I0 = index spaces, $S0
+    if $I0 < 0 goto iterate_chars_next
+    $I1 = pos - n
+    $S0 = substr str, n, $I1
+    push result, $S0 # push extracted space-separated item
+    
+iterate_chars__find_next_nonspace:
+    inc pos
+    if len <= pos goto iterate_chars_end
+    $S0 = substr str, pos, 1
+    $I0 = index spaces, $S0
+    unless $I0 < 0 goto iterate_chars__find_next_nonspace
+    n = pos
+    goto iterate_chars
+    
+iterate_chars__skip_variable:
+    ## TODO: skip variable like "$($(V))", "$(strip ${V})"...
+    inc pos
+    $S0 = substr str, pos, 1
+    unless $S0 == "(" goto iterate_chars__skip_variable__2
+    $I0 = index str, ")", pos
+    if $I0 < 0 goto iterate_chars__skip_variable__unterminated_error
+    pos = $I0 + 1
+    goto iterate_chars
+iterate_chars__skip_variable__2:
+    unless $S0 == "{" goto iterate_chars__skip_variable__single
+    $I0 = index str, "}", pos
+    if $I0 < 0 goto iterate_chars__skip_variable__unterminated_error
+    pos = $I0 + 1
+    goto iterate_chars
+iterate_chars__skip_variable__single:
+    inc pos
+    goto iterate_chars
+    
+iterate_chars_next:
+    inc pos
+    goto iterate_chars
+
+iterate_chars__skip_variable__unterminated_error:
+    $S1 = substr str, pos, 5
+    $S0 = "smart: ** unterminated variable '"
+    $S0 .= $S1
+    $S0 .= "'\n"
+    printerr $S0
+iterate_chars_end:
+
+    unless n < pos goto return_result
+    $I0 = pos - n
+    $S0 = substr str, n, $I0
+    push result, $S0 # push the last item
+
+return_result:
     .return (result)
 .end # sub "items"
 
@@ -55,7 +121,6 @@ iterate_items_end:
 .sub "count" :method
     $P0 = self.'items'()
     elements $I0, $P0
-    inc $I0 ## $I0 is zero based
     .return ($I0)
 .end # sub "count"
 

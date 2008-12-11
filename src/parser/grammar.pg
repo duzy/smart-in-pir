@@ -13,7 +13,7 @@ grammar smart::Grammar is PCT::Grammar;
 rule TOP {
     {*}					#= enter
     <statement>*
-    [ $ || <.panic: 'smart: * Unsupported Statement'> ]
+    [ $ || <.panic: 'smart: * Unsupported statement'> ]
     {*}					#= leave
 }
 
@@ -35,11 +35,16 @@ rule statement {
 token empty_smart_statement { <.ws> ';' {*} }
 
 token makefile_variable_declaration {
-    $<name>=[ <-[ : = # \ \t \n ]> <-[ : = # + ? \n ]>*: ]
-    $<sign>=[ '=' | ':=' | '?=' | '+=' ]
-    <makefile_variable_value_list>
-    [ [\n | $] || <.panic: 'smart: * Unterminated makefile variable declaration'> ]
-    {*}
+    |[ $<sign>=['define'] <[ \ \t ]>+ <.ws_inline>
+       $<name>=[ <-[ : = # \ \t \n ]> <-[ : = # + ? \n ]>*: ] <.ws_inline> \n
+       $<value>=[ [<!before [\n'endef'|'endef']> .]* ] \n?
+       'endef' <.ws_inline> \n
+     ] {*}
+    |[ $<name>=[ <-[ : = # \ \t \n ]> <-[ : = # + ? \n ]>*: ]
+       $<sign>=[ '=' | ':=' | '?=' | '+=' ]
+       <makefile_variable_value_list>
+       [ [\n | $] || <.panic: 'smart: * Unterminated makefile variable declaration'> ]
+     ] {*}
 }
 #token makefile_variable {
 #    <-[ : = # \ \t \n ]> <-[ : = # + ? \n ]>*

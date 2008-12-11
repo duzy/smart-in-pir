@@ -47,12 +47,15 @@ check_done:
     .param string name
     .param string sign
     .param pmc items
-
-    .local pmc var
-    get_hll_global var, ['smart';'makefile';'variable'], name
-    unless null var goto makefile_variable_exists
-    if sign == "?=" goto done
     
+    .local pmc var
+    .local int existed
+    
+    existed = 1
+    get_hll_global var, ['smart';'makefile';'variable'], name
+    
+    unless null var goto makefile_variable_exists
+    existed = 0
     var = new 'MakefileVariable'
     $P0 = new 'String'
     $P0 = name
@@ -82,9 +85,11 @@ iterate_items_end:
 
     if $S0  == ""   goto done
     if sign == "="  goto set_value
-    #if sign == "?=" goto assign_if_existed
     if sign == ":=" goto assign_with_expansion
     if sign == "+=" goto append_value
+    $I0 = sign == "?="
+    $I0 = and $I0, existed
+    if $I0 goto done
     
 assign_with_expansion:
     $S0 = 'expand'( $S0 )

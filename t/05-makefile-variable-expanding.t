@@ -15,6 +15,11 @@ say 'check:expand(item1	item2 item3 item4):', $(C).expand();
 say 'ok $(D).expand = ', $(D).expand();
 say 'ok $(E).expand = ', $(E).expand();
 
+N = C
+V = $($(N)) item5
+say "check:value($($(N)) item5):", $(V).value();
+say "check:expand(item1 item2 item3 item4):", $(V).expand();
+
 # in make, this cause an 'unterminated variable' error
 UN = aaa${unterminated
 say "uncompatible: ", $(UN).expand();
@@ -22,4 +27,5 @@ say "uncompatible: ", $(UN).expand();
 # this should be expanded to '' -- the empty string -- as make does
 NIL = aa$ bb
 say "uncompatible: ", $(NIL).expand();
+
 

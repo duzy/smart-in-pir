@@ -54,14 +54,21 @@ method empty_smart_statement($/) { make PAST::Op.new( :pirop('noop') ); }
 method makefile_variable_declaration($/) {
     our $VAR_ON;
     if ( $VAR_ON ) {
+        my $name;
+        my $sign;
+        my @items;
         ## declare variable at parse stage
-        my $name := strip(~$<name>);
-        my $sign := ~$<sign>;
-        #my @items;
-        #for $<makefile_variable_value_list><item> {
-        #    @items.push( ~$_ );
-        #}
-        my @items := $<makefile_variable_value_list><item>;
+        $name := strip(~$<name>);
+        $sign := ~$<sign>;
+        #for $<makefile_variable_value_list><item> { @items.push( ~$_ ); }
+        if ( $sign eq 'define' ) {
+            my $value := ~$<value>;
+            #$value := chop( $value );
+            @items.push( $value );
+        }
+        else {
+            @items := $<makefile_variable_value_list><item>;
+        }
         declare_makefile_variable( $name, $sign, @items );
     }
     make PAST::Op.new( :pirop("noop") );

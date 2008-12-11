@@ -37,7 +37,7 @@ sub collect_files {
     my @files;
 
     if ( $options{path} ) {
-        @files = glob( FileSpec->catfile( $options{path}, '*.t' ) );
+        @files = glob( File::Spec->catfile( $options{path}, '*.t' ) );
     }
 
     if ( $options{files} && ref $options{files} eq 'ARRAY' ) {
