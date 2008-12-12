@@ -30,6 +30,8 @@ sub new {
     $self->{report}->{failed}   = [];
     $self->{report}->{ok}       = 0;
     $self->{report}->{check}    = 0;
+    $self->{report}->{checkers} = 0;
+    $self->{report}->{failed_checkers} = [];
     $self->{report}->{passed_check} = 0;
     $self->{report}->{failed_check} = [];
     $self->{report}->{todo}     = [];
@@ -100,7 +102,9 @@ sub runtests {
 
         my $report = $self->check_result( @result );
 
-        if ( my $checker = $options->{checker} ) {
+        if ( !( $report =~ m{^failed.*} ) and
+                 ( my $checker = $options->{checker} ) ) {
+            my $checker_name = $checker;
             if ( ! -f $checker ) {
                 my ( $path ) = $file =~ m{^(.+/).+$};
                 $checker = $path . $checker;
@@ -108,10 +112,16 @@ sub runtests {
                 ##print "checker: " . $checker . "\n";
             }
             if ( -f $checker and open CH, "<", $checker ) {
+                ++$self->{report}->{checkers};
                 my @code = <CH>;
                 my $code = join '', @code;
+                my $checker_result;
                 eval $code;
-                close CH
+                close CH;
+                do {
+                    push @{ $self->{report}->{failed_checkers} }, $checker;
+                    $report .= "\n\tunpassed: checker " . $checker_name . "";
+                } unless $checker_result;
             }
         }
 
@@ -124,17 +134,22 @@ sub print_report {
     my $self            = shift;
     my @todos           = @{ $self->{report}->{todo} };
     my @failed_checks   = @{ $self->{report}->{failed_check} };
+    my @failed_checkers = @{ $self->{report}->{failed_checkers} };
     my @explicit_failes = @{ $self->{report}->{failed} };
     my $total           = $self->{report}->{total};
     my $count_passed    = $self->{report}->{passed};
     my $count_failed    = $#explicit_failes + 1;
     my $count_ok        = $self->{report}->{ok};
     my $count_check     = $self->{report}->{check};
+    my $count_checkers  = $self->{report}->{checkers};
     my $count_passed_checks = $self->{report}->{passed_check};
     my $count_failed_checks = $#failed_checks + 1;
     my $count_todo      = $#todos + 1;
     my $failed_checks   = join "\n", map { ' ' x 10 . $_ } @failed_checks;
+    my $failed_checkers = join "\n", map { ' ' x 10 . $_ } @failed_checkers;
     my $todo_list       = join "\n", map { ' ' x 10 . $_ } @todos;
+    $failed_checkers = "\n$failed_checkers" if @failed_checkers;
+    $failed_checkers = "(all passed)" unless @failed_checkers;
     print<<____END_REPORT____;
         Total: $total
         Total passed: $count_passed
@@ -143,6 +158,8 @@ sub print_report {
         Total checks: $count_check
         Passed checks: $count_passed_checks
         Failed checks: $count_failed_checks
+        Total checkers: $count_checkers
+        Failed checkers: $failed_checkers
         Unimplemented features: $count_todo TODOs:
 $todo_list
 ____END_REPORT____

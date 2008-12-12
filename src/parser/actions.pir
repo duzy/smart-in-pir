@@ -70,12 +70,22 @@ check_done:
 makefile_variable_exists:
 
     $I0 = var.'origin'()
-    unless $I0 == MAKEFILE_VARIABLE_ORIGIN_command_line goto do_update_variable
+
+check_origin__command_line:
+    unless $I0==MAKEFILE_VARIABLE_ORIGIN_command_line goto check_origin__environment
     unless override goto done
-    $I0 = MAKEFILE_VARIABLE_ORIGIN_override
     $P0 = new 'Integer'
-    $P0 = $I0
+    $P0 = MAKEFILE_VARIABLE_ORIGIN_override
     setattribute var, 'origin', $P0
+    goto do_update_variable
+
+check_origin__environment:
+    unless $I0==MAKEFILE_VARIABLE_ORIGIN_environment goto do_update_variable
+    $P0 = new 'Integer'
+    $P0 = MAKEFILE_VARIABLE_ORIGIN_file
+    setattribute var, 'origin', $P0
+    goto do_update_variable
+    
 do_update_variable:
     
     if null items goto done

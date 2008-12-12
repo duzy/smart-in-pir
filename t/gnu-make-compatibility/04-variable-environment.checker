@@ -1,26 +1,30 @@
 # -*- mode: cperl -*-
-
 {
     my $user = $ENV{USER};
-    my $var = $ENV{A_VAR_FROM_ENV}; #"foobar";
+    my $var_a = $ENV{A_var_from_env}; #"foobar";
+    my $var_b = $ENV{B_var_from_env}; #"foobar";
     my $result = join '', @result;
     my $expected = <<__END_EXPECTED__;
-1..4
+1..7
 check:origin-PATH(environment):environment
 check:origin-USER(environment):environment
 ok: $user
-ok: $var
+ok: $var_a
+check:origin-A_var_from_env(environment):environment
+check:origin-B_var_from_env(file):file
+check:B_var_from_env(xxxxxx):xxxxxx
 smart: Done, 1 targets updated.
 __END_EXPECTED__
     ;
 
+    ##print "\n", $result;
     if ( $result ne $expected ) {
-        $report .= "\n\t...but not the expected result:\n"
-            . "------------------------------ result:\n"
-            . $result . "\n"
-            . "------------------------------ expected:\n"
-            . $expected . "\n"
-            . "------------------------------ end expected";
+#         $report .= "\n\tchecker: not the expected result:\n"
+#             . "------------------------------ result:\n"
+#             . $result . "\n"
+#             . "------------------------------ expected:\n"
+#             . $expected . "\n"
+#             . "------------------------------ end expected";
     }
+    $checker_result = $result eq $expected;
 }
-
