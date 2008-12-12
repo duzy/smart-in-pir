@@ -60,7 +60,6 @@ sub runtests {
         my $cmd = $smart . ' -f ' . $file;
         if ( my $test_args = _extract_test_args( $file ) ) {
             $cmd .= ' ' . $test_args;
-            print $cmd, "\n";
         }
 
         my @res = `$cmd`;

@@ -38,7 +38,6 @@ report:
 	@echo "check:C(ccc):$(C)"
 	@echo "check:D(d d d):$(D)"
 
-#override
 
 
 

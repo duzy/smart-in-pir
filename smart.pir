@@ -50,6 +50,23 @@ object.
     set_hll_global ['smart';'makefile';'variable'], name, $P0
 .end # sub "override-variable-on-command-line"
 
+=item <"import-environment-variables"()>
+=cut
+.sub "import-environment-variables" :anon
+    .local pmc env, it
+    .local string name, value
+    env = new 'Env'
+    it  = new 'Iterator', env
+iterate_env:
+    unless it goto iterate_env_end
+    name = shift it
+    value = env[name]
+    $P0 = 'new:MakefileVariable'( name, value, MAKEFILE_VARIABLE_ORIGIN_environment )
+    set_hll_global ['smart';'makefile';'variable'], name, $P0
+    goto iterate_env
+iterate_env_end:
+.end # sub "import-environment-variables"
+
 .sub 'parse_command_line_arguments' :anon
     .param pmc args
     .local pmc iter, new_args
@@ -191,7 +208,9 @@ no_smartfile_for_new_args:
     .param pmc args
     .local pmc smart
     .local pmc arguments
-    
+
+    'import-environment-variables'()
+
     smart = compreg 'smart'
     arguments = 'parse_command_line_arguments'(args)
     $P1 = smart.'command_line'(arguments)

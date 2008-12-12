@@ -18,7 +18,7 @@ endef
 AAA = $(A) $(AA)
 
 report:
-	@echo "1..4"
+	@echo "1..5"
 	@echo "check:A(aaa):$(A)"
 	@echo "check:AA(aaa aaa):$(AA)"
 	@echo "check:AAA(aaa aaa aaa):$(AAA)"
