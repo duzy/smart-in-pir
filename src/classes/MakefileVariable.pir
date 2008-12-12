@@ -6,6 +6,37 @@
 #    $Id$
 #
 
+.namespace []
+.sub "new:MakefileVariable"
+    .param string name
+    .param string value
+    .param int origin           :optional
+    .param int has_origin       :opt_flag
+    
+    if has_origin goto validate_origin
+    origin = MAKEFILE_VARIABLE_ORIGIN_undefined
+    goto create_new_makefile_variable
+    
+validate_origin:
+    if origin <= MAKEFILE_VARIABLE_ORIGIN_smart_code goto create_new_makefile_variable
+    origin = MAKEFILE_VARIABLE_ORIGIN_undefined
+    goto create_new_makefile_variable
+    
+create_new_makefile_variable:
+    
+    $P0 = new 'MakefileVariable'
+    $P1 = new 'String'
+    $P1 = name
+    setattribute $P0, 'name', $P1
+    $P1 = new 'String'
+    $P1 = value
+    setattribute $P0, 'value', $P1
+    $P1 = new 'Integer'
+    $P1 = origin
+    setattribute $P0, 'origin', $P1
+    .return($P0)
+.end
+
 .namespace ['MakefileVariable']
 
 .sub '__init_class' :anon :init :load
@@ -116,6 +147,21 @@ return_result:
     .return (result)
 .end # sub "items"
 
+=item <origin()>
+=cut
+.sub "origin" :method
+    getattribute $P0, self, 'origin'
+    if null $P0 goto undefined_origin
+    $I0 = $P0
+    goto return_result
+
+undefined_origin:
+    $I0 = MAKEFILE_VARIABLE_ORIGIN_undefined
+    goto return_result
+
+return_result:
+    .return ($I0)
+.end
 
 =item <count()>
 =cut

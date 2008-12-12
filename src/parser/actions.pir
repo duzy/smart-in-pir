@@ -46,6 +46,7 @@ check_done:
 .sub "declare_makefile_variable"
     .param string name
     .param string sign
+    .param int override
     .param pmc items
     
     .local pmc var
@@ -56,14 +57,26 @@ check_done:
     
     unless null var goto makefile_variable_exists
     existed = 0
-    var = new 'MakefileVariable'
-    $P0 = new 'String'
-    $P0 = name
-    setattribute var, 'name', $P0
+#     var = new 'MakefileVariable'
+#     $P0 = new 'String'
+#     $P0 = name
+#     setattribute var, 'name', $P0
+    $S0 = ""
+    $I0 = MAKEFILE_VARIABLE_ORIGIN_file
+    var = 'new:MakefileVariable'( name, $S0, $I0 )
     ## Store new makefile variable as a HLL global symbol
     set_hll_global ['smart';'makefile';'variable'], name, var
     
 makefile_variable_exists:
+
+    $I0 = var.'origin'()
+    unless $I0 == MAKEFILE_VARIABLE_ORIGIN_command_line goto do_update_variable
+    unless override goto done
+    $I0 = MAKEFILE_VARIABLE_ORIGIN_override
+    $P0 = new 'Integer'
+    $P0 = $I0
+    setattribute var, 'origin', $P0
+do_update_variable:
     
     if null items goto done
     $S0 = typeof items
@@ -556,13 +569,14 @@ setup_number_one_target:
     $P1 = $P0[0]
     $S0 = $P1.'object'()
     set_hll_global ['smart';'makefile'], "$<0>", $P1
-    $P1 = new 'MakefileVariable'
-    $P2 = new 'String'
-    $P2 = ".DEFAULT_GOAL"
-    setattribute $P1, 'name', $P2
-    $P2 = new 'String'
-    $P2 = $S0
-    setattribute $P1, 'value', $P2
+#     $P1 = new 'MakefileVariable'
+#     $P2 = new 'String'
+#     $P2 = ".DEFAULT_GOAL"
+#     setattribute $P1, 'name', $P2
+#     $P2 = new 'String'
+#     $P2 = $S0
+#     setattribute $P1, 'value', $P2
+    $P1 = 'new:MakefileVariable'( ".DEFAULT_GOAL", $S0, MAKEFILE_VARIABLE_ORIGIN_automatic )
     set_hll_global ['smart';'makefile';'variable'], ".DEFAULT_GOAL", $P1
 setup_number_one_target_local_return:
     local_return call_stack

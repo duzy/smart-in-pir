@@ -25,6 +25,8 @@ object.
 
 .loadlib 'smart_group'
 
+.include 'src/constants.pir'
+
 .sub 'onload' :anon :load :init
     load_bytecode 'PCT.pbc'
     
@@ -37,6 +39,16 @@ object.
     $P1.'commandline_banner'("Smart Make for Parrot VM\n")
     $P1.'commandline_prompt'("smart> ")
 .end
+
+=item <"override-variable-on-command-line"(name, value)>
+=cut
+.sub "override-variable-on-command-line" :anon
+    .param string name
+    .param string value
+    $I0 = MAKEFILE_VARIABLE_ORIGIN_command_line
+    $P0 = 'new:MakefileVariable'( name, value, $I0 )
+    set_hll_global ['smart';'makefile';'variable'], name, $P0
+.end # sub "override-variable-on-command-line"
 
 .sub 'parse_command_line_arguments' :anon
     .param pmc args
@@ -77,8 +89,15 @@ check_arg_1:
     exit -1
     goto check_arg_end
 check_arg_2:
-#     unless arg == "-f" goto check_arg_3
-#     goto check_arg_end
+    $I0 = index arg, "="
+    if $I0 < 0 goto check_arg_3
+    $S0 = substr arg, 0, $I0
+    inc $I0
+    $I1 = length arg
+    $I1 = $I1 - $I0
+    $S1 = substr arg, $I0, $I1
+    'override-variable-on-command-line'($S0, $S1)
+    goto check_arg_end
 check_arg_3:
 #     unless arg == "-f" goto check_arg_4
 #     goto check_arg_end
@@ -91,6 +110,8 @@ check_arg_5:
 check_arg_else:
 #     $S0 = substr arg, 0, 1
 #     if $S0 == "-" goto check_arg_unknown_flag
+    print "arg: "
+    say arg
     push new_args, arg
     goto check_arg_targets
     goto check_arg_end

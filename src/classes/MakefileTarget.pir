@@ -144,12 +144,15 @@ no_rule_found:
 .end
 
 .macro MAKEFILE_VARIABLE( var, name, h )
-    .var = new 'MakefileVariable'
-    $P0 = new 'String'
-    $P0 = .name
+#     .var = new 'MakefileVariable'
+#     $P0 = new 'String'
+#     $P0 = .name
+#     $P1 = h[.name]
+#     setattribute .var, "name", $P0
+#     setattribute .var, "value", $P1
     $P1 = h[.name]
-    setattribute .var, "name", $P0
-    setattribute .var, "value", $P1
+    $S1 = $P1
+    .var = 'new:MakefileVariable'( .name, $S1, MAKEFILE_VARIABLE_ORIGIN_automatic )
 .endm
 
 
@@ -197,22 +200,26 @@ done_D_F:
     goto loop_tag
 loop_tag_end:
     .local pmc var_D, var_F
-    var_D = new 'MakefileVariable'
-    $P0 = new 'String'
-    $P0 = name_D
+#     var_D = new 'MakefileVariable'
+#     $P0 = new 'String'
+#     $P0 = name_D
+#     $S1 = join " ", items_D
+#     $P1 = new 'String'
+#     $P1 = $S1
+#     setattribute var_D, "name" , $P0
+#     setattribute var_D, "value", $P1
     $S1 = join " ", items_D
-    $P1 = new 'String'
-    $P1 = $S1
-    setattribute var_D, "name" , $P0
-    setattribute var_D, "value", $P1
-    var_F = new 'MakefileVariable'
-    $P0 = new 'String'
-    $P0 = name_F
+    var_D = 'new:MakefileVariable'( name_D, $S1, MAKEFILE_VARIABLE_ORIGIN_automatic )
+#     var_F = new 'MakefileVariable'
+#     $P0 = new 'String'
+#     $P0 = name_F
+#     $S1 = join " ", items_F
+#     $P1 = new 'String'
+#     $P1 = $S1
+#     setattribute var_F, "name" , $P0
+#     setattribute var_F, "value", $P1
     $S1 = join " ", items_F
-    $P1 = new 'String'
-    $P1 = $S1
-    setattribute var_F, "name" , $P0
-    setattribute var_F, "value", $P1
+    var_F = 'new:MakefileVariable'( name_F, $S1, MAKEFILE_VARIABLE_ORIGIN_automatic )
     .return (var_D, var_F)
 .end
 

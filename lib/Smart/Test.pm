@@ -41,8 +41,10 @@ sub _extract_test_args {
     my $test_args;
     open( TF, "<", $file ) or return $test_args;
     my @lines = <TF>;
-    if ( grep { /\#\s*test-args\s*:\s*(.+)\n$/ } @lines ) {
-        print "args: $1\n";
+    if ( my @a = grep { /^\#\s*test-args\s*:.+?$/ } @lines ) {
+        my $a = shift @a;
+        $a =~ m{\#\s*test-args\s*:\s*(.+?)\n?$};
+        #print "args: $1\n";
         return ($test_args = $1);
     }
     close TF;
@@ -58,6 +60,7 @@ sub runtests {
         my $cmd = $smart . ' -f ' . $file;
         if ( my $test_args = _extract_test_args( $file ) ) {
             $cmd .= ' ' . $test_args;
+            print $cmd, "\n";
         }
 
         my @res = `$cmd`;

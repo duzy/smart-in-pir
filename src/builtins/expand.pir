@@ -181,7 +181,7 @@ check_and_handle_callable_variable__check_2:
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_3:
     unless $S0 == "strip"       goto check_and_handle_callable_variable__check_4
-    
+    $S1 = 'strip'( $S1 )
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_4:
     unless $S0 == "findstring"  goto check_and_handle_callable_variable__check_5
@@ -253,6 +253,10 @@ check_and_handle_callable_variable__check_25:
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_26:
     unless $S0 == "origin"      goto check_and_handle_callable_variable__check_27
+    $I2 = $I1 - n # the length of the argument
+    $S1 = substr str, n, $I2
+    #$S1 = 'expand'( $S1 ) ## recursivly expand the name
+    $S1 = 'origin'( $S1 )
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_27:
     unless $S0 == "flavor"      goto check_and_handle_callable_variable__check_28

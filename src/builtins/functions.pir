@@ -239,6 +239,47 @@ findstring -- Returns 's' if it existed as a substring in 'text', or an empty
 .end
 
 .sub "origin"
+    .param string name
+    get_hll_global $P0, ['smart';'makefile';'variable'], name
+    unless null $P0 goto get_origin
+    $I0 = MAKEFILE_VARIABLE_ORIGIN_undefined
+    goto get_origin_string
+
+get_origin:
+    $I0 = $P0.'origin'()
+    goto get_origin_string
+    
+get_origin_string:
+    if $I0 < 0 goto return_undefined_origin
+    if MAKEFILE_VARIABLE_ORIGIN_smart_code < $I0 goto return_undefined_origin
+     
+    $P0 = new 'ResizableStringArray'
+#     push $P0, "undefined"
+#     push $P0, "default"
+#     push $P0, "environment"
+#     push $P0, "environment override"
+#     push $P0, "file"
+#     push $P0, "command line"
+#     push $P0, "override"
+#     push $P0, "automatic"
+#     push $P0, "smart code"
+    $P0[MAKEFILE_VARIABLE_ORIGIN_smart_code     ] = "smart code"
+    $P0[MAKEFILE_VARIABLE_ORIGIN_automatic      ] = "automatic"
+    $P0[MAKEFILE_VARIABLE_ORIGIN_override       ] = "override"
+    $P0[MAKEFILE_VARIABLE_ORIGIN_command_line   ] = "command line"
+    $P0[MAKEFILE_VARIABLE_ORIGIN_file           ] = "file"
+    $P0[MAKEFILE_VARIABLE_ORIGIN_environment_override] = "environment override"
+    $P0[MAKEFILE_VARIABLE_ORIGIN_environment    ] = "environment"
+    $P0[MAKEFILE_VARIABLE_ORIGIN_default        ] = "default"
+    $P0[MAKEFILE_VARIABLE_ORIGIN_undefined      ] = "undefined"
+    $S0 = $P0[$I0]
+    goto return_origin_string
+
+return_undefined_origin:
+    $S0 = "undefined"
+
+return_origin_string:
+    .return ($S0)
 .end
 
 .sub "flavor"

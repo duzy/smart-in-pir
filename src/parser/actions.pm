@@ -69,7 +69,7 @@ method makefile_variable_declaration($/) {
         else {
             @items := $<makefile_variable_value_list><item>;
         }
-        declare_makefile_variable( $name, $sign, @items );
+        declare_makefile_variable( $name, $sign, $<override>, @items );
     }
     make PAST::Op.new( :pirop("noop") );
 }
