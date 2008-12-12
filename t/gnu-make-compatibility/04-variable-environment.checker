@@ -1,0 +1,26 @@
+# -*- mode: cperl -*-
+
+{
+    my $user = $ENV{USER};
+    my $var = $ENV{A_VAR_FROM_ENV}; #"foobar";
+    my $result = join '', @result;
+    my $expected = <<__END_EXPECTED__;
+1..4
+check:origin-PATH(environment):environment
+check:origin-USER(environment):environment
+ok: $user
+ok: $var
+smart: Done, 1 targets updated.
+__END_EXPECTED__
+    ;
+
+    if ( $result ne $expected ) {
+        $report .= "\n\t...but not the expected result:\n"
+            . "------------------------------ result:\n"
+            . $result . "\n"
+            . "------------------------------ expected:\n"
+            . $expected . "\n"
+            . "------------------------------ end expected";
+    }
+}
+

@@ -36,19 +36,33 @@ sub new {
     return bless $self, $class;
 }
 
-sub _extract_test_args {
+sub _extract_test_options {
     my $file = shift;
-    my $test_args;
-    open( TF, "<", $file ) or return $test_args;
+    my $options = {};
+    open( TF, "<", $file ) or return $options;
     my @lines = <TF>;
-    if ( my @a = grep { /^\#\s*test-args\s*:.+?$/ } @lines ) {
-        my $a = shift @a;
-        $a =~ m{\#\s*test-args\s*:\s*(.+?)\n?$};
-        #print "args: $1\n";
-        return ($test_args = $1);
+#     if ( my @a = grep { /^\#\s*test-args\s*:.+?$/ } @lines ) {
+#         my $a = shift @a;
+#         $a =~ m{\#\s*test-args\s*:\s*(.+?)\n?$};
+#         #print "args: $1\n";
+#         return ($test_args = $1);
+#     }
+    $options->{envs} = [];
+    for (@lines) {
+        if ( m{\#\s*test-args\s*:\s*(.+?)\n?$} ) {
+            $options->{'test-args'} = $1;
+        }
+        elsif ( m{\#\s*env\s*:\s*.+?\s*=.*$} ) {
+            m{\#\s*env\s*:\s*(.+?)\s*=\s*(.*?)\s*\n$};
+            push @{ $options->{envs} }, [$1, $2];
+            ##print "env: '$1' = '$2'\n"
+        }
+        elsif ( m{\#\s*checker\s*:\s*(.+?)\s*\n?$} ) {
+            $options->{checker} = $1;
+        }
     }
     close TF;
-    return $test_args;
+    return $options;
 }
 
 sub runtests {
@@ -58,19 +72,50 @@ sub runtests {
 
     for my $file ( @files ) {
         my $cmd = $smart . ' -f ' . $file;
-        if ( my $test_args = _extract_test_args( $file ) ) {
+        my $options = _extract_test_options( $file );
+        if ( my $test_args = $options->{'test-args'} ) {
             $cmd .= ' ' . $test_args;
         }
 
-        my @res = `$cmd`;
+        #if ( $options->{envs} && @{ $options->{envs} } ) {
+        if ( @{ $options->{envs} } ) {
+            for ( @{ $options->{envs} } ) {
+                my ( $name, $value ) = @{ $_ };
+                #print "env: $name = $value\n";
+                $ENV{$name} = $value;
+            }
+        }
+
+        my @result = `$cmd`;
+
+        ##TODO: restore ENVs???
+
 	my $pat = $sw - length $file;
-        #print map { $_ } @res, "\n";
+        #print map { $_ } @result, "\n";
         print $file . '.' x $pat;
         unless ( 0 == $? ) {
             print "(error)\n";
             next;
         }
-        print $self->check_result( @res ), "\n";
+
+        my $report = $self->check_result( @result );
+
+        if ( my $checker = $options->{checker} ) {
+            if ( ! -f $checker ) {
+                my ( $path ) = $file =~ m{^(.+/).+$};
+                $checker = $path . $checker;
+                $checker .= ".checker" if !($checker =~ m{.+\.checker$});
+                ##print "checker: " . $checker . "\n";
+            }
+            if ( -f $checker and open CH, "<", $checker ) {
+                my @code = <CH>;
+                my $code = join '', @code;
+                eval $code;
+                close CH
+            }
+        }
+
+        print $report, "\n";
     }
     $self->print_report;
 }
