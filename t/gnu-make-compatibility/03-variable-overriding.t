@@ -3,7 +3,7 @@
 #  This test file is expected to be executed like this:
 #    smart -f 03-variable-overriding.t A=xxx B=xxx
 #
-# test-args: A=xxx B=xxx C=xxx D=xxx
+# args: A=xxx B=xxx C=xxx D=xxx
 # 
 
 #

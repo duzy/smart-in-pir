@@ -43,16 +43,16 @@ sub _extract_test_options {
     my $options = {};
     open( TF, "<", $file ) or return $options;
     my @lines = <TF>;
-#     if ( my @a = grep { /^\#\s*test-args\s*:.+?$/ } @lines ) {
+#     if ( my @a = grep { /^\#\s*args\s*:.+?$/ } @lines ) {
 #         my $a = shift @a;
-#         $a =~ m{\#\s*test-args\s*:\s*(.+?)\n?$};
+#         $a =~ m{\#\s*args\s*:\s*(.+?)\n?$};
 #         #print "args: $1\n";
 #         return ($test_args = $1);
 #     }
     $options->{envs} = [];
     for (@lines) {
-        if ( m{\#\s*test-args\s*:\s*(.+?)\n?$} ) {
-            $options->{'test-args'} = $1;
+        if ( m{\#\s*args\s*:\s*(.+?)\n?$} ) {
+            $options->{args} = $1;
         }
         elsif ( m{\#\s*env\s*:\s*.+?\s*=.*$} ) {
             m{\#\s*env\s*:\s*(.+?)\s*=\s*(.*?)\s*\n$};
@@ -75,7 +75,7 @@ sub runtests {
     for my $file ( @files ) {
         my $cmd = $smart . ' -f ' . $file;
         my $options = _extract_test_options( $file );
-        if ( my $test_args = $options->{'test-args'} ) {
+        if ( my $test_args = $options->{args} ) {
             $cmd .= ' ' . $test_args;
         }
 

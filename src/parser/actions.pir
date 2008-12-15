@@ -68,9 +68,9 @@ check_done:
     set_hll_global ['smart';'makefile';'variable'], name, var
     
 makefile_variable_exists:
-
+    
     $I0 = var.'origin'()
-
+    
 check_origin__command_line:
     unless $I0==MAKEFILE_VARIABLE_ORIGIN_command_line goto check_origin__environment
     unless override goto done
@@ -78,9 +78,24 @@ check_origin__command_line:
     $P0 = MAKEFILE_VARIABLE_ORIGIN_override
     setattribute var, 'origin', $P0
     goto do_update_variable
-
+    
 check_origin__environment:
     unless $I0==MAKEFILE_VARIABLE_ORIGIN_environment goto do_update_variable
+    get_hll_global $P0, ['smart';'makefile'], "$-e" # the '-e' option on the command line
+    if null $P0 goto check_origin__environment__origin_file
+    $I1 = $P0
+    unless $I1  goto check_origin__environment__origin_file
+    if override goto check_origin__environment__origin_override
+    $P0 = new 'Integer'
+    $P0 = MAKEFILE_VARIABLE_ORIGIN_environment_override
+    setattribute var, 'origin', $P0
+    goto done # the environment variables overrides the file ones
+check_origin__environment__origin_override:
+    $P0 = new 'Integer'
+    $P0 = MAKEFILE_VARIABLE_ORIGIN_override
+    setattribute var, 'origin', $P0
+    goto do_update_variable
+check_origin__environment__origin_file:
     $P0 = new 'Integer'
     $P0 = MAKEFILE_VARIABLE_ORIGIN_file
     setattribute var, 'origin', $P0

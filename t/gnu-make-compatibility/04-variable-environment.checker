@@ -1,8 +1,8 @@
 # -*- mode: cperl -*-
 {
     my $user = $ENV{USER};
-    my $var_a = $ENV{A_var_from_env}; #"foobar";
-    my $var_b = $ENV{B_var_from_env}; #"foobar";
+    my $var_a = $ENV{A_env_var}; #"foobar";
+    my $var_b = $ENV{B_env_var}; #"foobar";
     my $result = join '', @result;
     my $expected = <<__END_EXPECTED__;
 1..7
@@ -10,9 +10,9 @@ check:origin-PATH(environment):environment
 check:origin-USER(environment):environment
 ok: $user
 ok: $var_a
-check:origin-A_var_from_env(environment):environment
-check:origin-B_var_from_env(file):file
-check:B_var_from_env(xxxxxx):xxxxxx
+check:origin-A_env_var(environment):environment
+check:origin-B_env_var(file):file
+check:B_env_var(xxxxxx):xxxxxx
 smart: Done, 1 targets updated.
 __END_EXPECTED__
     ;

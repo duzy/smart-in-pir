@@ -116,8 +116,11 @@ check_arg_2:
     'override-variable-on-command-line'($S0, $S1)
     goto check_arg_end
 check_arg_3:
-#     unless arg == "-f" goto check_arg_4
-#     goto check_arg_end
+    unless arg == "-e" goto check_arg_4
+    $P0 = new 'Integer'
+    $P0 = 1
+    set_hll_global ['smart';'makefile'], "$-e", $P0
+    goto check_arg_end
 check_arg_4:
 #     unless arg == "-f" goto check_arg_5
 #     goto check_arg_end
