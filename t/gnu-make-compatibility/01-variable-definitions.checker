@@ -1,0 +1,16 @@
+# -*- mode: cperl -*-
+{
+    my $expected = <<__END_EXPECTED__;
+1..5
+ok: \$
+check:A(aaa):aaa
+check:B(bbb):bbb
+check:C(ccc):ccc
+check:D(d d d):d d d
+smart: Done, 1 targets updated.
+__END_EXPECTED__
+    ;
+
+    my $result = join '', @result;
+    $check_result = $result eq $expected;
+}

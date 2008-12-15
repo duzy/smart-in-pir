@@ -562,6 +562,28 @@ update_done:
     .return ($I0, $I1, $I2)
 .end
 
+.sub "is_phony" :method
+    .local pmc array
+    .local string object
+    object = self.'object'()
+    $I0 = 0
+    
+    get_hll_global array, ['smart';'makefile';'rule'], ".PHONY"
+    if null array goto return_result
+
+    $P0 = new 'Iterator', array
+iterate_phony:
+    unless $P0 goto iterate_phony_end
+    $P1 = shift $P0
+    $S0 = $P1
+    if object == $S0 goto return_result
+    goto iterate_phony
+iterate_phony_end:
+    
+return_result:
+    .return($I0)
+.end
+
 .sub "update-target" :anon
     .param pmc target
     .param pmc requestor
@@ -594,13 +616,16 @@ we_got_the_rule:
     local_branch call_stack, check_and_update_prerequisites
     ## If any prerequsites got updated, the target will be updated.
     if 0 < update_count goto execute_update_actions ## if any prerequisites updated
+
+    $I0 = target.'is_phony'()
+    if $I0 goto execute_update_actions
     
     ## If the object of the target not extsted, the target will be updated.
-    if object_existed == 0 goto execute_update_actions
+    if object_existed==0 goto execute_update_actions
     
     ## If no prerequisites is updated but some of them is newer than the taget,
     ## the target will be updated.
-    if 0 < newer_count goto execute_update_actions
+    if 0 < newer_count  goto execute_update_actions
     
 return_without_execution:
     .return (0, newer_count, 0)

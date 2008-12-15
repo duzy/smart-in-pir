@@ -19,6 +19,56 @@ expand -- Expand makefile variable.
     .return ($S0)
 .end # sub "expand"
 
+=item <"~expanded-items"(str)>
+Expand the input string and then split it into a ResizableStringArray.
+=cut
+.sub "~expanded-items"
+    .param string str
+    .local string spaces
+    .local pmc array
+    .local int pos, len, n
+    str = '~expand-string'( str )
+    array = new 'ResizableStringArray'
+    spaces = " \t"
+    len = length str
+    pos = 0
+    n   = 0
+iterate_chars:
+    unless pos < len goto iterate_chars_end
+    $S0 = substr str, pos, 1
+    $I0 = index spaces, $S0
+    if $I0 < 0 goto iterate_chars_next
+    $I1 = pos - n
+    $S0 = substr str, n, $I1
+    $S0 = 'strip'( $S0 )
+    if $S0 == "" goto iterate_chars__find_next_nonspace
+    push array, $S0 # push item
+
+iterate_chars__find_next_nonspace:
+    inc pos
+    if len <= pos goto iterate_chars_end
+    $S0 = substr str, pos, 1
+    $I0 = index spaces, $S0
+    unless $I0 < 0 goto iterate_chars__find_next_nonspace
+    n   = pos
+    goto iterate_chars
+
+iterate_chars_next:
+    inc pos # step forward
+    goto iterate_chars
+iterate_chars_end:
+
+    unless n < pos goto return_result
+    $I0 = pos - n
+    $S0 = substr str, n, $I0
+    $S0 = 'strip'( $S0 )
+    if $S0 == "" goto return_result
+    push array, $S0 # push the last item
+
+return_result:
+    .return (array)
+.end # sub "~expanded-items"
+
 .sub "~expand-string"
     .param string str
     .local string result
@@ -130,6 +180,7 @@ parse_and_expand_var____parsing__succeed:
 parse_and_expand_var____parsing__end:
     
 parse_and_expand_var__appending_result:
+    if name == "$" goto parse_and_expand_var__appending_result__escape_SS
     get_hll_global $P0, ['smart';'makefile';'variable'], name
     unless null $P0 goto parse_and_expand_var__appending_result__do_expanding
     local_branch call_stack, report_null_variable
@@ -137,6 +188,9 @@ parse_and_expand_var__appending_result:
 parse_and_expand_var__appending_result__do_expanding:
     $S0 = $P0.'expand'()
     concat result, $S0 ## expanding well done!
+    goto parse_and_expand_var__done
+parse_and_expand_var__appending_result__escape_SS: ## $$ escape to literal $
+    concat result, "$"
     goto parse_and_expand_var__done
     
 parse_and_expand_var__done:
@@ -363,10 +417,15 @@ handle_callable_variable__wildcard:
     ## local routine: report_null_variable
     ##          IN: name
 report_null_variable:
+    get_hll_global $P0, ['smart'], "$--warn-undefined-variables"
+    if null $P0 goto report_null_variable__return
+    $I0 = $P0
+    unless $I0  goto report_null_variable__return
     $S0 = "smart: Makefile variable '"
     concat $S0, name
     concat $S0, "' undeclaraed.\n"
     print $S0
+report_null_variable__return:
     local_return call_stack
 
     ############################

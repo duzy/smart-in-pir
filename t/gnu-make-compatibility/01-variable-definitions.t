@@ -1,4 +1,7 @@
 # -*- mode: Makefile -*-
+#
+# checker: 01-variable-definitions
+# 
 
 #
 #  A _variable_ is a name defined in a makefile to represent a string of text,
@@ -32,7 +35,8 @@ D += d
 D += d
 
 report:
-	@echo "1..4"
+	@echo "1..5"
+	@echo "ok: $$"
 	@echo "check:A(aaa):$(A)"
 	@echo "check:B(bbb):$(B)"
 	@echo "check:C(ccc):$(C)"

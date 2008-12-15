@@ -17,7 +17,7 @@ smart: Done, 1 targets updated.
 __END_EXPECTED__
     ;
 
-    ##print "\n", $result;
+    #print "\n", $result;
     if ( $result ne $expected ) {
 #         $report .= "\n\tchecker: not the expected result:\n"
 #             . "------------------------------ result:\n"
@@ -26,5 +26,5 @@ __END_EXPECTED__
 #             . $expected . "\n"
 #             . "------------------------------ end expected";
     }
-    $checker_result = $result eq $expected;
+    $check_result = $result eq $expected;
 }

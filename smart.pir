@@ -119,21 +119,24 @@ check_arg_3:
     unless arg == "-e" goto check_arg_4
     $P0 = new 'Integer'
     $P0 = 1
-    set_hll_global ['smart';'makefile'], "$-e", $P0
+    set_hll_global ['smart'], "$-e", $P0
     goto check_arg_end
 check_arg_4:
-#     unless arg == "-f" goto check_arg_5
-#     goto check_arg_end
+    unless arg == "--warn-undefined-variables" goto check_arg_5
+    $P0 = new 'Integer'
+    $P0 = 1
+    set_hll_global ['smart'], "$--warn-undefined-variables", $P0
+    goto check_arg_end
 check_arg_5:
 #     unless arg == "-f" goto check_arg_else
 #     goto check_arg_end
 check_arg_else:
-#     $S0 = substr arg, 0, 1
-#     if $S0 == "-" goto check_arg_unknown_flag
+    $S0 = substr arg, 0, 1
+    if $S0 == "-" goto check_arg_unknown_flag
+    goto check_arg_targets
     print "arg: "
     say arg
     push new_args, arg
-    goto check_arg_targets
     goto check_arg_end
 check_arg_targets:
     get_hll_global $P0, ['smart';'makefile'], "@<?>"

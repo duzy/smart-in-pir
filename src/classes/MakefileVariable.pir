@@ -62,6 +62,8 @@ has_name:
 
 =item <items()>
 Returns an string array containing all items.
+
+See also "~expanded-items"().
 =cut
 .sub "items" :method
     .local pmc items, result, it
@@ -83,7 +85,7 @@ Returns an string array containing all items.
     .local int pos, len, n
     spaces = " \t"
     str = self.'value'()
-    n = 0
+    n   = 0
     pos = 0
     len = length str
     result = new 'ResizableStringArray'
@@ -104,7 +106,7 @@ iterate_chars__find_next_nonspace:
     $S0 = substr str, pos, 1
     $I0 = index spaces, $S0
     unless $I0 < 0 goto iterate_chars__find_next_nonspace
-    n = pos
+    n   = pos
     goto iterate_chars
     
 iterate_chars__skip_variable:
@@ -129,7 +131,7 @@ iterate_chars__skip_variable__single:
 iterate_chars_next:
     inc pos
     goto iterate_chars
-
+    
 iterate_chars__skip_variable__unterminated_error:
     $S1 = substr str, pos, 5
     $S0 = "smart: ** unterminated variable '"
@@ -137,12 +139,12 @@ iterate_chars__skip_variable__unterminated_error:
     $S0 .= "'\n"
     printerr $S0
 iterate_chars_end:
-
+    
     unless n < pos goto return_result
     $I0 = pos - n
     $S0 = substr str, n, $I0
     push result, $S0 # push the last item
-
+    
 return_result:
     .return (result)
 .end # sub "items"
@@ -154,11 +156,11 @@ return_result:
     if null $P0 goto undefined_origin
     $I0 = $P0
     goto return_result
-
+    
 undefined_origin:
     $I0 = MAKEFILE_VARIABLE_ORIGIN_undefined
     goto return_result
-
+    
 return_result:
     .return ($I0)
 .end

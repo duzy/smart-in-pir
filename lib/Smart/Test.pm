@@ -108,20 +108,23 @@ sub runtests {
             if ( ! -f $checker ) {
                 my ( $path ) = $file =~ m{^(.+/).+$};
                 $checker = $path . $checker;
-                $checker .= ".checker" if !($checker =~ m{.+\.checker$});
+                $checker .= ".checker" if !( $checker =~ m{.+\.checker$} );
                 ##print "checker: " . $checker . "\n";
             }
             if ( -f $checker and open CH, "<", $checker ) {
                 ++$self->{report}->{checkers};
                 my @code = <CH>;
-                my $code = join '', @code;
-                my $checker_result;
-                eval $code;
+                my $check_result;
+                if ( eval join '', @code ) {
+                    do {
+                        push @{ $self->{report}->{failed_checkers} }, $checker;
+                        $report .= "\n\tunpassed: checker " . $checker_name;
+                    } unless $check_result;
+                }
+                else {
+                    $report .= "\n\terror: checker " . $checker_name . "\n$@";
+                }
                 close CH;
-                do {
-                    push @{ $self->{report}->{failed_checkers} }, $checker;
-                    $report .= "\n\tunpassed: checker " . $checker_name . "";
-                } unless $checker_result;
             }
         }
 

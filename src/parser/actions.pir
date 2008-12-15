@@ -81,7 +81,7 @@ check_origin__command_line:
     
 check_origin__environment:
     unless $I0==MAKEFILE_VARIABLE_ORIGIN_environment goto do_update_variable
-    get_hll_global $P0, ['smart';'makefile'], "$-e" # the '-e' option on the command line
+    get_hll_global $P0, ['smart'], "$-e" # the '-e' option on the command line
     if null $P0 goto check_origin__environment__origin_file
     $I1 = $P0
     unless $I1  goto check_origin__environment__origin_file
@@ -729,29 +729,15 @@ check_name_done:
     ######################
     ## local routine: update_special_PHONY
 update_special_PHONY:
-    say "TODO: .PHONY rule..."
+    $S0 = ".PHONY"
+    local_branch call_stack, update_special_array_rule
     local_return call_stack
 
     ######################
     ## local routine: update_special_SUFFIXES
 update_special_SUFFIXES:
-    .local pmc suffixes
-    get_hll_global suffixes, ['smart';'makefile';'rule'], ".SUFFIXES"
-    unless null suffixes goto update_special_SUFFIXES__has_suffixes_rule
-    suffixes = new 'ResizableStringArray'
-    set_hll_global ['smart';'makefile';'rule'], ".SUFFIXES", suffixes
-    update_special_SUFFIXES__has_suffixes_rule:
-    $P0 = new 'Iterator', items
-update_special_SUFFIXES_iterate_items:
-    unless $P0 goto update_special_SUFFIXES_iterate_items_done
-    $P1 = shift $P0
-    push suffixes, $P1
-#     $S0 = $P1
-#     print "suffix: "
-#     say $S0
-    goto update_special_SUFFIXES_iterate_items
-update_special_SUFFIXES_iterate_items_done:
-update_special_SUFFIXES_done:
+    $S0 = ".SUFFIXES"
+    local_branch call_stack, update_special_array_rule
     local_return call_stack
 
     ######################
@@ -818,6 +804,48 @@ update_special_EXPORT_ALL_VARIABLES:
     ## local routine: update_special_NOTPARALLEL
 update_special_NOTPARALLEL:
     say "TODO: .NOTPARALLEL rule..."
+    local_return call_stack
+
+    ######################
+    ## local routine: update_special_array_rule
+    ##          IN: $S0(the name of the rule)
+update_special_array_rule:
+    .local pmc array
+    get_hll_global array, ['smart';'makefile';'rule'], $S0
+    unless null array goto update_special_PHONY__got_phony_array
+    array = new 'ResizableStringArray'
+    set_hll_global ['smart';'makefile';'rule'], $S0, array
+update_special_PHONY__got_phony_array:
+    $P0 = array
+    local_branch call_stack, convert_items_into_array
+    local_return call_stack
+    
+    ######################
+    ## local routine: convert_items_into_array
+    ##          IN: $P0 (a ResizableStringArray)
+    ##          OUT: $P0 (modifying)
+convert_items_into_array:
+#     $P1 = new 'Iterator', items
+# convert_items_into_array__iterate_items:
+#     unless $P1 goto convert_items_into_array__iterate_items_end
+#     $P2 = shift $P1
+#     push $P0, $P2
+#     ##print "item: "
+#     ##say $P2
+#     goto convert_items_into_array__iterate_items
+# convert_items_into_array__iterate_items_end:
+    $S0 = join ' ', items
+    $P1 = '~expanded-items'( $S0 )
+    $P2 = new 'Iterator', $P1
+convert_items_into_array__iterate_items:
+    unless $P2 goto convert_items_into_array__iterate_items_end
+    $P1 = shift $P2
+    push $P0, $P1
+    ##print "item: "
+    ##say $P1
+    goto convert_items_into_array__iterate_items
+convert_items_into_array__iterate_items_end:
+convert_items_into_array__done:
     local_return call_stack
 
 .end # sub !update-special-makefile-rule
