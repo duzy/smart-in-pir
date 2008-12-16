@@ -26,6 +26,8 @@ object.
 .loadlib 'smart_group'
 
 .include 'src/constants.pir'
+.include "stat.pasm"
+.include "datatypes.pasm" # for libc::readdir
 
 .sub 'onload' :anon :load :init
     load_bytecode 'PCT.pbc'
@@ -102,7 +104,12 @@ check_arg_0:
     goto check_arg_end
 check_arg_1:
     unless arg == "-h" goto check_arg_2
-    say "TODO: show command usage."
+    #say "TODO: show command usage."
+    $S0 = <<'END_USAGE'
+Usage:
+    
+END_USAGE
+    say $S0
     exit -1
     goto check_arg_end
 check_arg_2:

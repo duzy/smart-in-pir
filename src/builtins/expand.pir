@@ -287,7 +287,10 @@ check_and_handle_callable_variable__check_19:
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_20:
     unless $S0 == "wildcard"    goto check_and_handle_callable_variable__check_21
-    local_branch call_stack, handle_callable_variable__wildcard
+    #local_branch call_stack, handle_callable_variable__wildcard
+    $I2 = $I1 - n
+    $S1 = substr str, n, $I2
+    $S1 = 'wildcard'( $S1 ) # globbing
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_21:
     unless $S0 == "realpath"    goto check_and_handle_callable_variable__check_22

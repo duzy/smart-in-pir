@@ -6,6 +6,21 @@
 #    $Id$
 #
 
+.sub "__onload" :anon :load :init
+    load_bytecode "PGE/Glob.pbc"
+
+    .local pmc libc
+    .local pmc opendir
+    .local pmc readdir
+    .local pmc closedir
+    null libc
+    dlfunc opendir, libc, 'opendir', 'pt'
+    dlfunc readdir, libc, 'readdir', 'pp'
+    dlfunc closedir, libc, 'closedir', 'ip'
+    store_global 'libc::opendir', opendir
+    store_global 'libc::readdir', readdir
+    store_global 'libc::closedir', closedir
+.end
 
 =head1 <subst(from,to,text)>
 
@@ -218,25 +233,126 @@ findstring -- Returns 's' if it existed as a substring in 'text', or an empty
 =head1 <wildcard(pat)>
 =cut
 .sub "wildcard"
-    .param string pat
-    .local string result
+    .param string arg
+    .local string result, pat
+    .local pmc globber
+    .local pmc pats
+    .local pmc it
+    .local pmc call_stack
+    
+    globber = compreg 'PGE::Glob'
+    call_stack = new 'ResizableIntegerArray'
+    
+    .local pmc d_struct
+    new d_struct, 'OrderedHash'
+    set d_struct["d_fileno"], .DATATYPE_INT64
+    push d_struct, 0
+    push d_struct, 0
+    set d_struct["d_reclen"], .DATATYPE_SHORT
+    push d_struct, 0
+    push d_struct, 0
+    set d_struct["d_type"], .DATATYPE_CHAR
+    push d_struct, 0
+    push d_struct, 0
+    set d_struct["d_name"], .DATATYPE_CHAR
+    push d_struct, 256
+    push d_struct, 0           # 11
+    
+    pats = split " ", arg
+    it = iter pats
+    
+iterate_pats:
+    unless it goto iterate_pats_end
+    pat = shift it
+    local_branch call_stack, glob_pattern
+    goto iterate_pats
+iterate_pats_end:
+    
+    chopn result, 1 ## get rid of the tail " "
     .return(result)
-.end
+    
+    ######################
+    ## local routine: glob_pattern
+    ##		IN: pat
+    ##		OUT: result
+glob_pattern:
+    stat $I0, pat, .STAT_EXISTS
+    unless $I0 goto do_globbing
+    concat result, pat
+    concat result, " "
+    local_return call_stack
+    
+do_globbing:
+    .local pmc subs
+    .local string path
+    subs = split "/", pat
+
+    pat = pop subs
+    elements $I0, subs
+    path = join "/", subs
+    unless path == "" goto glob_the_path
+    path = "."
+    glob_the_path:
+    #print "path: "
+    #say path
+
+    .local pmc rule
+    rule = globber.'compile'(pat)
+    
+    .local pmc curdir
+    .local pmc entry
+    curdir = 'libc::opendir'( path )
+
+    .local string d_name
+iterate_dir:
+    d_name = ""
+    entry = 'libc::readdir'(curdir)
+    get_addr $I0, entry
+    unless $I0 goto iterate_dir_done
+    assign entry, d_struct
+    $I1 = 0
+iterate_dir_loop:
+    $I0 = entry["d_name";$I1]
+    unless $I0 goto iterate_dir_loop_end
+    chr $S0, $I0
+    concat d_name, $S0
+    inc $I1
+    goto iterate_dir_loop
+iterate_dir_loop_end:
+    #print "entry: "
+    #say d_name
+
+    ## Check the d_name by pat
+    .local pmc res
+    res = rule( d_name )
+
+    .local int b
+    istrue b, res
+    unless b goto iterate_dir
+    concat result, d_name # append the item
+    concat result, " "
+    goto iterate_dir
+iterate_dir_done:
+    'libc::closedir'(curdir)
+
+glob_pattern_done:
+    local_return call_stack
+.end # sub "wildcard"
 
 .sub "realpath"
-.end
+.end # sub "realpath"
 
 .sub "abspath"
-.end
+.end # sub "abspath"
 
 .sub "error"
-.end
+.end # sub "error"
 
 .sub "warning"
-.end
+.end # sub "warning"
 
 .sub "shell"
-.end
+.end # sub "shell"
 
 .sub "origin"
     .param string name

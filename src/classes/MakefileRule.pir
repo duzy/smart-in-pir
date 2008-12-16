@@ -13,6 +13,13 @@ The '@[%]' variable holds the list of implicit rules.
 
 =cut
 
+.namespace []
+.sub "new:MakefileRule"
+    .local pmc rule
+    rule = new 'MakefileRule'
+    .return(rule)
+.end
+
 
 .namespace ['MakefileRule']
 .sub "__init_class" :anon :init :load

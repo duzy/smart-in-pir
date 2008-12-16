@@ -17,6 +17,14 @@ pattern targets(the match-anything rule is excluded).
 
 =cut
 
+.namespace []
+.sub "new:MakefileTarget"
+    .local pmc target
+    target = new 'MakefileTarget'
+    .return(target)
+.end
+
+
 .namespace ['MakefileTarget']
 .sub "__init_class" :anon :init :load
     newclass $P0, 'MakefileTarget'
@@ -576,7 +584,8 @@ iterate_phony:
     unless $P0 goto iterate_phony_end
     $P1 = shift $P0
     $S0 = $P1
-    if object == $S0 goto return_result
+    $I0 = object == $S0
+    if $I0 goto return_result
     goto iterate_phony
 iterate_phony_end:
     
@@ -606,7 +615,7 @@ return_result:
     
 we_got_the_rule:
     
-    .local int update_count, newer_count, object_existed
+    .local int update_count, newer_count, object_existed, is_phony
     update_count = 0
     newer_count = 0
     object_existed = 0
@@ -616,9 +625,11 @@ we_got_the_rule:
     local_branch call_stack, check_and_update_prerequisites
     ## If any prerequsites got updated, the target will be updated.
     if 0 < update_count goto execute_update_actions ## if any prerequisites updated
-
-    $I0 = target.'is_phony'()
-    if $I0 goto execute_update_actions
+    
+    is_phony = target.'is_phony'()
+    #print "is-phony: "
+    #say $I0
+    if is_phony goto execute_update_actions
     
     ## If the object of the target not extsted, the target will be updated.
     if object_existed==0 goto execute_update_actions
@@ -635,7 +646,8 @@ execute_update_actions:
     $I0 = $P0
     $I1 = 0
     unless $I0 == 0 goto do_actions_execution
-    if object_existed goto return_update_results
+    if object_existed   goto return_update_results
+    if is_phony         goto return_update_results
     local_branch call_stack, try_chaining_rules_for_updating
     goto return_update_results
     
