@@ -100,14 +100,14 @@ got_updated:
     out = 0
     
     $S0 = self.'object'()
-    stat $I0, $S0, 0 # EXISTS
+    stat $I0, $S0, .STAT_EXISTS
     if $I0 goto object_already_exists
     
     goto out_of
     
 object_already_exists:
     .local int changetime
-    stat changetime, $S0, 7 # CHANGETIME
+    stat changetime, $S0, .STAT_CHANGETIME #7 # CHANGETIME
     
 #     print "time: "
 #     print $S0
@@ -121,9 +121,9 @@ iterate_prerequisites:
     unless iter goto end_iterate_prerequisites
     prerequisite = shift iter
     $S1 = prerequisite.'object'()
-    stat $I0, $S1, 0 # EXISTS
+    stat $I0, $S1, .STAT_EXISTS # EXISTS
     unless $I0 goto out_of # prerequisite not exists
-    stat $I0, $S1, 7 # CHANGETIME
+    stat $I0, $S1, .STAT_CHANGETIME #7 # CHANGETIME
     
 #     print "time: "
 #     print $S1
@@ -152,12 +152,6 @@ no_rule_found:
 .end
 
 .macro MAKEFILE_VARIABLE( var, name, h )
-#     .var = new 'MakefileVariable'
-#     $P0 = new 'String'
-#     $P0 = .name
-#     $P1 = h[.name]
-#     setattribute .var, "name", $P0
-#     setattribute .var, "value", $P1
     $P1 = h[.name]
     $S1 = $P1
     .var = 'new:MakefileVariable'( .name, $S1, MAKEFILE_VARIABLE_ORIGIN_automatic )
@@ -208,24 +202,8 @@ done_D_F:
     goto loop_tag
 loop_tag_end:
     .local pmc var_D, var_F
-#     var_D = new 'MakefileVariable'
-#     $P0 = new 'String'
-#     $P0 = name_D
-#     $S1 = join " ", items_D
-#     $P1 = new 'String'
-#     $P1 = $S1
-#     setattribute var_D, "name" , $P0
-#     setattribute var_D, "value", $P1
     $S1 = join " ", items_D
     var_D = 'new:MakefileVariable'( name_D, $S1, MAKEFILE_VARIABLE_ORIGIN_automatic )
-#     var_F = new 'MakefileVariable'
-#     $P0 = new 'String'
-#     $P0 = name_F
-#     $S1 = join " ", items_F
-#     $P1 = new 'String'
-#     $P1 = $S1
-#     setattribute var_F, "name" , $P0
-#     setattribute var_F, "value", $P1
     $S1 = join " ", items_F
     var_F = 'new:MakefileVariable'( name_F, $S1, MAKEFILE_VARIABLE_ORIGIN_automatic )
     .return (var_D, var_F)
@@ -305,12 +283,12 @@ loop_prerequisites:
     
     ## var3 => $?
     array = h["?"]
-    stat $I0, $S0, 0 # EXISTS
+    stat $I0, $S0, .STAT_EXISTS # EXISTS
     unless $I0 goto push_var3 # object not exists
-    stat $I0, $S1, 0 # EXISTS
+    stat $I0, $S1, .STAT_EXISTS # EXISTS
     unless $I0 goto end_var3
-    stat $I0, $S0, 7 # CHANGETIME
-    stat $I1, $S1, 7 # CHANGETIME
+    stat $I0, $S0, .STAT_CHANGETIME #7 # CHANGETIME
+    stat $I1, $S1, .STAT_CHANGETIME #7 # CHANGETIME
     $I0 = $I0 < $I1 # if newer...
     if $I0 goto push_var3
     goto end_var3
@@ -455,7 +433,6 @@ var7_got_empty_stem:
     .param pmc prerequisite
     .local string stem
     $S0 = typeof prerequisite
-#     if $S0 == "MakefileVariable" goto got_variable_prerequisite
     unless $S0 == "String" goto got_normal_prerequisite
     $S0 = prerequisite
     $I0 = index $S0, "%"
@@ -483,14 +460,6 @@ got_normal_prerequisite:
     $S0 = prerequisite.'object'()
     .return ($S0)
 
-# got_variable_prerequisite:
-#     $S0 = ""
-#     $I0 = prerequisite.'count'()
-#     if $I0 <= 0 goto got_variable_prerequisite_done
-#     $S0 = prerequisite.'expand'()
-#     got_variable_prerequisite_done:
-#     .return ($S0)
-    
 invalid_implicit_prerequisite: ## it's an internal error!
     $S1 = "smart: ** Expecting a implicit prerequisite '"
     $S1 .= $S0
@@ -596,6 +565,20 @@ return_result:
 .sub "update-target" :anon
     .param pmc target
     .param pmc requestor
+
+    ##
+    ##  1) check the target's updated flag, if marked then goto end)
+    ##  2) for each prerequsite do 3)
+    ##          3) check the prerequsite to see if:
+    ##                  ?) if it's phony then goto $)
+    ##                  ?) if the object existed goto $), if not report
+    ##                     non-existed error and stop all.
+    ##                  $) goto 4)
+    ##          4) invokes update action on the prerequsite,
+    ##          ...
+    ##  5) ...
+    ##  end) ...
+    ##  
     
     ## If the target itself has been updated, than nothing should be done.
     $I0 = target.'updated'()
@@ -619,14 +602,14 @@ we_got_the_rule:
     update_count = 0
     newer_count = 0
     object_existed = 0
-    stat object_existed, object, 0 # EXISTS
+    stat object_existed, object, .STAT_EXISTS #0 # EXISTS
+    is_phony = target.'is_phony'()
     
     ## this will set 'update_count' and 'newer_count' variables
     local_branch call_stack, check_and_update_prerequisites
     ## If any prerequsites got updated, the target will be updated.
     if 0 < update_count goto execute_update_actions ## if any prerequisites updated
     
-    is_phony = target.'is_phony'()
     #print "is-phony: "
     #say $I0
     if is_phony goto execute_update_actions
@@ -758,12 +741,12 @@ compare_file_time:
     ## Checking prerequsite-newer...
     $I1 = -1
     $I2 = -1
-    stat $I0, $S0, 0
+    stat $I0, $S0, .STAT_EXISTS #0
     unless $I0 goto compare_file_time_local_return
-    stat $I0, $S1, 0
+    stat $I0, $S1, .STAT_EXISTS #0
     unless $I0 goto compare_file_time_local_return
-    stat $I1, $S0, 7 # CHANGETIME
-    stat $I2, $S1, 7 # CHANGETIME
+    stat $I1, $S0, .STAT_CHANGETIME #7 # CHANGETIME
+    stat $I2, $S1, .STAT_CHANGETIME #7 # CHANGETIME
     $I0 = $I1 < $I2
 compare_file_time_local_return:
     local_return call_stack
@@ -797,7 +780,7 @@ check_out_implicit_rules_local_return:
 no_rule_found:
     ## If the object does not exists, it should report "no-rule-error" error.
     $S1 = target.'object'()
-    $I0 = stat $S1, 0 # EXISTS
+    $I0 = stat $S1, .STAT_EXISTS #0 # EXISTS
     unless $I0 goto report_no_rule_error
     .return(0, newer_count, 0)
     
