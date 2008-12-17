@@ -281,7 +281,7 @@ loop_prerequisites:
     ## skip empty object, e.g. variable prerequisite will returns empty
     if $S1 == "" goto loop_prerequisites
     
-    ## var3 => $?
+    ## var3 => $?, prerequsites newer than the target
     array = h["?"]
     stat $I0, $S0, .STAT_EXISTS # EXISTS
     unless $I0 goto push_var3 # object not exists
@@ -562,6 +562,19 @@ return_result:
     .return($I0)
 .end
 
+#.sub "touch" :method
+#.end
+
+.sub "changetime" :method
+    .local string object
+    object = self.'object'()
+    stat $I0, object, .STAT_EXISTS
+    unless $I0 goto return_result
+    stat $I0, object, .STAT_CHANGETIME
+return_result:
+    .return($I0)
+.end # .sub "changetime"
+
 .sub "update-target" :anon
     .param pmc target
     .param pmc requestor
@@ -598,11 +611,10 @@ return_result:
     
 we_got_the_rule:
     
-    .local int update_count, newer_count, object_existed, is_phony
+    .local int update_count, newer_count, object_changetime, is_phony
     update_count = 0
     newer_count = 0
-    object_existed = 0
-    stat object_existed, object, .STAT_EXISTS #0 # EXISTS
+    object_changetime = target.'changetime'()
     is_phony = target.'is_phony'()
     
     ## this will set 'update_count' and 'newer_count' variables
@@ -615,7 +627,7 @@ we_got_the_rule:
     if is_phony goto execute_update_actions
     
     ## If the object of the target not extsted, the target will be updated.
-    if object_existed==0 goto execute_update_actions
+    if object_changetime==0 goto execute_update_actions
     
     ## If no prerequisites is updated but some of them is newer than the taget,
     ## the target will be updated.
@@ -629,7 +641,7 @@ execute_update_actions:
     $I0 = $P0
     $I1 = 0
     unless $I0 == 0 goto do_actions_execution
-    if object_existed   goto return_update_results
+    if object_changetime   goto return_update_results
     if is_phony         goto return_update_results
     local_branch call_stack, try_chaining_rules_for_updating
     goto return_update_results
@@ -689,23 +701,24 @@ handle_with_normal_prerequisite: ## normal prerequisite: MakefileTarget object
     $I0 = can prerequisite, 'update'
     unless $I0 goto invalid_target_object
     
-    #$S0 = target.'object'()
     $S1 = prerequisite.'object'()
     
     ## checking recursive...
     unless object == $S1 goto process_the_prerequsite
     local_branch call_stack, report_droped_recursive_dependency
-    ##TODO:check recursive...
+    ##TODO:check recursive dependancy here...
     goto iterate_prerequisites
     process_the_prerequsite:
     
     ## Checking prerequsite-newer...
-    local_branch call_stack, compare_file_time ## this will use $S0 and $S1
+    $I0 = prerequisite.'changetime'()
+    unless $I0 goto invoke_update_on_prerequsite
+    $I0 = object_changetime < $I0
     unless $I0 goto invoke_update_on_prerequsite
     inc newer_count
-    invoke_update_on_prerequsite:
     
-    ## Invoke the update method...
+invoke_update_on_prerequsite:
+    ## Invoke the prerequsite's update method...
     ($I0, $I1) = 'update-target'( prerequisite, requestor )
     
     ## Updates the counter...
@@ -730,27 +743,6 @@ invalid_implicit_prerequisite:
 end_iterate_prerequisites:
     local_return call_stack
     
-    ######################
-    ## local routine: compare_file_time
-    ##          IN: $S0, $S1
-    ##          OUT: $I0, $I1, $I2
-    ##     $I1 = file time of $S0 or -1 indicates not existed
-    ##     $I2 = file time of $S1 or -1 indicates not existed
-    ##     $I0 = $I1 < $I2
-compare_file_time:
-    ## Checking prerequsite-newer...
-    $I1 = -1
-    $I2 = -1
-    stat $I0, $S0, .STAT_EXISTS #0
-    unless $I0 goto compare_file_time_local_return
-    stat $I0, $S1, .STAT_EXISTS #0
-    unless $I0 goto compare_file_time_local_return
-    stat $I1, $S0, .STAT_CHANGETIME #7 # CHANGETIME
-    stat $I2, $S1, .STAT_CHANGETIME #7 # CHANGETIME
-    $I0 = $I1 < $I2
-compare_file_time_local_return:
-    local_return call_stack
-
     ######################
     ## local routine: check_out_implicit_rules
     ##          OUT: rule
@@ -779,9 +771,10 @@ check_out_implicit_rules_local_return:
     
 no_rule_found:
     ## If the object does not exists, it should report "no-rule-error" error.
-    $S1 = target.'object'()
-    $I0 = stat $S1, .STAT_EXISTS #0 # EXISTS
-    unless $I0 goto report_no_rule_error
+    #$S1 = target.'object'()
+    #$I0 = stat $S1, .STAT_EXISTS #0 # EXISTS
+    #unless $I0 goto report_no_rule_error
+    unless object_changetime goto report_no_rule_error
     .return(0, newer_count, 0)
     
 report_no_rule_error:
