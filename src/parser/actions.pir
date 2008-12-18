@@ -173,7 +173,7 @@ iterate_command_line_targets:
     get_hll_global target, ['smart';'makefile';'target'], $S0
     unless null target goto got_command_line_target
     target = 'new:MakefileTarget'( $S0 )
-    ##set_hll_global ['smart';'makefile';'target'], $S0, target
+    set_hll_global ['smart';'makefile';'target'], $S0, target
     got_command_line_target:
     $I0 = target.'update'()
     if 0 < $I0 goto command_line_target_update_ok

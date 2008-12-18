@@ -504,11 +504,7 @@ iterate_objects:
 #     print "'\n"
     get_hll_global object, ['smart';'makefile';'target'], object_name
     unless null object goto got_stored_target_object
-#     print "\tnew\n"
-    object = new 'MakefileTarget'
-    $P0 = new 'String'
-    $P0 = object_name
-    setattribute object, 'object', $P0
+    object = 'new:MakefileTarget'( object_name )
     set_hll_global ['smart';'makefile';'target'], object_name, object
     
 got_stored_target_object:
@@ -698,15 +694,10 @@ iterate_prerequisites:
     
 handle_with_implicit_prerequsite:
     $S1 = '.!calculate-object-of-prerequisite'( target, prerequisite )
-    print "prerequsite: "
-    say $S1
     ## Get stored prerequsite, or create a new one if none existed.
     get_hll_global prerequisite, ['smart';'makefile';'target'], $S1
     unless null prerequisite goto handle_with_normal_prerequisite
-    prerequisite = new 'MakefileTarget'
-    $P1 = new 'String'
-    $P1 = $S1
-    setattribute prerequisite, 'object', $P1
+    prerequisite = 'new:MakefileTarget'( $S1 )
     set_hll_global ['smart';'makefile';'target'], $S1,  prerequisite
     
 handle_with_normal_prerequisite: ## normal prerequisite: MakefileTarget object
