@@ -339,6 +339,15 @@ glob_pattern_done:
     local_return call_stack
 .end # sub "wildcard"
 
+.sub "match" #xxxxxxxxxxxx
+    .param string pat
+    .param string s
+    .local pmc o
+    o = 'new:Pattern'( pat )
+    $S0 = o.'match'( s )
+    .return($S0)
+.end
+
 .sub "realpath"
 .end # sub "realpath"
 

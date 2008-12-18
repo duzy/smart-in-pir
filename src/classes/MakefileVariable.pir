@@ -175,8 +175,9 @@ return_result:
 =item <cout()>
 =cut
 .sub "count_deeply" :method
-    say "TODO: count item deeply..."
-    .return (-1)
+    $P0 = self.'expanded_items'()
+    elements $I0, $P0
+    .return ($I0)
 .end # sub "count_deeply"
 
 

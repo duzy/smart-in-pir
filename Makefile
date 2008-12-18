@@ -49,6 +49,7 @@ SOURCES = smart.pir \
   src/classes/MakefileRule.pir\
   src/classes/MakefileTarget.pir\
   src/classes/MakefileAction.pir\
+  src/classes/Pattern.pir\
 #  $(SMART_GROUP)
 
 BUILTINS_PIR = \

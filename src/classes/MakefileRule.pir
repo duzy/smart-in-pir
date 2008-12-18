@@ -78,8 +78,8 @@ got_rule:
     
     object = target.'object'()
     
-#     print "match-pattern-for: " ##!!!!!!!!!!
-#     say object ##!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    #print "match-pattern-for: " ##!!!!!!!!!!
+    #say object ##!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     .local pmc pattern, iter
     .local string prefix, suffix
@@ -124,8 +124,9 @@ got_bad_pattern:
     $S0 = self.'match'()
     $S1 .= $S0
     $S1 .= "'. Stop.\n"
-    print $S1
-    exit -1
+    #print $S1
+    #exit -1
+    die $S1
 end_iterate_patterns:
     
 end_matching:

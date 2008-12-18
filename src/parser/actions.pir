@@ -833,8 +833,9 @@ convert_items_into_array__done:
     .local pmc items
     .local pmc result
     .local pmc it
-    items = var.'expanded_items'()
     result = new 'ResizablePMCArray'
+    if null var goto iterate_items_end
+    items = var.'expanded_items'()
     it = new 'Iterator', items
 iterate_items:
     unless it goto iterate_items_end

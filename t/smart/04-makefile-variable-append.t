@@ -1,6 +1,6 @@
 # -*- mode: makefile -*-
 
-say '1..8';
+say '1..9';
 
 A = item0
 A += item1
@@ -21,4 +21,4 @@ say 'check:expand(item0 item1 item2 item3  item4	item5 bbb1 bbb2):', $(A).expand
 #say 'check:join(item0;item1;item2;item3;item4;item5;bbb1;bbb2):', $(A).join(';');
 say 'check:join(item0;item1;item2;item3;item4;item5;$(B)):', $(A).join(';');
 
-say 'todo: $(A).count_deeply()';
+say 'check:count_deeply(8):', $(A).count_deeply();

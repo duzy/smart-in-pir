@@ -154,6 +154,7 @@ parse_and_expand_var____parsing:
     if $S0 == paren goto parse_and_expand_var____parsing__succeed
     if $S0 == ":" goto parse_and_expand_var____parsing__check_substitution_pattern
     if $S0 == " " goto parse_and_expand_var____parsing__check_if_callable_variable
+    if $S0 == "$" goto parse_and_expand_var____parsing__compute_variable_name
     inc n ## step forward to parse
     goto parse_and_expand_var____parsing
 
@@ -169,6 +170,10 @@ parse_and_expand_var____parsing__check_if_callable_variable:
     ## $I1 is the position of the right paren, set by the previous local_branch
     n = $I1 + 1 ## skip to the right paren
     var_len = n - pos
+    goto parse_and_expand_var__done
+
+parse_and_expand_var____parsing__compute_variable_name:
+    say "TODO: (expand.pir)computed variable name"
     goto parse_and_expand_var__done
     
 parse_and_expand_var____parsing__succeed:
@@ -407,14 +412,14 @@ handle_callable_variable__call:
     print $S2    
     local_return call_stack
 
-    ######################
-    ## local routine: handle_callable_variable__wildcard
-handle_callable_variable__wildcard:
-    $S2 = "TODO: wildcard files '"
-    $S2 .= $S1
-    $S2 .= "'\n"
-    print $S2    
-    local_return call_stack
+#     ######################
+#     ## local routine: handle_callable_variable__wildcard
+# handle_callable_variable__wildcard:
+#     $S2 = "TODO: wildcard files '"
+#     $S2 .= $S1
+#     $S2 .= "'\n"
+#     print $S2    
+#     local_return call_stack
 
     ######################
     ## local routine: report_null_variable

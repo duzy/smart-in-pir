@@ -30,9 +30,15 @@ B ?= bbb
 T = c
 C := c$(T)c
 
-D = d
+D := d
 D += d
 D += d
+
+value := computed variable names
+more_deeper_name = value
+deeper_name = more_deeper_name
+name = deeper_name
+v = expecting[$($($($($(name)))))]
 
 report:
 	@echo "1..5"
@@ -41,9 +47,7 @@ report:
 	@echo "check:B(bbb):$(B)"
 	@echo "check:C(ccc):$(C)"
 	@echo "check:D(d d d):$(D)"
-
-
-
+	@echo "check:computed-name(computed variable names):$(v)"
 
 
 
