@@ -15,8 +15,23 @@ The '@[%]' variable holds the list of implicit rules.
 
 .namespace []
 .sub "new:MakefileRule"
+    .param pmc match
+    .param pmc targets          :optional
+    .param pmc prerequisites    :optional
     .local pmc rule
     rule = new 'MakefileRule'
+
+    unless null targets goto has_targets
+    targets = new 'ResizablePMCArray'
+has_targets:
+
+    unless null prerequisites goto has_prerequisites
+    prerequisites = new 'ResizablePMCArray'
+has_prerequisites:
+    
+    setattribute rule, 'match', match
+    setattribute rule, 'targets', targets
+    setattribute rule, 'prerequisites', prerequisites
     .return(rule)
 .end
 
@@ -141,6 +156,16 @@ invalid_action_object:
 end_iterate_actions:
     
     .return(state, action_count)
+.end
+
+
+=item <targets()>
+Returns the target list for which can the rule update
+=cut
+.sub "targets" :method
+    .local pmc targets
+    getattribute targets, self, 'targets'
+    .return(targets)
 .end
 
 

@@ -63,28 +63,26 @@ has_name:
 =item <items()>
 Returns an string array containing all items.
 
-See also "~expanded-items"().
+See also "expanded_items"(), "~expanded-items"().
 =cut
 .sub "items" :method
+    $S0 = self.'value'()
+    $P0 = '~split-string'( $S0 )
+    .return ($P0)
+.end # sub "items"
+
+.sub "expanded_items" :method
+    $S0 = self.'expand'()
+    $P0 = '~split-string'( $S0 )
+    .return ($P0)
+.end # sub "expanded_items"
+
+.sub "~split-string" :anon
+    .param string str
     .local pmc items, result, it
-#     .local string str
-#     str = self.'value'()
-#     items = split " ", str
-#     result = new 'ResizableStringArray'
-#     it = new 'Iterator', items
-# iterate_items:
-#     unless it goto iterate_items_end
-#     str = shift it
-#     str = 'strip'( str )
-#     if str == "" goto iterate_items
-#     push result, str
-#     goto iterate_items
-# iterate_items_end:
-#     .return (result)
-    .local string str, spaces, item
+    .local string spaces, item
     .local int pos, len, n
     spaces = " \t"
-    str = self.'value'()
     n   = 0
     pos = 0
     len = length str
@@ -147,7 +145,7 @@ iterate_chars_end:
     
 return_result:
     .return (result)
-.end # sub "items"
+.end # sub "~split-string"
 
 =item <origin()>
 =cut

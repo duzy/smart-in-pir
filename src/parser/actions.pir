@@ -57,10 +57,6 @@ check_done:
     
     unless null var goto makefile_variable_exists
     existed = 0
-#     var = new 'MakefileVariable'
-#     $P0 = new 'String'
-#     $P0 = name
-#     setattribute var, 'name', $P0
     $S0 = ""
     $I0 = MAKEFILE_VARIABLE_ORIGIN_file
     var = 'new:MakefileVariable'( name, $S0, $I0 )
@@ -176,10 +172,7 @@ iterate_command_line_targets:
     $S0 = shift iter
     get_hll_global target, ['smart';'makefile';'target'], $S0
     unless null target goto got_command_line_target
-    target = new 'MakefileTarget'
-    $P1 = new 'String'
-    $P1 = $S0
-    setattribute target, 'object', $P1
+    target = 'new:MakefileTarget'( $S0 )
     ##set_hll_global ['smart';'makefile';'target'], $S0, target
     got_command_line_target:
     $I0 = target.'update'()
@@ -251,10 +244,52 @@ no_number_one_target:
     .return (args)
 .end
 
+.sub "!makeilfe-rule-pack-targets"
+    .param pmc args :slurpy
+    .local pmc result
+    .local pmc it, ait
+    result = new 'ResizablePMCArray'
+    it = new 'Iterator', args
+iterate_items:
+    unless it goto iterate_items_end
+    shift $P0, it
+    typeof $S0, $P0
+    if $S0 == "MakefileTarget" goto iterate_items__pack_MakefileTarget
+    if $S0 == "ResizablePMCArray" goto iterate_items__pack_ResizablePMCArray
+    ## PS: Unknown type here will be ignored.
+    goto iterate_items
+    
+iterate_items__pack_MakefileTarget:
+    push result, $P0
+    goto iterate_items
+    
+iterate_items__pack_ResizablePMCArray:
+    ait = new 'Iterator', $P0
+iterate_items__pack_ResizablePMCArray__iterate_array:
+    unless ait goto iterate_items__pack_ResizablePMCArray__iterate_array_end
+    $P1 = shift ait
+    push result, $P1
+    goto iterate_items__pack_ResizablePMCArray__iterate_array
+iterate_items__pack_ResizablePMCArray__iterate_array_end:
+    goto iterate_items
+    
+iterate_items_end:
+    .return (result)
+.end
+
 
 =item <'!update-makefile-rule'(IN match, IN target, OPT deps, OPT actions)>
-    Update the rule by 'match', created one if the rule is not existed.
+Update the rule by 'match', created one if the rule is not existed.
 =cut
+.sub "!update-makefile-rule~"
+    .param string match
+    .param pmc targets
+    .param pmc prerequisites    :optional
+    .param pmc actions          :optional
+    
+    #.return(rule) ## returns the rule object
+.end # sub "!update-makefile-rule"
+
 .sub "!update-makefile-rule"
     .param string match
     .param pmc targets
@@ -289,13 +324,9 @@ no_number_one_target:
     ##          OUT: rule, implicit
 create_new_rule_object:
     implicit = 0
-    
-    rule = new 'MakefileRule'
-    $P0 = new 'String'
-    $P0 = match
-    setattribute rule, 'match', $P0
-    $P0 = new 'ResizablePMCArray'
-    setattribute rule, 'targets', $P0
+
+    rule = 'new:MakefileRule'( match )
+    $P0 = rule.'targets'()
     
     out_array = $P0
     
@@ -308,10 +339,6 @@ create_new_rule_object:
 iterate_targets: ## Iterate 'targets'
     unless iter goto end_iterate_targets
     target = shift iter
-    
-    ## check to see if it's a MakefileVariable target
-    $S0 = typeof target
-    if $S0 == 'MakefileVariable' goto got_variable_target
     
     ## check to see if it's an 'implicit target'.
     target_name = target.'object'()
@@ -334,11 +361,6 @@ got_normal_target:
     if implicit goto error_mixed_implicit_and_normal_rule
     setattribute target, 'rule', rule
     push out_array, target
-    goto iterate_targets
-    
-    ## Choice 2
-got_variable_target:
-    local_branch call_stack, expand_variable_target_and_convert_into_stored_normal_targets
     goto iterate_targets
     
     ## Choice 3 -- Implicit target(pattern)
@@ -510,19 +532,18 @@ update_prerequsites:
     out_array = rule.'prerequisites'()
     iter = new 'Iterator', prerequisites
 
+#     print "ps: "
+#     print prerequisites
+#     print ", target="
+#     say match
+
     if implicit goto iterate_implicit_prerequisites
     
     ## normal prerequsites
 iterate_prerequisites: #############################
     unless iter goto end_iterate_prerequisites
     $P0 = shift iter
-    $S0 = typeof $P0
-    if $S0 == 'MakefileVariable' goto push_variable_prerequsite
     push out_array, $P0
-    goto iterate_prerequisites
-push_variable_prerequsite:
-    target = $P0 ## for the sub routine
-    local_branch call_stack, expand_variable_prerequsite_and_convert_into_stored_normal_targets
     goto iterate_prerequisites
 end_iterate_prerequisites: #########################
     goto update_prerequsites__done
@@ -531,9 +552,6 @@ end_iterate_prerequisites: #########################
 iterate_implicit_prerequisites: ########################################
     unless iter goto end_iterate_implicit_prerequisites
     $P0 = shift iter
-    ## check the type to see if an "MakefileVariable" prerequsite
-    $S0 = typeof $P0
-    if $S0 == 'MakefileVariable' goto push_variable_prerequsite_2
     ## check the validatity of the implicit prerequsite
     unless $S0 == 'String' goto iterate_implicit_prerequisites__not_an_string
     ## the prerequsite is String
@@ -559,10 +577,6 @@ push_implicit_prerequisite: ###########################
     #say $S0 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     push out_array, $S0 ## an implicit prerequsite
     ## TODO: should I unset the HLL global target named by $S0??
-    goto iterate_implicit_prerequisites
-push_variable_prerequsite_2:
-    target = $P0 ## for the sub routine
-    local_branch call_stack, expand_variable_prerequsite_and_convert_into_stored_normal_targets
     goto iterate_implicit_prerequisites
 end_iterate_implicit_prerequisites: ####################################
 update_prerequsites__done:
@@ -594,39 +608,11 @@ setup_number_one_target:
     $P1 = $P0[0]
     $S0 = $P1.'object'()
     set_hll_global ['smart';'makefile'], "$<0>", $P1
-#     $P1 = new 'MakefileVariable'
-#     $P2 = new 'String'
-#     $P2 = ".DEFAULT_GOAL"
-#     setattribute $P1, 'name', $P2
-#     $P2 = new 'String'
-#     $P2 = $S0
-#     setattribute $P1, 'value', $P2
     $P1 = 'new:MakefileVariable'( ".DEFAULT_GOAL", $S0, MAKEFILE_VARIABLE_ORIGIN_automatic )
     set_hll_global ['smart';'makefile';'variable'], ".DEFAULT_GOAL", $P1
 setup_number_one_target_local_return:
     local_return call_stack
     
-    
-    ############
-    ## local routine 5
-expand_variable_target_and_convert_into_stored_normal_targets:
-    ## expand variable to obtain the target list, bind each target in the list
-    ## to the new created rule.
-    $S0 = target.'expand'()
-    $P0 = split " ", $S0
-    iter = new 'Iterator', $P0
-    ## iterate items in the makefile variable and convert each into target
-iterate_variable_expanded_targets: #################
-    unless iter goto end_iterate_variable_expanded_targets
-    target_name = shift iter
-    if target_name == "" goto iterate_variable_expanded_targets
-    local_branch call_stack, obtain_target_by_target_name
-    setattribute target, 'rule', rule
-    push out_array, target
-    goto iterate_variable_expanded_targets
-end_iterate_variable_expanded_targets: #############
-    local_return call_stack
-
     
     ############
     ## local routine 6
@@ -638,6 +624,8 @@ expand_variable_prerequsite_and_convert_into_stored_normal_targets:
 iterate_variable_expanded_prerequsites: #################
     unless iter goto end_iterate_variable_expanded_prerequsites
     target_name = shift iter
+#     print "expanded: "
+#     say target_name
     if target_name == "" goto iterate_variable_expanded_prerequsites
     local_branch call_stack, obtain_target_by_target_name
     push out_array, target
@@ -652,10 +640,7 @@ obtain_target_by_target_name:
     get_hll_global target, ['smart';'makefile';'target'], target_name
     unless null target goto obtain_target_by_target_name_local_return
     ## convert the makefile variable item into a target
-    target = new 'MakefileTarget'
-    $P1 = new 'String'
-    $P1 = target_name
-    setattribute target, 'object', $P1
+    target = 'new:MakefileTarget'( target_name )    
     set_hll_global ['smart';'makefile';'target'], target_name, target
 obtain_target_by_target_name_local_return:
     local_return call_stack
@@ -825,15 +810,6 @@ update_special_PHONY__got_phony_array:
     ##          IN: $P0 (a ResizableStringArray)
     ##          OUT: $P0 (modifying)
 convert_items_into_array:
-#     $P1 = new 'Iterator', items
-# convert_items_into_array__iterate_items:
-#     unless $P1 goto convert_items_into_array__iterate_items_end
-#     $P2 = shift $P1
-#     push $P0, $P2
-#     ##print "item: "
-#     ##say $P2
-#     goto convert_items_into_array__iterate_items
-# convert_items_into_array__iterate_items_end:
     $S0 = join ' ', items
     $P1 = '~expanded-items'( $S0 )
     $P2 = new 'Iterator', $P1
@@ -850,6 +826,23 @@ convert_items_into_array__done:
 
 .end # sub !update-special-makefile-rule
 
+.sub "!makefile-variable-to-targets"
+    .param pmc var
+    .local pmc items
+    .local pmc result
+    .local pmc it
+    items = var.'expanded_items'()
+    result = new 'ResizablePMCArray'
+    it = new 'Iterator', items
+iterate_items:
+    unless it goto iterate_items_end
+    $S0 = shift it
+    $P0 = '!bind-makefile-target'( $S0, 1 )
+    push result, $P0
+    goto iterate_items
+iterate_items_end:
+    .return(result)
+.end # sub "!makefile-variable-to-targets"
 
 
 =item <'!bind-makefile-target'(IN name, OPT is_rule)>
@@ -859,21 +852,17 @@ convert_items_into_array__done:
     be created on the fly, and the created implicit targets will be stored.
 =cut
 .sub "!bind-makefile-target"
-    .param pmc name_pmc
+    .param string name
     .param int is_target           ## is target declaraed as rule?
     .local pmc target
     .local string name
-    name = name_pmc
-
-create_normal_target:
     
     get_hll_global target, ['smart';'makefile';'target'], name
     if null target goto create_new_makefile_target
     .return (target)
     
 create_new_makefile_target:
-    target = new 'MakefileTarget'
-    setattribute target, 'object', name_pmc
+    target = 'new:MakefileTarget'( name )
     
     ## store the new target object
     ## TODO: should escape implicit targets(patterns)?
@@ -886,30 +875,25 @@ create_new_makefile_target:
 =item
 =cut
 .sub "!create-makefile-action"
-    .param pmc command
-    .local pmc action
+    .param string command
+    .local int echo_on
+    .local int ignore_error
     
-    action = new 'MakefileAction'
+    substr $S1, command, 0, 1
     
-    set $S0, command
-    substr $S1, $S0, 0, 1
+    echo_on = $S1 != "@"
+    ignore_error = $S1 != "-"
     
-    $I0 = $S1 != "@"
-    action.'echo_on'( $I0 )
-    $I1 = $I0
-    
-    $I0 = $S1 != "-"
-    action.'ignore_error'( $I0 )
-    $I1 = and $I1, $I0
-    
-    if $I1 goto command_echo_is_on
-    $I0 = length $S0
+    $I0 = and echo_on, ignore_error
+    if $I0 goto command_echo_is_on
+    $I0 = length command
     $I0 -= 1
-    substr $S1, $S0, 1, $I0
+    substr $S1, command, 1, $I0
     command = $S1
 command_echo_is_on:
     
-    action.'command'( command )
+    .local pmc action
+    action = 'new:MakefileAction'( command, echo_on, ignore_error )
     .return(action)
 .end
 

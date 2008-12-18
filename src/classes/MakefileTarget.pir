@@ -19,8 +19,15 @@ pattern targets(the match-anything rule is excluded).
 
 .namespace []
 .sub "new:MakefileTarget"
+    .param pmc object
     .local pmc target
+    
+    if null object goto return_target
+    
     target = new 'MakefileTarget'
+    setattribute target, 'object', object
+    
+return_target:
     .return(target)
 .end
 
@@ -670,13 +677,17 @@ check_and_update_prerequisites:
     
     prerequisites = rule.'prerequisites'()
     iter = new 'Iterator', prerequisites
+#     print "number-of-prerequisites: "
+#     print prerequisites
+#     print ", target="
+#     say object
     
 iterate_prerequisites:
     unless iter goto end_iterate_prerequisites
     prerequisite = shift iter
     
     ## Check the type of prerequsite...
-    $S0 = typeof prerequisite
+    typeof $S0, prerequisite
     unless $S0 == "String" goto handle_with_normal_prerequisite
     $S0 = prerequisite
     $I0 = index $S0, "%"
@@ -687,6 +698,8 @@ iterate_prerequisites:
     
 handle_with_implicit_prerequsite:
     $S1 = '.!calculate-object-of-prerequisite'( target, prerequisite )
+    print "prerequsite: "
+    say $S1
     ## Get stored prerequsite, or create a new one if none existed.
     get_hll_global prerequisite, ['smart';'makefile';'target'], $S1
     unless null prerequisite goto handle_with_normal_prerequisite

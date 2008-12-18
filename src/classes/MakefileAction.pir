@@ -6,6 +6,20 @@
 #    $Id$
 #
 
+.namespace []
+.sub "new:MakefileAction"
+    .param pmc command
+    .param pmc echo_on
+    .param pmc ignore_error
+    .local pmc action
+    action = new 'MakefileAction'
+    setattribute action, 'command', command
+    setattribute action, 'echo_on', echo_on
+    setattribute action, 'ignore_error', ignore_error
+    .return(action)
+.end # sub "new:MakefileAction"
+
+
 .namespace ['MakefileAction']
 .sub '__init_class' :anon :init :load
     newclass $P0, 'MakefileAction'

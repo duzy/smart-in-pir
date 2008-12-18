@@ -36,13 +36,20 @@ sub collect_files {
     my %options = @_;
     my @files;
 
-    if ( $options{path} ) {
-        @files = glob( File::Spec->catfile( $options{path}, '*.t' ) );
+    if ( $options{path} && ref $options{path} eq 'ARRAY' ) {
+	my @pathes = @{ $options{path} };
+	push @files, map { glob(File::Spec->catfile( $_, '*.t' )) } @pathes;
+    }
+    elsif ( $options{path} && ref $options{path} eq 'STRING' ) {
+        push @files, glob( File::Spec->catfile( $options{path}, '*.t' ) );
     }
 
     if ( $options{files} && ref $options{files} eq 'ARRAY' ) {
         my @patterns = @{ $options{files} };
         push @files, map { glob( $_ ) } @patterns;
+    }
+    elsif ( $options{files} && ref $options{files} eq 'STRING' ) {
+	push @files, glob( $options{files} );
     }
 
     return @files;

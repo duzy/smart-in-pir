@@ -109,20 +109,29 @@ method makefile_variable_ref($/) {
                    );
 }
 
+=item
+  targets : prerequsites
+=cut
 method makefile_rule($/) {
     if ( $<makefile_special_rule> ) {
         make $( $<makefile_special_rule> );
     }
     elsif $<static_targets> {
-        make PAST::Op.new( :inline('print "TODO: static pattern rule\n"') );
+        make PAST::Op.new( :inline('print "TODO: (actions.pm)static pattern rule\n"') );
     }
     else {
+        #my $pack_targets := PAST::Op.new( :pasttype('call'),
+        #  :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
+        #for $<makefile_target> { $pack_targets.push( $( $_ ) ); }
         my $pack_targets := PAST::Op.new( :pasttype('call'),
-          :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
+          :name('!makeilfe-rule-pack-targets'), :returns('ResizablePMCArray') );
         for $<makefile_target> { $pack_targets.push( $( $_ ) ); }
 
+        #my $pack_prerequisites := PAST::Op.new( :pasttype('call'),
+        #  :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
+        #for $<makefile_prerequisite> { $pack_prerequisites.push( $( $_ ) ); }
         my $pack_prerequisites := PAST::Op.new( :pasttype('call'),
-          :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
+          :name('!makeilfe-rule-pack-targets'), :returns('ResizablePMCArray') );
         for $<makefile_prerequisite> { $pack_prerequisites.push( $( $_ ) ); }
 
         my $pack_actions := PAST::Op.new( :pasttype('call'),
@@ -149,7 +158,11 @@ method makefile_rule($/) {
 }
 method makefile_target($/) {
     if $<makefile_variable_ref> {
-        make $( $<makefile_variable_ref> );
+        #make $( $<makefile_variable_ref> );
+        my $past := PAST::Op.new( :name('!makefile-variable-to-targets'),
+          :returns('ResizablePMCArray'), :pasttype('call') );
+        $past.push( $( $<makefile_variable_ref> ) );
+        make $past;
     }
     else {
         my $name := strip( ~$/ );
@@ -171,7 +184,11 @@ method makefile_target($/) {
 }
 method makefile_prerequisite($/) {
     if $<makefile_variable_ref> {
-        make $( $<makefile_variable_ref> );
+        #make $( $<makefile_variable_ref> );
+        my $past := PAST::Op.new( :name('!makefile-variable-to-targets'),
+          :returns('ResizablePMCArray'), :pasttype('call') );
+        $past.push( $( $<makefile_variable_ref> ) );
+        make $past;
     }
     else {
         my $p := PAST::Var.new(
