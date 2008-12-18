@@ -465,6 +465,7 @@ convert_suffix_target_if_any__done:
 convert_suffix_target_if_any__check_suffixes:
     .local pmc suffixes
     get_hll_global suffixes, ['smart';'makefile';'rule'], ".SUFFIXES"
+    if null suffixes goto convert_suffix_target_if_any__check_suffixes__done
     $P0 = new 'Iterator', suffixes
     $I1 = 0
 convert_suffix_target_if_any__iterate_suffixes:
@@ -552,6 +553,7 @@ end_iterate_prerequisites: #########################
 iterate_implicit_prerequisites: ########################################
     unless iter goto end_iterate_implicit_prerequisites
     $P0 = shift iter
+    $S0 = typeof $P0
     ## check the validatity of the implicit prerequsite
     unless $S0 == 'String' goto iterate_implicit_prerequisites__not_an_string
     ## the prerequsite is String

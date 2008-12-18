@@ -153,7 +153,9 @@ token makefile_prerequisite {
     | <makefile_variable_ref> {*}
     | <-[ ; \ \t \\ \n ]>+ {*}
 }
-token makefile_rule_action { <-[ \n ]>* {*} }
+token makefile_rule_action {
+    [[<!before \\\n><-[\n]>]+ [\\\n]?]* {*}
+}
 token makefile_special_rule {
     <.ws_inline>
     [

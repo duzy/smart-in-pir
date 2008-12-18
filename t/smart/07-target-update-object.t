@@ -1,7 +1,6 @@
 # -*- mode: makefile -*-
 
-#say "1..1";
-
 a.txt:
+	@echo "1..1"
 	@echo "foobar" > a.txt
 	@echo "ok"

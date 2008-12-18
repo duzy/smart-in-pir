@@ -480,46 +480,46 @@ invalid_stem: ## another internal error
     die $S1 ## it's an internal error!
 .end
 
-=item
-=cut
-.sub ".!update-variable-prerequisite" :anon
-    .param pmc self
-    .param pmc var
-    .param pmc requestor
+# =item
+# =cut
+# .sub ".!update-variable-prerequisite" :anon
+#     .param pmc self
+#     .param pmc var
+#     .param pmc requestor
     
-    .local int update_count, newer_count
-    .local string object_name
-    .local pmc objects, object, iter
-    update_count = 0
-    newer_count = 0
-    $S0 = var.'expand'()
-    objects = split " ", $S0
-    iter = new 'Iterator', objects
-iterate_objects:
-    unless iter goto end_iterate_objects
-    object_name = shift iter
-    if object_name == "" goto iterate_objects
-#     print "object: '"
-#     print object_name
-#     print "'\n"
-    get_hll_global object, ['smart';'makefile';'target'], object_name
-    unless null object goto got_stored_target_object
-    object = 'new:MakefileTarget'( object_name )
-    set_hll_global ['smart';'makefile';'target'], object_name, object
+#     .local int update_count, newer_count
+#     .local string object_name
+#     .local pmc objects, object, iter
+#     update_count = 0
+#     newer_count = 0
+#     $S0 = var.'expand'()
+#     objects = split " ", $S0
+#     iter = new 'Iterator', objects
+# iterate_objects:
+#     unless iter goto end_iterate_objects
+#     object_name = shift iter
+#     if object_name == "" goto iterate_objects
+# #     print "object: '"
+# #     print object_name
+# #     print "'\n"
+#     get_hll_global object, ['smart';'makefile';'target'], object_name
+#     unless null object goto got_stored_target_object
+#     object = 'new:MakefileTarget'( object_name )
+#     set_hll_global ['smart';'makefile';'target'], object_name, object
     
-got_stored_target_object:
-    ($I0, $I1) = 'update-target'( object, requestor )
-    if $I1 <= 0 goto no_inc_newer_counter
-    newer_count += $I1
-    no_inc_newer_counter:
-    if $I0 <= 0 goto iterate_objects
-    update_count += $I0
-    goto iterate_objects
-end_iterate_objects:
+# got_stored_target_object:
+#     ($I0, $I1) = 'update-target'( object, requestor )
+#     if $I1 <= 0 goto no_inc_newer_counter
+#     newer_count += $I1
+#     no_inc_newer_counter:
+#     if $I0 <= 0 goto iterate_objects
+#     update_count += $I0
+#     goto iterate_objects
+# end_iterate_objects:
     
-update_done:
-    .return (update_count, newer_count)
-.end # sub ".!update-variable-prerequisite"
+# update_done:
+#     .return (update_count, newer_count)
+# .end # sub ".!update-variable-prerequisite"
 
 
 ######################################################################
