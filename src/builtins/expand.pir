@@ -74,9 +74,8 @@ return_result:
     .local string result
     .local string char, paren, name
     .local int len, pos, var_len, beg
-    .local int n
     .local pmc call_stack
-
+    
     call_stack = new 'ResizableIntegerArray'
     
     result = ""
@@ -87,14 +86,16 @@ return_result:
     #print "expand: " ##!!!!!!!!!!!!!
     #say str
     
+    #.local pmc ivar_stack # the inner-variable stack: $($($(inner)))
+    #ivar_stack = new 'ResizableIntegerArray'
 search_variable_sign:
     $I0 = index str, "$", pos
     if $I0 < 0 goto search_variable_sign_failed
     ## concat the substring before the "$" sign
     pos = $I0 ## tells the end position of substring to be concated
-    local_branch call_stack, append_substring
+    local_branch call_stack, append_substring # append substring [beg, pos)
     ## parse and expand the variable indicated by "$"
-    local_branch call_stack, parse_and_expand_var
+    local_branch call_stack, expand_variable # expand variable to the result
     pos += var_len ## skip the length of variable
     beg = pos ## save the start position of substring
     goto search_variable_sign
@@ -109,7 +110,7 @@ search_variable_sign_end:
 
     
     ######################
-    ## local routine: append_substring
+    ## local routine: append_substring (substring [beg, pos) )
     ##          IN: str, beg, pos
     ##          OUT: result (modifying)
 append_substring:
@@ -122,10 +123,11 @@ append_substring__done:
 
     
     ######################
-    ## local routine: parse_and_expand_var
+    ## local routine: expand_variable
     ##          IN: str, pos, len
     ##          OUT: var_len, result (modifying), paren, name
-parse_and_expand_var:
+expand_variable:
+    .local int n # used to parse the variable(searching the right paren)
     paren = ""
     name = ""
     var_len = 1 ## at less the length of "$"
@@ -133,74 +135,143 @@ parse_and_expand_var:
     
     ## check to see if '}' or ')' used as right paren
     $S0 = substr str, n, 1
-    unless $S0 == "{" goto parse_and_expand_var__check_right_paren_2
+    
+expand_variable__check_right_paren_1:
+    unless $S0 == "{" goto expand_variable__check_right_paren_2
     paren = "}"
-    inc n
-    goto parse_and_expand_var____parsing
-parse_and_expand_var__check_right_paren_2:
-    unless $S0 == "(" goto parse_and_expand_var__check_if_single_name
+    inc n # used to searching the right paren
+    goto expand_variable____parse
+expand_variable__check_right_paren_2:
+    unless $S0 == "(" goto expand_variable__check_if_single_name
     paren = ")"
-    inc n
-    goto parse_and_expand_var____parsing
-parse_and_expand_var__check_if_single_name:
+    inc n # used to searching the right paren
+    goto expand_variable____parse
+expand_variable__check_if_single_name:
     name = $S0
     var_len = 2
-    goto parse_and_expand_var__appending_result
+    #goto expand_variable__append_result
+    local_branch call_stack, append_result_by_name
+    goto expand_variable__done
 
     ## Find the right paren and try parsing variable according it
-parse_and_expand_var____parsing:
+expand_variable____parse:
     unless n < len goto error__unterminated_var
-    $S0 = substr str, n, 1
-    if $S0 == paren goto parse_and_expand_var____parsing__succeed
-    if $S0 == ":" goto parse_and_expand_var____parsing__check_substitution_pattern
-    if $S0 == " " goto parse_and_expand_var____parsing__check_if_callable_variable
-    if $S0 == "$" goto parse_and_expand_var____parsing__compute_variable_name
-    inc n ## step forward to parse
-    goto parse_and_expand_var____parsing
+    substr $S0, str, n, 1
+    if $S0 == paren goto expand_variable____parse__succeed
+    if $S0 == "$"   goto expand_variable____parse__compute_variable_name
+    if $S0 == ":"   goto expand_variable____parse__check_substitution_pattern
+    if $S0 == " "   goto expand_variable____parse__check_if_callable_variable
+    inc n ## step forward to search the right paren
+    goto expand_variable____parse
+    
+expand_variable____parse__compute_variable_name:
+    ## extract the substring surrounded by "$("/"${" and ")"/"}"
+    .local pmc iparens
+    new iparens, 'ResizableStringArray'
+    set $I0, n
+expand_variable____parse__compute_variable_name__loop:
+    substr $S0, str, $I0, 2 ## '$(' or '${'
+expand_variable____parse__compute_variable_name__loop_case1:
+    unless $S0 =="$(" goto expand_variable____parse__compute_variable_name__loop_case2
+    push iparens, $S0 #")"
+    inc $I0
+    #say "sign: $("
+    goto expand_variable____parse__compute_variable_name__loop_case_end
+expand_variable____parse__compute_variable_name__loop_case2:
+    unless $S0 =="${" goto expand_variable____parse__compute_variable_name__loop_case3
+    push iparens, $S0 #"}"
+    inc $I0
+    #say "sign: ${"
+    goto expand_variable____parse__compute_variable_name__loop_case_end
+    
+expand_variable____parse__compute_variable_name__loop_case3:
+    ## reset $S0 for one character
+    substr $S0, str, $I0, 1 ## '$(' or '${'
+    unless $S0 == ")" goto expand_variable____parse__compute_variable_name__loop_case4
+    $S1 = iparens[-1]
+    unless $S1 == "$(" goto expand_variable____parse__compute_variable_name__loop_case_end
+    pop $S1, iparens ## pop left paren
+    goto expand_variable____parse__compute_variable_name__loop_check_name_variable_end
+expand_variable____parse__compute_variable_name__loop_case4:
+    unless $S0 == "}" goto expand_variable____parse__compute_variable_name__loop_case_end
+    $S1 = iparens[-1]
+    unless $S1 == "${" goto expand_variable____parse__compute_variable_name__loop_case_end
+    pop $S1, iparens ## pop left paren
+    goto expand_variable____parse__compute_variable_name__loop_check_name_variable_end
+    
+expand_variable____parse__compute_variable_name__loop_check_name_variable_end:
+    elements $I1, iparens ## if no elements...
+    if $I1 <= 0 goto expand_variable____parse__compute_variable_name__loop_end
+    
+expand_variable____parse__compute_variable_name__loop_case_end:
+    inc $I0
+    unless $I0 < len goto expand_variable__done
+    goto expand_variable____parse__compute_variable_name__loop
+expand_variable____parse__compute_variable_name__loop_end:
+    null iparens ## release the iparens
 
-parse_and_expand_var____parsing__check_substitution_pattern:
+    #add n, 2 # skip the length of "$(" or "${"
+    sub $I1, $I0, n
+    inc $I1
+    substr $S0, str, n, $I1
+    add n, $I0, 1 # set 'n' to the just behind of the right paren
+
+    name = '~expand-string'( $S0 )
+#     print "computed: "
+#     print $S0
+#     print " -> "
+#     say name
+    
+expand_variable____parse__compute_variable_name__done:
+    goto expand_variable____parse__succeed
+    
+expand_variable____parse__succeed: ## got the right paren!
+    ## here 'n' is the position of the right paren
+    ## and 'pos' is the positon of "$"
+    sub var_len, n, pos #var_len = n - pos
+    inc var_len ## 'var_len' should include ')' or '}'
+    add n, pos, 2 ## set 'n' to the start position of var-name, by skipping the '$(' or '${'
+    sub $I1, var_len, 3 ## length of the name, minus the length of "${}" or "$()"
+    unless name == "" goto expand_variable____parse__succeed__got_computed_name
+    substr name, str, n, $I1
+expand_variable____parse__succeed__got_computed_name:
+    local_branch call_stack, append_result_by_name
+    goto expand_variable__done
+    
+expand_variable____parse__check_substitution_pattern:
     local_branch call_stack, parse_pattern_substitution
-    if name == "" goto parse_and_expand_var____parsing
-    var_len = n - pos
-    goto parse_and_expand_var__done
+    if name == "" goto expand_variable____parse
+    sub var_len, n, pos #var_len = n - pos
+    goto expand_variable__done
     
-parse_and_expand_var____parsing__check_if_callable_variable:
+expand_variable____parse__check_if_callable_variable:
     local_branch call_stack, check_and_handle_callable_variable
-    if name == "" goto parse_and_expand_var____parsing
-    ## $I1 is the position of the right paren, set by the previous local_branch
-    n = $I1 + 1 ## skip to the right paren
-    var_len = n - pos
-    goto parse_and_expand_var__done
-
-parse_and_expand_var____parsing__compute_variable_name:
-    say "TODO: (expand.pir)computed variable name"
-    goto parse_and_expand_var__done
+    if name == "" goto expand_variable____parse
+    sub var_len, n, pos #var_len = n - pos
+    goto expand_variable__done
     
-parse_and_expand_var____parsing__succeed:
-    var_len = n - pos ## here n is the position of the right paren, pos is the positon of "$"
-    $I1 = var_len - 2 ## minus the length of "${" or "$("
-    n = pos + 2 ## n is the start position of var-name now, skipping the '$(' or '${'
-    name = substr str, n, $I1
-    inc var_len ## var_len should include ')' or '}'
-parse_and_expand_var____parsing__end:
-    
-parse_and_expand_var__appending_result:
-    if name == "$" goto parse_and_expand_var__appending_result__escape_SS
-    get_hll_global $P0, ['smart';'makefile';'variable'], name
-    unless null $P0 goto parse_and_expand_var__appending_result__do_expanding
-    local_branch call_stack, report_null_variable
-    goto parse_and_expand_var__done
-parse_and_expand_var__appending_result__do_expanding:
-    $S0 = $P0.'expand'()
-    concat result, $S0 ## expanding well done!
-    goto parse_and_expand_var__done
-parse_and_expand_var__appending_result__escape_SS: ## $$ escape to literal $
-    concat result, "$"
-    goto parse_and_expand_var__done
-    
-parse_and_expand_var__done:
+expand_variable__done:
     local_return call_stack
 
+
+    ######################
+    ## local routine: append_result_by_name
+    ##          IN: name
+    ##          OUT: result(modifying)
+append_result_by_name:
+    if name == "$" goto append_result_by_name__escape_SS
+    get_hll_global $P0, ['smart';'makefile';'variable'], name
+    unless null $P0 goto append_result_by_name__do_expanding
+    local_branch call_stack, report_null_variable
+    local_return call_stack
+append_result_by_name__do_expanding:
+    $S0 = $P0.'expand'()
+    concat result, $S0 ## expanding well done!
+    local_return call_stack
+append_result_by_name__escape_SS: ## $$ escape to literal $
+    concat result, "$"
+    local_return call_stack
+    
     
     ######################
     ## local routine: check_and_handle_callable_variable
@@ -223,15 +294,12 @@ check_and_handle_callable_variable__check_1:
     $I3 = $I2 - n
     $S1 = substr str, n, $I3 ## argument one
     inc $I2 ## skip the first comma
-    n = $I2 ## step counter forward
     $I2 = index str, ",", n
     $I3 = $I2 - n
     $S2 = substr str, n, $I3 ## argument two
     inc $I2 ## skip the second comma
-    n = $I2 ## step counter forward
     $I2 = $I1 - n
     $S3 = substr str, n, $I2
-    n = $I1 + 1 ## step counter forward
     $S1 = 'subst'( $S1, $S2, $S3 )
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_2:
@@ -343,6 +411,7 @@ check_and_handle_callable_variable__check_32:
 check_and_handle_callable_variable__check_done:
 
     name = $S0 ## store the callable name
+    n = $I1 + 1 ## skip to just behind the right paren
     concat result, $S1 ## append the processed result
     
 check_and_handle_callable_variable__done:
