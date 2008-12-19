@@ -100,7 +100,7 @@ method makefile_variable_ref($/) {
     );
     my $binder := PAST::Op.new( :pasttype('call'),
       :name('!get-makefile-variable-object'),
-      :returns('MakefileVariable') );
+      :returns('MakeVariable') );
     $binder.push( PAST::Val.new( :value($var.name()), :returns('String') ) );
 
     make PAST::Op.new( $var, $binder,
@@ -143,7 +143,7 @@ method makefile_rule($/) {
         my $rule := PAST::Var.new( :lvalue(1), :viviself('Undef'),
            :scope('package'), :name($match), :namespace('smart::makefile::rule') );
         my $rule_ctr := PAST::Op.new( :pasttype('call'),
-          :name('!update-makefile-rule'), :returns('MakefileRule')
+          :name('!update-makefile-rule'), :returns('MakeRule')
         );
         $rule_ctr.push( PAST::Val.new( :value($match), :returns('String') ) );
         $rule_ctr.push( $pack_targets );
@@ -173,7 +173,7 @@ method makefile_target($/) {
           :scope('lexical'),
           :node( $/ )
         );
-        my $c := PAST::Op.new( :pasttype('call'), :returns('MakefileTarget'),
+        my $c := PAST::Op.new( :pasttype('call'), :returns('MakeTarget'),
           :name('!bind-makefile-target') );
         $c.push( PAST::Val.new( :value($t.name()), :returns('String') ) );
         $c.push( PAST::Val.new( :value(1), :returns('Integer') ) );
@@ -200,7 +200,7 @@ method makefile_prerequisite($/) {
         my $c := PAST::Op.new(
             :pasttype('call'),
             :name('!bind-makefile-target'),
-            :returns('MakefileTarget') );
+            :returns('MakeTarget') );
         $c.push( PAST::Val.new( :value($p.name()), :returns('String') ) );
         $c.push( PAST::Val.new( :value(0), :returns('Integer') ) );
         make PAST::Op.new( $p, $c, :pasttype('bind'),
@@ -209,7 +209,7 @@ method makefile_prerequisite($/) {
     }
 }
 method makefile_rule_action($/) {
-    my $past := PAST::Op.new( :pasttype('call'), :returns('MakefileAction'),
+    my $past := PAST::Op.new( :pasttype('call'), :returns('MakeAction'),
       :name('!create-makefile-action'), :node($/) );
     $past.push( PAST::Val.new( :value(~$/), :returns('String') ) );
     make $past;

@@ -7,7 +7,7 @@
 #
 
 .namespace []
-.sub "new:MakefileVariable"
+.sub "new:MakeVariable"
     .param string name
     .param string value
     .param int origin           :optional
@@ -24,7 +24,7 @@ validate_origin:
     
 create_new_makefile_variable:
     
-    $P0 = new 'MakefileVariable'
+    $P0 = new 'MakeVariable'
     $P1 = new 'String'
     $P1 = name
     setattribute $P0, 'name', $P1
@@ -37,10 +37,10 @@ create_new_makefile_variable:
     .return($P0)
 .end
 
-.namespace ['MakefileVariable']
+.namespace ['MakeVariable']
 
 .sub '__init_class' :anon :init :load
-    newclass $P1, 'MakefileVariable'
+    newclass $P1, 'MakeVariable'
     addattribute $P1, 'name'
     addattribute $P1, 'value'
     addattribute $P1, 'origin' # tells where does the variable come from.

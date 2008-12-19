@@ -8,7 +8,7 @@
 
 =head1
 
-MakefileTarget is identified by '$<xx>', in which 'xx' is the indentifier,
+MakeTarget is identified by '$<xx>', in which 'xx' is the indentifier,
 The '$<0>' variable is the number-one target from the smartfile, the '@<?>'
 variable holds a list of target requested to be updated(normally they are
 coming from command-line), the '$<%>' variable holds the match-anything
@@ -18,13 +18,13 @@ pattern targets(the match-anything rule is excluded).
 =cut
 
 .namespace []
-.sub "new:MakefileTarget"
+.sub "new:MakeTarget"
     .param pmc object
     .local pmc target
     
     if null object goto return_target
     
-    target = new 'MakefileTarget'
+    target = new 'MakeTarget'
     setattribute target, 'object', object
     
 return_target:
@@ -32,12 +32,12 @@ return_target:
 .end
 
 
-.namespace ['MakefileTarget']
+.namespace ['MakeTarget']
 .sub "__init_class" :anon :init :load
-    newclass $P0, 'MakefileTarget'
+    newclass $P0, 'MakeTarget'
     addattribute $P0, 'object'  ## the filename of the object 
     addattribute $P0, 'member'  ## for Archive target, indicates the member name
-    addattribute $P0, 'rule'    ## the MakefileRule object
+    addattribute $P0, 'rule'    ## the MakeRule object
     addattribute $P0, 'stem'    ## used with implicit rule -- pattern
     addattribute $P0, 'updated' ## 1/0, wether the object has been updated
     addattribute $P0, '%'       ## 1/0, 1 if it's an target pattern
@@ -161,7 +161,7 @@ no_rule_found:
 .macro MAKEFILE_VARIABLE( var, name, h )
     $P1 = h[.name]
     $S1 = $P1
-    .var = 'new:MakefileVariable'( .name, $S1, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    .var = 'new:MakeVariable'( .name, $S1, MAKEFILE_VARIABLE_ORIGIN_automatic )
 .endm
 
 
@@ -210,9 +210,9 @@ done_D_F:
 loop_tag_end:
     .local pmc var_D, var_F
     $S1 = join " ", items_D
-    var_D = 'new:MakefileVariable'( name_D, $S1, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    var_D = 'new:MakeVariable'( name_D, $S1, MAKEFILE_VARIABLE_ORIGIN_automatic )
     $S1 = join " ", items_F
-    var_F = 'new:MakefileVariable'( name_F, $S1, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    var_F = 'new:MakeVariable'( name_F, $S1, MAKEFILE_VARIABLE_ORIGIN_automatic )
     .return (var_D, var_F)
 .end
 
@@ -432,7 +432,7 @@ var7_got_empty_stem:
 .end
 
 =item
-    A prerequisite could be a MakefileTarget or an implicit prerequisite which
+    A prerequisite could be a MakeTarget or an implicit prerequisite which
     is an pattern-string -- contains one "%".
 =cut
 .sub ".!calculate-object-of-prerequisite" :anon
@@ -463,7 +463,7 @@ var7_got_empty_stem:
     .return ($S1)
     
 got_normal_prerequisite:
-    ## as to normal prerequisite, 'prerequisite' muste be a MakefileTarget
+    ## as to normal prerequisite, 'prerequisite' muste be a MakeTarget
     $S0 = prerequisite.'object'()
     .return ($S0)
 
@@ -504,7 +504,7 @@ invalid_stem: ## another internal error
 # #     print "'\n"
 #     get_hll_global object, ['smart';'makefile';'target'], object_name
 #     unless null object goto got_stored_target_object
-#     object = 'new:MakefileTarget'( object_name )
+#     object = 'new:MakeTarget'( object_name )
 #     set_hll_global ['smart';'makefile';'target'], object_name, object
     
 # got_stored_target_object:
@@ -697,11 +697,11 @@ handle_with_implicit_prerequsite:
     ## Get stored prerequsite, or create a new one if none existed.
     get_hll_global prerequisite, ['smart';'makefile';'target'], $S1
     unless null prerequisite goto handle_with_normal_prerequisite
-    prerequisite = 'new:MakefileTarget'( $S1 )
+    prerequisite = 'new:MakeTarget'( $S1 )
     set_hll_global ['smart';'makefile';'target'], $S1,  prerequisite
     
-handle_with_normal_prerequisite: ## normal prerequisite: MakefileTarget object
-    ## Here, The 'prerequsite' is a 'MakefileTarget' object.
+handle_with_normal_prerequisite: ## normal prerequisite: MakeTarget object
+    ## Here, The 'prerequsite' is a 'MakeTarget' object.
     $I0 = can prerequisite, 'update'
     unless $I0 goto invalid_target_object
     
@@ -737,7 +737,7 @@ invalid_target_object:
     $S0 = "smart: *** Invalid prerequisite of type '"
     $S1 = typeof prerequisite
     $S0 .= $S1
-    $S0 .= "', expecting to be 'MakefileTarget'\n"
+    $S0 .= "', expecting to be 'MakeTarget'\n"
     die $S0
 invalid_implicit_prerequisite:
     $S1 = "smart: *** Not a pattern prerequisite '"

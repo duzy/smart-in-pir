@@ -18,7 +18,7 @@ say 'ok $(E).expand = ', $(E).expand();
 N = C
 V = $($(N)) item5
 say "check:value($($(N)) item5):", $(V).value();
-say "check:expand(item1 item2 item3 item4):", $(V).expand();
+say "check:expand(item1	item2 item3 item4 item5):", $(V).expand();
 
 # in make, this cause an 'unterminated variable' error
 UN = aaa${unterminated

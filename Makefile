@@ -45,10 +45,10 @@ SOURCES = smart.pir \
   src/parser/actions.pir\
   src/parser/grammar.pir\
   src/classes/all.pir\
-  src/classes/MakefileVariable.pir\
-  src/classes/MakefileRule.pir\
-  src/classes/MakefileTarget.pir\
-  src/classes/MakefileAction.pir\
+  src/classes/MakeVariable.pir\
+  src/classes/MakeRule.pir\
+  src/classes/MakeTarget.pir\
+  src/classes/MakeAction.pir\
   src/classes/Pattern.pir\
 #  $(SMART_GROUP)
 

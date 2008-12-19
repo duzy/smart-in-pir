@@ -498,7 +498,7 @@ report_null_variable:
     if null $P0 goto report_null_variable__return
     $I0 = $P0
     unless $I0  goto report_null_variable__return
-    $S0 = "smart: Makefile variable '"
+    $S0 = "smart: Make variable '"
     concat $S0, name
     concat $S0, "' undeclaraed.\n"
     print $S0

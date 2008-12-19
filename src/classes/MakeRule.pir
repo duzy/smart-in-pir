@@ -8,18 +8,18 @@
 
 =head1
 
-MakefileRule is identified by '$[xx]', in which 'xx' should be the identifier.
+MakeRule is identified by '$[xx]', in which 'xx' should be the identifier.
 The '@[%]' variable holds the list of implicit rules.
 
 =cut
 
 .namespace []
-.sub "new:MakefileRule"
+.sub "new:MakeRule"
     .param pmc match
     .param pmc targets          :optional
     .param pmc prerequisites    :optional
     .local pmc rule
-    rule = new 'MakefileRule'
+    rule = new 'MakeRule'
 
     unless null targets goto has_targets
     targets = new 'ResizablePMCArray'
@@ -36,9 +36,9 @@ has_prerequisites:
 .end
 
 
-.namespace ['MakefileRule']
+.namespace ['MakeRule']
 .sub "__init_class" :anon :init :load
-    newclass $P0, 'MakefileRule'
+    newclass $P0, 'MakeRule'
     addattribute $P0, 'match'
     addattribute $P0, 'targets' ## if implicit, it's patterns
     addattribute $P0, 'prerequisites'

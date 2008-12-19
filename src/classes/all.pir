@@ -1,6 +1,6 @@
-.include 'src/classes/MakefileVariable.pir'
-.include 'src/classes/MakefileTarget.pir'
-.include 'src/classes/MakefileAction.pir'
-.include 'src/classes/MakefileRule.pir'
+.include 'src/classes/MakeVariable.pir'
+.include 'src/classes/MakeTarget.pir'
+.include 'src/classes/MakeAction.pir'
+.include 'src/classes/MakeRule.pir'
 .include 'src/classes/Pattern.pir'
 

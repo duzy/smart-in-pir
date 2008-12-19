@@ -276,12 +276,12 @@ token makefile_variable_ref {
 token makefile_variable_ref1 {
     '$'
     [ '(' $<name>=[<-[ ) \n : = # ]>+]
-    [ ')' || <.panic: "smart: * Makefile variable referencing expects ')'"> ]]
+    [ ')' || <.panic: "smart: * Make variable referencing expects ')'"> ]]
 }
 token makefile_variable_ref2 {
     '$'
     [ '{' $<name>=[<-[ } \n : = # ]>+]
-    [ '}' || <.panic: "smart: * Makefile variable referencing expects '}'"> ]]
+    [ '}' || <.panic: "smart: * Make variable referencing expects '}'"> ]]
 }
 
 rule expression is optable { ... }
