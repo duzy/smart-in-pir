@@ -171,34 +171,44 @@ expand_variable____parse__compute_variable_name:
     set $I0, n
 expand_variable____parse__compute_variable_name__loop:
     substr $S0, str, $I0, 2 ## '$(' or '${'
+    
 expand_variable____parse__compute_variable_name__loop_case1:
     $I1 = $S0 == "$("
     $I2 = $S0 == "${"
     $I1 = or $I1, $I2
     unless $I1 goto expand_variable____parse__compute_variable_name__loop_case2
-    push iparens, $S0 #")"
+    push iparens, $S0
     inc $I0
-    goto expand_variable____parse__compute_variable_name__loop_case_end
+    goto expand_variable____parse__compute_variable_name__loop_next
+    
 expand_variable____parse__compute_variable_name__loop_case2:
     ## reset $S0 for one character
     substr $S0, str, $I0, 1 ## '$(' or '${'
-    unless $S0 == ")" goto expand_variable____parse__compute_variable_name__loop_case3
-    $S1 = iparens[-1]
-    unless $S1 == "$(" goto expand_variable____parse__compute_variable_name__loop_case_end
-    pop $S1, iparens ## pop left paren
-    goto expand_variable____parse__compute_variable_name__loop_check_name_variable_end
-expand_variable____parse__compute_variable_name__loop_case3:
-    unless $S0 == "}" goto expand_variable____parse__compute_variable_name__loop_case_end
-    $S1 = iparens[-1]
-    unless $S1 == "${" goto expand_variable____parse__compute_variable_name__loop_case_end
-    pop $S1, iparens ## pop left paren
-    goto expand_variable____parse__compute_variable_name__loop_check_name_variable_end
     
-expand_variable____parse__compute_variable_name__loop_check_name_variable_end:
+    $I1 = $S0 == ")"
+    $I2 = $S0 == "}"
+    $I3 = or $I1, $I2
+    unless $I3 goto expand_variable____parse__compute_variable_name__loop_next
+    $S1 = iparens[-1]
+    $I3 = $S1 == "$("
+    $I4 = $S1 == "${"
+    $I3 = or $I3, $I4
+    unless $I3 goto expand_variable____parse__compute_variable_name__loop_next
+    pop $S1, iparens ## pop left paren
+#     print "match: "
+#     say $S1
+    
     elements $I1, iparens ## if no elements...
     if $I1 <= 0 goto expand_variable____parse__compute_variable_name__loop_end
     
-expand_variable____parse__compute_variable_name__loop_case_end:
+expand_variable____parse__compute_variable_name__loop_next:
+    elements $I1, iparens ## if no elements...
+    if $I1 <= 0 goto expand_variable____parse__compute_variable_name__loop_end
+    
+#     $S1 = iparens[-1]
+#     print "left: "
+#     say $S1
+    
     inc $I0
     unless $I0 < len goto expand_variable__done
     goto expand_variable____parse__compute_variable_name__loop
@@ -210,10 +220,10 @@ expand_variable____parse__compute_variable_name__loop_end:
     substr $S0, str, n, $I1
     add n, $I0, 1 # set 'n' to the just behind of the right paren
     name = '~expand-string'( $S0 )
-#     print "computed: "
-#     print $S0
-#     print " -> "
-#     say name
+    print "computed: "
+    print $S0
+    print " -> "
+    say name
     
 expand_variable____parse__compute_variable_name__done:
     goto expand_variable____parse__succeed
