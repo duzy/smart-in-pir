@@ -151,6 +151,11 @@ done:
 .sub "!get-makefile-variable-object"
     .param string name
     .local pmc var
+#     print "ref: "
+#     print name
+#     print " => "
+    name = 'expand'( name )
+#     say name
     get_hll_global var, ['smart';'makefile';'variable'], name
     .return(var)
 .end # sub "!update-makefile-variable"

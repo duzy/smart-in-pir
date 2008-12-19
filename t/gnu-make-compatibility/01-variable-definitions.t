@@ -40,8 +40,12 @@ deeper_name = more_deeper_name
 name = deeper_name
 v = expecting[$($($($(name))))]
 
+prefix = COMPUTED_
+$(prefix)var = var1
+var1 = value
+
 report:
-	@echo "1..5"
+	@echo "1..9"
 	@echo "ok: $$"
 	@echo "check:A(aaa):$(A)"
 	@echo "check:B(bbb):$(B)"
@@ -49,6 +53,7 @@ report:
 	@echo "check:D(d d d):$(D)"
 	@echo "check:computed-name(more_deeper_name):$($(name))"
 	@echo "check:computed-name(expecting[computed variable names]):$(v)"
-
+	@echo "check:computed-name(var1):$(COMPUTED_var)"
+	@echo "check:computed-name(computed variable names):$($($($(prefix)var)))"
 
 

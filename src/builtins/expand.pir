@@ -172,27 +172,22 @@ expand_variable____parse__compute_variable_name:
 expand_variable____parse__compute_variable_name__loop:
     substr $S0, str, $I0, 2 ## '$(' or '${'
 expand_variable____parse__compute_variable_name__loop_case1:
-    unless $S0 =="$(" goto expand_variable____parse__compute_variable_name__loop_case2
+    $I1 = $S0 == "$("
+    $I2 = $S0 == "${"
+    $I1 = or $I1, $I2
+    unless $I1 goto expand_variable____parse__compute_variable_name__loop_case2
     push iparens, $S0 #")"
     inc $I0
-    #say "sign: $("
     goto expand_variable____parse__compute_variable_name__loop_case_end
 expand_variable____parse__compute_variable_name__loop_case2:
-    unless $S0 =="${" goto expand_variable____parse__compute_variable_name__loop_case3
-    push iparens, $S0 #"}"
-    inc $I0
-    #say "sign: ${"
-    goto expand_variable____parse__compute_variable_name__loop_case_end
-    
-expand_variable____parse__compute_variable_name__loop_case3:
     ## reset $S0 for one character
     substr $S0, str, $I0, 1 ## '$(' or '${'
-    unless $S0 == ")" goto expand_variable____parse__compute_variable_name__loop_case4
+    unless $S0 == ")" goto expand_variable____parse__compute_variable_name__loop_case3
     $S1 = iparens[-1]
     unless $S1 == "$(" goto expand_variable____parse__compute_variable_name__loop_case_end
     pop $S1, iparens ## pop left paren
     goto expand_variable____parse__compute_variable_name__loop_check_name_variable_end
-expand_variable____parse__compute_variable_name__loop_case4:
+expand_variable____parse__compute_variable_name__loop_case3:
     unless $S0 == "}" goto expand_variable____parse__compute_variable_name__loop_case_end
     $S1 = iparens[-1]
     unless $S1 == "${" goto expand_variable____parse__compute_variable_name__loop_case_end
@@ -210,12 +205,10 @@ expand_variable____parse__compute_variable_name__loop_case_end:
 expand_variable____parse__compute_variable_name__loop_end:
     null iparens ## release the iparens
 
-    #add n, 2 # skip the length of "$(" or "${"
     sub $I1, $I0, n
     inc $I1
     substr $S0, str, n, $I1
     add n, $I0, 1 # set 'n' to the just behind of the right paren
-
     name = '~expand-string'( $S0 )
 #     print "computed: "
 #     print $S0

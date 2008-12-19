@@ -58,7 +58,7 @@ method makefile_variable_declaration($/) {
         my $sign;
         my @items;
         ## declare variable at parse stage
-        $name := strip(~$<name>);
+        $name := expand(strip(~$<name>));
         $sign := ~$<sign>;
         if ( $sign eq 'define' ) {
             my $value := ~$<value>;

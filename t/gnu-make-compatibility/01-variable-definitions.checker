@@ -9,6 +9,8 @@ check:C(ccc):ccc
 check:D(d d d):d d d
 check:computed-name(more_deeper_name):more_deeper_name
 check:computed-name(expecting[computed variable names]):expecting[computed variable names]
+check:computed-name(var1):var1
+check:computed-name(computed variable names):computed variable names
 smart: Done, 1 targets updated.
 __END_EXPECTED__
     ;

@@ -264,8 +264,8 @@ rule makefile_variable_method_call {
 
 token makefile_variable_ref {
     [
-    | <makefile_variable_ref1>
-    | <makefile_variable_ref2>
+     | <makefile_variable_ref1>
+     | <makefile_variable_ref2>
     ]
     {*}
 #    {{
@@ -275,12 +275,12 @@ token makefile_variable_ref {
 }
 token makefile_variable_ref1 {
     '$'
-    [ '(' $<name>=[<-[ ) \n : = # ]>+]
+    [ '(' $<name>=[[<!before ')'><-[\n:=#$]>|<.makefile_variable_ref>]+]
     [ ')' || <.panic: "smart: * Make variable referencing expects ')'"> ]]
 }
 token makefile_variable_ref2 {
     '$'
-    [ '{' $<name>=[<-[ } \n : = # ]>+]
+    [ '{' $<name>=[[<!before '}'><-[\n:=#$]>|<.makefile_variable_ref>]+]
     [ '}' || <.panic: "smart: * Make variable referencing expects '}'"> ]]
 }
 
