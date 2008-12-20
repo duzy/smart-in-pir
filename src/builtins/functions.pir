@@ -231,17 +231,34 @@ findstring -- Returns 's' if it existed as a substring in 'text', or an empty
 .end
 
 =head1 <wildcard(pat)>
+Do wildcard, returns string result.
+
+See also "~wildcard"()
 =cut
 .sub "wildcard"
     .param string arg
-    .local string result, pat
+    $P0 = '~wildcard'( arg )
+    $S0 = join " ", $P0
+    .return($S0)
+.end # sub "wildcard"
+
+=head1 <wildcard(pat)>
+Do wildcard returns ResizableStringArray result.
+
+See also "wildcard"()
+=cut
+.sub "~wildcard"
+    .param string arg
+    .local string pat
     .local pmc globber
     .local pmc pats
     .local pmc it
     .local pmc call_stack
+    .local pmc result
     
     globber = compreg 'PGE::Glob'
     call_stack = new 'ResizableIntegerArray'
+    result = new 'ResizableStringArray'
     
     .local pmc d_struct
     new d_struct, 'OrderedHash'
@@ -267,8 +284,7 @@ iterate_pats:
     local_branch call_stack, glob_pattern
     goto iterate_pats
 iterate_pats_end:
-    
-    chopn result, 1 ## get rid of the tail " "
+
     .return(result)
     
     ######################
@@ -277,18 +293,16 @@ iterate_pats_end:
     ##		OUT: result
 glob_pattern:
     stat $I0, pat, .STAT_EXISTS
-    unless $I0 goto do_globbing
-    concat result, pat
-    concat result, " "
+    unless $I0 goto do_real_globbing
+    push result, pat
     local_return call_stack
     
-do_globbing:
+do_real_globbing:
     .local pmc subs
     .local string path
     subs = split "/", pat
 
     pat = pop subs
-    elements $I0, subs
     path = join "/", subs
     unless path == "" goto glob_the_path
     path = "."
@@ -296,12 +310,18 @@ do_globbing:
     #print "path: "
     #say path
 
+    local_branch call_stack, glob_a_single_pattern
+    local_return call_stack
+
+glob_a_single_pattern:
     .local pmc rule
     rule = globber.'compile'(pat)
     
     .local pmc curdir
     .local pmc entry
-    curdir = 'libc::opendir'( path )
+    curdir = 'libc::opendir'(path)
+    ##unless curdir goto glob_a_single_pattern_done
+    #say "TODO: (~wildcard)validate 'curdir'!"
 
     .local string d_name
 iterate_dir:
@@ -326,18 +346,23 @@ iterate_dir_loop_end:
     .local pmc res
     res = rule( d_name )
 
-    .local int b
-    istrue b, res
-    unless b goto iterate_dir
-    concat result, d_name # append the item
-    concat result, " "
+    istrue $I0, res
+    unless $I0 goto iterate_dir
+
+    set $S0, ""
+    concat $S0, path
+    concat $S0, "/"
+    concat $S0, d_name # append the item
+    push result, $S0
     goto iterate_dir
 iterate_dir_done:
     'libc::closedir'(curdir)
 
-glob_pattern_done:
+glob_a_single_pattern_done:
     local_return call_stack
-.end # sub "wildcard"
+.end # sub "~wildcard"
+
+
 
 .sub "match" #xxxxxxxxxxxx
     .param string pat

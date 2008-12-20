@@ -53,7 +53,7 @@ test-order-only:			uoo
 	@echo "todo: order-only prerequsites"
 
 
-test-wildcard:	uoo src/[c]*.pir
+test-wildcard:	uoo src/[^g]*.pir
 	@echo "$@ ------------------------------"
 	@echo "wildcard: $^"
 	@echo "$@ ---- done --------------------"

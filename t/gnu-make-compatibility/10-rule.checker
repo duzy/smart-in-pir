@@ -10,7 +10,11 @@ test-echo-on(uoo)
 test-echo ---- done --------------------
 dollar-sign: \$
 test-dollar-sign ---- done --------------------
-prerequsites <- uoo test-echo test-dollar-sign
+todo: order-only prerequsites
+test-wildcard ------------------------------
+wildcard: uoo src/constants.pir
+test-wildcard ---- done --------------------
+prerequsites <- uoo test-echo test-dollar-sign test-order-only test-wildcard
 prerequsites ---- done --------------------
 goal <- prerequsites(all: prerequsites)
 __END_EXPECT

@@ -685,8 +685,7 @@ check_wildcard_prerequsite__case4:
     goto check_wildcard_prerequsite__done
     
 check_wildcard_prerequsite__done_yes:
-    $S1 = 'wildcard'( $S0 )
-    $P1 = split " ", $S1
+    $P1 = '~wildcard'( $S0 )
     $P2 = new 'Iterator', $P1
 check_wildcard_prerequsite__done_yes__iterate_items:
     unless $P2 goto check_wildcard_prerequsite__done_yes__iterate_items__end
