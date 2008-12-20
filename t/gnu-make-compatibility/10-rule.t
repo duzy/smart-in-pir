@@ -22,7 +22,8 @@ prerequsites: uoo \
   test-echo\
   test-dollar-sign	\
   test-order-only \
-  test-wildcard
+  test-wildcard \
+  test-variable-target-name
 	@echo $@ "<-" $^
 	@echo "$@ ---- done --------------------"
 
@@ -57,6 +58,13 @@ test-wildcard:	uoo src/[^g]*.pir
 	@echo "$@ ------------------------------"
 	@echo "wildcard: $^"
 	@echo "$@ ---- done --------------------"
+
+
+target = foo
+test-variable-target-name: $(target).xxx
+
+$(target).xxx: $(target).txt
+	@echo "$@ <- $^"
 
 
 # shold be updated only once
