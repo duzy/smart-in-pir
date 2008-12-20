@@ -1,7 +1,7 @@
 # -*- mode: cperl -*-
 {
     my $expected = <<__END_EXPECTED__;
-1..5
+1..9
 ok: \$
 check:A(aaa):aaa
 check:B(bbb):bbb

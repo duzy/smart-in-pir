@@ -169,6 +169,7 @@ expand_variable____parse__compute_variable_name:
     .local pmc iparens
     new iparens, 'ResizableStringArray'
     set $I0, n
+    
 expand_variable____parse__compute_variable_name__loop:
     substr $S0, str, $I0, 2 ## '$(' or '${'
     
@@ -178,7 +179,7 @@ expand_variable____parse__compute_variable_name__loop_case1:
     $I1 = or $I1, $I2
     unless $I1 goto expand_variable____parse__compute_variable_name__loop_case2
     push iparens, $S0
-    inc $I0
+    inc $I0 # forward one step, because $S0 is length 2
     goto expand_variable____parse__compute_variable_name__loop_next
     
 expand_variable____parse__compute_variable_name__loop_case2:
@@ -195,8 +196,6 @@ expand_variable____parse__compute_variable_name__loop_case2:
     $I3 = or $I3, $I4
     unless $I3 goto expand_variable____parse__compute_variable_name__loop_next
     pop $S1, iparens ## pop left paren
-#     print "match: "
-#     say $S1
     
     elements $I1, iparens ## if no elements...
     if $I1 <= 0 goto expand_variable____parse__compute_variable_name__loop_end
@@ -204,30 +203,26 @@ expand_variable____parse__compute_variable_name__loop_case2:
 expand_variable____parse__compute_variable_name__loop_next:
     elements $I1, iparens ## if no elements...
     if $I1 <= 0 goto expand_variable____parse__compute_variable_name__loop_end
-    
-#     $S1 = iparens[-1]
-#     print "left: "
-#     say $S1
-    
-    inc $I0
-    unless $I0 < len goto expand_variable__done
+    inc $I0 # step forward...
+    unless $I0 < len goto error__unterminated_var
     goto expand_variable____parse__compute_variable_name__loop
 expand_variable____parse__compute_variable_name__loop_end:
     null iparens ## release the iparens
 
+    inc $I0 # skip the last inner right paren ")" or "}"
+    index $I0, str, paren, $I0
+    if $I0 < 0 goto error__unterminated_var
+
     sub $I1, $I0, n
-    inc $I1
     substr $S0, str, n, $I1
     add n, $I0, 1 # set 'n' to the just behind of the right paren
+    sub var_len, n, pos
     name = '~expand-string'( $S0 )
-    print "computed: "
-    print $S0
-    print " -> "
-    say name
     
 expand_variable____parse__compute_variable_name__done:
-    goto expand_variable____parse__succeed
-    
+    local_branch call_stack, append_result_by_name
+    goto expand_variable__done
+
 expand_variable____parse__succeed: ## got the right paren!
     ## here 'n' is the position of the right paren
     ## and 'pos' is the positon of "$"
