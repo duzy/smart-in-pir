@@ -818,3 +818,8 @@ invalid_rule_object:
     die $S0
 .end # sub "update"
 
+
+.sub get_string :method :vtable
+    $S0 = self.'object'()
+    .return ($S0)
+.end

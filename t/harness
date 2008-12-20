@@ -12,11 +12,11 @@ use lib qw( . lib ../lib ../../lib ../../lib );
 #use Parrot::Test::Harness language => 'smart',
 #                          compiler => 'smart.pbc';
 
-use Smart::Test::Unit	smart	=> '../../parrot smart.pbc',
-    files	=> [ 't/gnu-make-compatibility/*.t' ],
-    path	=> [ 't', 't/smart', 't/misc' ],
+# use Smart::Test::Unit	smart	=> '../../parrot smart.pbc',
+#     files	=> [ 't/gnu-make-compatibility/*.t' ],
+#     path	=> [ 't', 't/smart', 't/misc' ],
     ;
 
-#use Smart::Test::Unit   files   => [ 't/gnu-make-compatibility/*.t' ],
-#                        smart   => '../../parrot smart.pbc';
+use Smart::Test::Unit   files   => [ 't/gnu-make-compatibility/*.t' ],
+                        smart   => '../../parrot smart.pbc';
 

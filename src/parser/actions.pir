@@ -549,6 +549,10 @@ update_prerequsites:
 iterate_prerequisites: #############################
     unless iter goto end_iterate_prerequisites
     $P0 = shift iter
+#     print "prerequsite: "
+#     say $P0
+    local_branch call_stack, check_wildcard_prerequsite
+    if $I0 goto iterate_prerequisites
     push out_array, $P0
     goto iterate_prerequisites
 end_iterate_prerequisites: #########################
@@ -643,6 +647,8 @@ end_iterate_variable_expanded_prerequsites: #############
     
     ############
     ## local routine 7
+    ##          IN: target_name
+    ##          OUT: target
 obtain_target_by_target_name:
     get_hll_global target, ['smart';'makefile';'target'], target_name
     unless null target goto obtain_target_by_target_name_local_return
@@ -650,6 +656,50 @@ obtain_target_by_target_name:
     target = 'new:MakeTarget'( target_name )    
     set_hll_global ['smart';'makefile';'target'], target_name, target
 obtain_target_by_target_name_local_return:
+    local_return call_stack
+
+
+    ######################
+    ## local routine: check_wildcard_prerequsite
+    ##          IN: $P0 (should be an MakeTarget which is the prerequsite to be checked)
+    ##          OUT: $I0 (1/0, 1 indicates that's a wildcard)
+check_wildcard_prerequsite:
+    $S0 = $P0
+    $I0 = 0
+check_wildcard_prerequsite__case1:
+    index $I1, $S0, "*"
+    if $I1 < 0 goto check_wildcard_prerequsite__case2
+    goto check_wildcard_prerequsite__done_yes
+check_wildcard_prerequsite__case2:
+    index $I1, $S0, "?"
+    if $I1 < 0 goto check_wildcard_prerequsite__case3
+    goto check_wildcard_prerequsite__done_yes
+check_wildcard_prerequsite__case3:
+    index $I1, $S0, "["
+    if $I1 < 0 goto check_wildcard_prerequsite__case4
+    index $I2, $S0, "]", $I1
+    if $I2 < 0 goto check_wildcard_prerequsite__case4
+    goto check_wildcard_prerequsite__done_yes
+check_wildcard_prerequsite__case4:
+    ## more other case?
+    goto check_wildcard_prerequsite__done
+    
+check_wildcard_prerequsite__done_yes:
+    $S1 = 'wildcard'( $S0 )
+    $P1 = split " ", $S1
+    $P2 = new 'Iterator', $P1
+check_wildcard_prerequsite__done_yes__iterate_items:
+    unless $P2 goto check_wildcard_prerequsite__done_yes__iterate_items__end
+    $S1 = shift $P2
+#     print "wildcard: "
+#     say $S1
+    target_name = $S1
+    local_branch call_stack, obtain_target_by_target_name
+    push out_array, target
+    goto check_wildcard_prerequsite__done_yes__iterate_items
+check_wildcard_prerequsite__done_yes__iterate_items__end:
+    $I0 = 1
+check_wildcard_prerequsite__done:
     local_return call_stack
 .end # sub "!update-makefile-rule"
 

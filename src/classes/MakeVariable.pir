@@ -71,6 +71,9 @@ See also "expanded_items"(), "~expanded-items"().
     .return ($P0)
 .end # sub "items"
 
+=item
+See also "~expanded-items"()
+=cut
 .sub "expanded_items" :method
     $S0 = self.'expand'()
     $P0 = '~split-string'( $S0 )

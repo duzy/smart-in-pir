@@ -1,0 +1,19 @@
+# -*- cperl -*-
+{
+    pop @result; ## pop the last line "smart: Done, # targets updated"
+    my $result = join '', @result;
+    my $expect = <<__END_EXPECT;
+--------------------------------------------------
+test-echo-off(uoo)
+echo test-echo-on"(uoo)"
+test-echo-on(uoo)
+test-echo ---- done --------------------
+dollar-sign: \$
+test-dollar-sign ---- done --------------------
+prerequsites <- uoo test-echo test-dollar-sign
+prerequsites ---- done --------------------
+goal <- prerequsites(all: prerequsites)
+__END_EXPECT
+    ;
+    $check_result = $result eq $expect;
+}
