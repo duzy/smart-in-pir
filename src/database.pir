@@ -11,7 +11,7 @@
 .sub "default-make-variable" :anon
     .param string name
     .param string value
-    .param int origin
+    ##.param int origin
     $P0 = 'new:MakeVariable'( name, value, MAKEFILE_VARIABLE_ORIGIN_default )
     set_hll_global ['smart';'makefile';'variable'], name, $P0
     .return($P0)
@@ -87,4 +87,4 @@
     'default-make-variable'( "LINK.f",          "$(FC) $(FFLAGS) $(LDFLAGS) $(TARGET_ARCH)" )
     #'default-make-rule'()
     .return()
-.end # .sub "~load-make-database"
+.end # .sub "load-make-database"

@@ -233,6 +233,7 @@ no_smartfile_for_new_args:
     .local pmc smart
     .local pmc arguments
 
+    'load-make-database'()
     'import-environment-variables'()
 
     smart = compreg 'smart'
@@ -244,7 +245,6 @@ no_smartfile_for_new_args:
     #smart.'eval'( $S0 )
     #$P0 = smart.'compile'( $S0 )
     #$P0()
-    'load-make-database'()
     
     $P1 = smart.'command_line'( arguments )
 .end
