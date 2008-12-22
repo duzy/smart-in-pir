@@ -14,7 +14,11 @@ todo: order-only prerequsites
 test-wildcard ------------------------------
 wildcard: uoo src/constants.pir
 test-wildcard ---- done --------------------
-prerequsites <- uoo test-echo test-dollar-sign test-order-only test-wildcard
+foo.xxx <- foo.txt
+afoo in foo bar
+bara in foo bar
+test-variable-target-name ---- done --------------------
+prerequsites <- uoo test-echo test-dollar-sign test-order-only test-wildcard test-variable-target-name
 prerequsites ---- done --------------------
 goal <- prerequsites(all: prerequsites)
 __END_EXPECT

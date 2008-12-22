@@ -112,6 +112,37 @@ method makefile_variable_ref($/) {
 =item
   targets : prerequsites
 =cut
+method makefile_rule_($/) {
+    my $pack_targets := PAST::Op.new( :pasttype('call'),
+      :name('!expand-string-to-targets'), :returns('ResizablePMCArray') );
+    $pack_targets.push( PAST::Val.new( :value(1), :returns('Integer') ) );
+    $pack_targets.push( ~$<targets> );
+
+    my $pack_prerequisites := PAST::Op.new( :pasttype('call'),
+      :name('!expand-string-to-targets'), :returns('ResizablePMCArray') );
+    $pack_prerequisites.push( PAST::Val.new( :value(0), :returns('Integer') ) );
+    $pack_prerequisites.push( ~$<prerequisites> );
+
+    my $pack_actions := PAST::Op.new( :pasttype('call'),
+      :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
+    for $<makefile_rule_action> { $pack_actions.push( $( $_ ) ); }
+
+    my $match := ~$<targets>;
+    $match := strip( $match );
+    my $rule := PAST::Var.new( :lvalue(1), :viviself('Undef'),
+      :scope('package'), :name($match), :namespace('smart::makefile::rule') );
+    my $rule_ctr := PAST::Op.new( :pasttype('call'),
+      :name('!update-makefile-rule'), :returns('MakeRule') );
+    $rule_ctr.push( PAST::Val.new( :value($match), :returns('String') ) );
+    $rule_ctr.push( $pack_targets );
+    $rule_ctr.push( $pack_prerequisites );
+    $rule_ctr.push( $pack_actions );
+
+    make PAST::Op.new( $rule, $rule_ctr,
+                       :pasttype('bind'),
+                       :name('bind-makefile-rule-variable'),
+                       :node( $/ ) );
+}
 method makefile_rule($/) {
     if ( $<makefile_special_rule> ) {
         make $( $<makefile_special_rule> );
@@ -120,16 +151,10 @@ method makefile_rule($/) {
         make PAST::Op.new( :inline('print "TODO: (actions.pm)static pattern rule\n"') );
     }
     else {
-        #my $pack_targets := PAST::Op.new( :pasttype('call'),
-        #  :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
-        #for $<makefile_target> { $pack_targets.push( $( $_ ) ); }
         my $pack_targets := PAST::Op.new( :pasttype('call'),
           :name('!makeilfe-rule-pack-targets'), :returns('ResizablePMCArray') );
         for $<makefile_target> { $pack_targets.push( $( $_ ) ); }
 
-        #my $pack_prerequisites := PAST::Op.new( :pasttype('call'),
-        #  :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
-        #for $<makefile_prerequisite> { $pack_prerequisites.push( $( $_ ) ); }
         my $pack_prerequisites := PAST::Op.new( :pasttype('call'),
           :name('!makeilfe-rule-pack-targets'), :returns('ResizablePMCArray') );
         for $<makefile_prerequisite> { $pack_prerequisites.push( $( $_ ) ); }
@@ -158,10 +183,18 @@ method makefile_rule($/) {
 }
 method makefile_target($/) {
     if $<makefile_variable_ref> {
-        #make $( $<makefile_variable_ref> );
-        my $past := PAST::Op.new( :name('!makefile-variable-to-targets'),
+#         my $past := PAST::Op.new( :name('!makefile-variable-to-targets'),
+#           :returns('ResizablePMCArray'), :pasttype('call') );
+#         $past.push( $( $<makefile_variable_ref> ) );
+#         make $past;
+        my $past := PAST::Op.new( :name('!expand-string-to-targets'),
           :returns('ResizablePMCArray'), :pasttype('call') );
-        $past.push( $( $<makefile_variable_ref> ) );
+        #$past.push( PAST::Val.new( :value(1), :returns('Integer') ) );
+        $past.push( ~$/ );
+#         PIR q< find_lex $P0, "$/" >;
+#         PIR q< set $S0, $P0 >;
+#         PIR q< print "target: " >;
+#         PIR q< say $S0 >;
         make $past;
     }
     else {
@@ -184,10 +217,18 @@ method makefile_target($/) {
 }
 method makefile_prerequisite($/) {
     if $<makefile_variable_ref> {
-        #make $( $<makefile_variable_ref> );
-        my $past := PAST::Op.new( :name('!makefile-variable-to-targets'),
+#         my $past := PAST::Op.new( :name('!makefile-variable-to-targets'),
+#           :returns('ResizablePMCArray'), :pasttype('call') );
+#         $past.push( $( $<makefile_variable_ref> ) );
+#         make $past;
+        my $past := PAST::Op.new( :name('!expand-string-to-targets'),
           :returns('ResizablePMCArray'), :pasttype('call') );
-        $past.push( $( $<makefile_variable_ref> ) );
+        #$past.push( PAST::Val.new( :value(0), :returns('Integer') ) );
+        $past.push( ~$/ );
+#         PIR q< find_lex $P0, "$/" >;
+#         PIR q< set $S0, $P0 >;
+#         PIR q< print "prerequisite: " >;
+#         PIR q< say $S0 >;
         make $past;
     }
     else {

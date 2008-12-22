@@ -259,6 +259,9 @@ iterate_items:
     unless it goto iterate_items_end
     shift $P0, it
     typeof $S0, $P0
+#     print $S0
+#     print ": "
+#     say $P0
     if $S0 == "MakeTarget" goto iterate_items__pack_MakeTarget
     if $S0 == "ResizablePMCArray" goto iterate_items__pack_ResizablePMCArray
     ## PS: Unknown type here will be ignored.
@@ -273,6 +276,8 @@ iterate_items__pack_ResizablePMCArray:
 iterate_items__pack_ResizablePMCArray__iterate_array:
     unless ait goto iterate_items__pack_ResizablePMCArray__iterate_array_end
     $P1 = shift ait
+#     print "     :"
+#     say $P1
     push result, $P1
     goto iterate_items__pack_ResizablePMCArray__iterate_array
 iterate_items__pack_ResizablePMCArray__iterate_array_end:
@@ -283,18 +288,10 @@ iterate_items_end:
 .end
 
 
+
 =item <'!update-makefile-rule'(IN match, IN target, OPT deps, OPT actions)>
 Update the rule by 'match', created one if the rule is not existed.
 =cut
-.sub "!update-makefile-rule~"
-    .param string match
-    .param pmc targets
-    .param pmc prerequisites    :optional
-    .param pmc actions          :optional
-    
-    #.return(rule) ## returns the rule object
-.end # sub "!update-makefile-rule"
-
 .sub "!update-makefile-rule"
     .param string match
     .param pmc targets
@@ -346,7 +343,8 @@ iterate_targets: ## Iterate 'targets'
     target = shift iter
     
     ## check to see if it's an 'implicit target'.
-    target_name = target.'object'()
+    #target_name = target.'object'()
+    target_name = target # auto-convert
 
     ## convert suffix rule if any, e.g: .c.o, .cpp.o
     local_branch call_stack, convert_suffix_target_if_any
@@ -549,8 +547,6 @@ update_prerequsites:
 iterate_prerequisites: #############################
     unless iter goto end_iterate_prerequisites
     $P0 = shift iter
-#     print "prerequsite: "
-#     say $P0
     local_branch call_stack, check_wildcard_prerequsite
     if $I0 goto iterate_prerequisites
     push out_array, $P0
@@ -900,6 +896,25 @@ iterate_items:
 iterate_items_end:
     .return(result)
 .end # sub "!makefile-variable-to-targets"
+
+.sub "!expand-string-to-targets"
+    .param string str
+    .local pmc items
+    .local pmc result
+    new result, 'ResizablePMCArray'
+    items = '~expanded-items'( str )
+    $P0 = new 'Iterator', items
+iterate_items:
+    unless $P0 goto iterate_items_end
+    $S0 = shift $P0
+#     say $S0
+    $P1 = '!bind-makefile-target'( $S0, 0 )
+    push result, $P1
+    goto iterate_items
+iterate_items_end:
+    
+    .return(result)
+.end
 
 
 =item <'!bind-makefile-target'(IN name, OPT is_rule)>

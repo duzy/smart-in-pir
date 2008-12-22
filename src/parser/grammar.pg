@@ -146,12 +146,14 @@ token makefile_rule {
 }
 #      $<item>=[ <makefile_variable_ref> | [<-[ : \ \t \n ]>+] ]
 token makefile_target {
-    | <makefile_variable_ref> {*}
-    | <-[ : \ \t \n ]>+ {*}
+#     | <makefile_variable_ref> {*}
+#     | <-[ : \ \t \n ]>+ {*}
+      [<makefile_variable_ref>|<-[:\ \t\n$]>]+ {*}
 }
 token makefile_prerequisite {
-    | <makefile_variable_ref> {*}
-    | <-[ ; \ \t \\ \n ]>+ {*}
+#     | <makefile_variable_ref> {*}
+#     | <-[ ; \ \t \\ \n ]>+ {*}
+      [<makefile_variable_ref>|<-[;\ \t\\\n$]>]+ {*}
 }
 token makefile_rule_action {
     [[<!before \\\n><-[\n]>]+ [\\\n]?]* {*}

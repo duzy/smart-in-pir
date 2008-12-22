@@ -61,11 +61,15 @@ test-wildcard:	uoo src/[^g]*.pir
 
 
 target = foo
-test-variable-target-name: $(target).xxx
+test-variable-target-name: $(target).xxx afoo bara
+	@echo "$@ ---- done --------------------"
 
 $(target).xxx: $(target).txt
 	@echo "$@ <- $^"
 
+aa = foo bar
+a$(aa)a:
+	@echo "$@ in $(aa)"
 
 # shold be updated only once
 uoo:
