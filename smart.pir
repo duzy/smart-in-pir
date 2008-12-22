@@ -25,9 +25,9 @@ object.
 
 .loadlib 'smart_group'
 
-.include 'src/constants.pir'
 .include "stat.pasm"
 .include "datatypes.pasm" # for libc::readdir
+.include "src/constants.pir"
 
 .sub 'onload' :anon :load :init
     load_bytecode 'PCT.pbc'
@@ -40,7 +40,17 @@ object.
     
     $P1.'commandline_banner'("Smart Make for Parrot VM\n")
     $P1.'commandline_prompt'("smart> ")
+
+
+    $P0 = new 'ResizablePMCArray'
+    set_hll_global ['smart';'Grammar';'Actions'], '@?BLOCK', $P0
+    $P0 = new 'ResizablePMCArray'
+    set_hll_global ['smart';'Grammar';'Actions'], '@VAR_SWITCHES', $P0
+    $P0 = new 'Integer'
+    $P0 = 1
+    set_hll_global ['smart';'Grammar';'Actions'], '$VAR_ON', $P0
 .end
+
 
 =item <"override-variable-on-command-line"(name, value)>
 =cut
@@ -69,7 +79,7 @@ iterate_env:
 iterate_env_end:
 .end # sub "import-environment-variables"
 
-.sub 'parse_command_line_arguments' :anon
+.sub "parse-command-line-arguments" :anon
     .param pmc args
     .local pmc iter, new_args
     .local string command_name, target
@@ -211,7 +221,8 @@ no_smartfile_for_new_args:
     $S0 = "smart: No targets specified and no Smartfile found. Stop.\n"
     print $S0
     exit -1
-.end
+.end # sub "parse-command-line-arguments"
+
 
 =item main(args :slurpy)  :main
     Start compilation by passing any command line C<args>
@@ -225,29 +236,26 @@ no_smartfile_for_new_args:
     'import-environment-variables'()
 
     smart = compreg 'smart'
-    arguments = 'parse_command_line_arguments'(args)
-    $P1 = smart.'command_line'(arguments)
+    arguments = "parse-command-line-arguments"( args )
+
+#     $S0 = <<'    ____end_database'
+# RM = rm -f
+#     ____end_database
+    #smart.'eval'( $S0 )
+    #$P0 = smart.'compile'( $S0 )
+    #$P0()
+    'load-make-database'()
+    
+    $P1 = smart.'command_line'( arguments )
 .end
 
-.include 'src/gen_builtins.pir'
-.include 'src/gen_grammar.pir'
-.include 'src/gen_actions.pir'
-.include 'src/parser/grammar.pir'
-.include 'src/parser/actions.pir'
-.include 'src/classes/all.pir'
-
-.namespace []
-
-.sub '__init_internal_objects' :anon :load :init
-    $P0 = new 'ResizablePMCArray'
-    set_hll_global ['smart';'Grammar';'Actions'], '@?BLOCK', $P0
-    $P0 = new 'ResizablePMCArray'
-    set_hll_global ['smart';'Grammar';'Actions'], '@VAR_SWITCHES', $P0
-    $P0 = new 'Integer'
-    $P0 = 1
-    set_hll_global ['smart';'Grammar';'Actions'], '$VAR_ON', $P0
-.end
-
+.include "build/gen_builtins.pir"
+.include "build/gen_grammar.pir"
+.include "build/gen_actions.pir"
+.include "src/parser/grammar.pir"
+.include "src/parser/actions.pir"
+.include "src/classes/all.pir"
+.include "src/database.pir"
 
 =back
 

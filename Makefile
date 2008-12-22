@@ -9,7 +9,7 @@
 PARROT_ARGS =
 
 ## configuration settings
-BUILD_DIR     = /home/duzy/open/parrot
+BUILD_DIR     = /more/temp/parrot
 LOAD_EXT      = .so
 O             = .o
 
@@ -39,9 +39,9 @@ all: smart.pbc
 SMART_GROUP = $(PMC_DIR)/smart_group$(LOAD_EXT)
 
 SOURCES = smart.pir \
-  src/gen_grammar.pir \
-  src/gen_actions.pir \
-  src/gen_builtins.pir \
+  build/gen_grammar.pir \
+  build/gen_actions.pir \
+  build/gen_builtins.pir \
   src/parser/actions.pir\
   src/parser/grammar.pir\
   src/classes/all.pir\
@@ -49,7 +49,6 @@ SOURCES = smart.pir \
   src/classes/MakeRule.pir\
   src/classes/MakeTarget.pir\
   src/classes/MakeAction.pir\
-  src/classes/Pattern.pir\
 #  $(SMART_GROUP)
 
 BUILTINS_PIR = \
@@ -67,17 +66,20 @@ smart: smart.pbc
 smart.pbc: $(PARROT) $(SOURCES)
 	$(PARROT) $(PARROT_ARGS) -o smart.pbc smart.pir
 
-src/gen_grammar.pir: $(PERL6GRAMMAR) src/parser/grammar.pg
+build/gen_grammar.pir: $(PERL6GRAMMAR) src/parser/grammar.pg
+	@[ -d build ] || mkdir -p build
 	$(PARROT) $(PARROT_ARGS) $(PERL6GRAMMAR) \
-	    --output=src/gen_grammar.pir \
+	    --output=build/gen_grammar.pir \
 	    src/parser/grammar.pg \
 
-src/gen_actions.pir: $(NQP) $(PCT) src/parser/actions.pm
-	$(PARROT) $(PARROT_ARGS) $(NQP) --output=src/gen_actions.pir \
+build/gen_actions.pir: $(NQP) $(PCT) src/parser/actions.pm
+	@[ -d build ] || mkdir -p build
+	$(PARROT) $(PARROT_ARGS) $(NQP) --output=build/gen_actions.pir \
 	    --target=pir src/parser/actions.pm
 
-src/gen_builtins.pir: $(BUILTINS_PIR)
-	$(CAT) $(BUILTINS_PIR) >src/gen_builtins.pir
+build/gen_builtins.pir: $(BUILTINS_PIR)
+	@[ -d build ] || mkdir -p build
+	$(CAT) $(BUILTINS_PIR) >build/gen_builtins.pir
 
 $(SMART_GROUP): $(PARROT) $(PMC_SOURCES)
 	cd $(PMC_DIR) && $(BUILD_DYNPMC) generate $(PMCS)
@@ -117,9 +119,9 @@ testclean:
 
 CLEANUPS = \
   smart.pbc \
-  src/gen_grammar.pir \
-  src/gen_actions.pir \
-  src/gen_builtins.pir \
+  build/gen_grammar.pir \
+  build/gen_actions.pir \
+  build/gen_builtins.pir \
   $(PMC_DIR)/*.h \
   $(PMC_DIR)/*.c \
   $(PMC_DIR)/*.dump \
