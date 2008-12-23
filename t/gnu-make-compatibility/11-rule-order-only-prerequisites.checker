@@ -1,0 +1,4 @@
+# -*- cperl -*-
+{
+    $check_result = 0;
+}

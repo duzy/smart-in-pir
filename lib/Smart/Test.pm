@@ -20,6 +20,7 @@ package Smart::Test;
 
 use strict;
 use warnings;
+use Carp;
 
 sub new {
     my ( $class )       = @_;
@@ -59,6 +60,9 @@ sub _extract_test_options {
             push @{ $options->{envs} }, [$1, $2];
             ##print "env: '$1' = '$2'\n"
         }
+        elsif ( m{\#\s*runner\s*:\s*(.+?)\s*\n?$} ) {
+            $options->{runner} = $1;
+        }
         elsif ( m{\#\s*checker\s*:\s*(.+?)\s*\n?$} ) {
             $options->{checker} = $1;
         }
@@ -73,10 +77,10 @@ sub runtests {
     my $sw = 65; # width of screen
 
     for my $file ( @files ) {
-        my $cmd = $smart . ' -f ' . $file;
+        my $command = $smart . ' -f ' . $file;
         my $options = _extract_test_options( $file );
         if ( my $test_args = $options->{args} ) {
-            $cmd .= ' ' . $test_args;
+            $command .= ' ' . $test_args;
         }
 
         #if ( $options->{envs} && @{ $options->{envs} } ) {
@@ -88,7 +92,30 @@ sub runtests {
             }
         }
 
-        my @result = `$cmd`;
+        my @result;
+        if ( my $runner = $options->{runner} ) {
+            my $runner_name = $runner;
+            if ( ! -f $runner ) {
+                my ( $path ) = $file =~ m{^(.+/).+$}; #$
+                $runner = $path . $runner;
+                $runner .= ".runner" if !( $runner =~ m/.+\.runner$/ );
+                #print "$runner\n";
+            }
+            if ( -f $runner and open RH, "<", $runner ) {
+                my @code = <RH>;
+                unless ( eval join '', @code ) {
+                    carp "\n\terror: runner " . $runner_name . "\n\t$@";
+                }
+                close RH;
+            }
+            else {
+                print $file . "." x ($sw - length $file) . "error:"
+                    . "\n\tI can't find the test runner:"
+                    . "\n\t  $runner\n";
+                #carp "Invalid test runner";
+            }
+        }
+        @result = `$command` unless @result;
 
         ##TODO: restore ENVs???
 
@@ -102,7 +129,7 @@ sub runtests {
 
         my $report = $self->check_result( @result );
 
-        if ( !( $report =~ m{^failed.*} ) and
+        if ( !( $report =~ m{^(failed).*} ) and
                  ( my $checker = $options->{checker} ) ) {
             my $checker_name = $checker;
             if ( ! -f $checker ) {
@@ -122,7 +149,7 @@ sub runtests {
                     } unless $check_result;
                 }
                 else {
-                    $report .= "\n\terror: checker " . $checker_name . "\n$@";
+                    $report .= "\n\terror: checker " . $checker_name . "\n\t$@";
                 }
                 close CH;
             }
