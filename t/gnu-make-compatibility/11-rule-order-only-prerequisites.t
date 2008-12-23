@@ -1,7 +1,8 @@
 # -*- Makefile -*-
-
+#
 # runner: 11-rule-order-only-prerequisites
 # checker: 11-rule-order-only-prerequisites
+#
 
 #
 #  There are normal and order-only prerequisites understood by GNU make.

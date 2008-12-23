@@ -1,4 +1,44 @@
 # -*- cperl -*-
 {
-    $check_result = 0;
+    my $expect = <<'    __END_EXPECT__';
+normal-1
+normal-2
+order-only-1
+order-only-2
+target: foo
+prerequisies: normal-1 normal-2
+order-only: order-only-1 order-only-2
+updated: normal-1 normal-2
+order-only-nonexisted
+target: bar
+prerequisites: 
+order-only: order-only-1 order-only-2 order-only-nonexisted
+updated: 
+====================
+order-only-nonexisted
+====================
+order-only-nonexisted
+====================
+target: foo
+prerequisies: normal-1 normal-2
+order-only: order-only-1 order-only-2
+updated: normal-1
+order-only-nonexisted
+====================
+    __END_EXPECT__
+    ;
+    my $result = join '', @result;
+    $check_result = $result eq $expect;
+    {
+        if ( open L, ">>test.log" ) {
+            print L "\n";
+            print L "failed:$file"
+                . "\nexpecting:\n" . "\n$expect"
+                . "\nbut got:\n" . "\n$result"
+                ;
+            close L;
+        }
+    }
+    print "";
 }
+
