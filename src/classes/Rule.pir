@@ -42,6 +42,7 @@ has_prerequisites:
     addattribute $P0, 'match'
     addattribute $P0, 'targets' ## if implicit, it's patterns
     addattribute $P0, 'prerequisites'
+    addattribute $P0, 'order-only' ## order-only prerequisites
     addattribute $P0, 'actions'
     addattribute $P0, 'implicit'
 .end
@@ -191,6 +192,29 @@ returns_only:
     setattribute self, 'prerequisites', $P0
 got_prerequisites:
     .return ($P0)
+invalid_arg:
+    die "smart: *** Not an ResizablePMCArray object."
+.end
+
+
+.sub "orderonly" :method
+    .param pmc orderonly        :optional
+    .param int has_value        :opt_flag
+    
+    unless has_value goto returns_only
+    typeof $S0, orderonly
+    unless $S0 == 'ResizablePMCArray' goto invalid_arg
+    setattribute self, 'order-only', orderonly
+    .return()
+    
+returns_only:
+    getattribute $P0, self, 'order-only'
+    unless null $P0 goto got_value
+    new $P0, 'ResizablePMCArray'
+    setattribute self, 'order-only', $P0
+got_value:
+    .return ($P0)
+    
 invalid_arg:
     die "smart: *** Not an ResizablePMCArray object."
 .end

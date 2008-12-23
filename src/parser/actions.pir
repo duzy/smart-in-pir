@@ -289,13 +289,14 @@ iterate_items_end:
 
 
 
-=item <'!update-makefile-rule'(IN match, IN target, OPT deps, OPT actions)>
+=item <'!UPDATE-RULE'(IN match, IN target, OPT deps, OPT actions)>
 Update the rule by 'match', created one if the rule is not existed.
 =cut
-.sub "!update-makefile-rule"
+.sub "!UPDATE-RULE"
     .param string match
     .param pmc targets
     .param pmc prerequisites    :optional
+    .param pmc orderonly        :optional
     .param pmc actions          :optional
     
     .local pmc rule
@@ -317,6 +318,7 @@ Update the rule by 'match', created one if the rule is not existed.
     
     update_prerequsites_and_actions_of_the_rule:
     local_branch call_stack, update_prerequsites
+    local_branch call_stack, update_orderonly
     local_branch call_stack, update_actions
     
     .return(rule) ## returns the rule object
@@ -531,11 +533,23 @@ store_match_anything_rule__done:
     ############
     ## local routine: update_prerequsites
 update_prerequsites:
-    if null prerequisites goto update_prerequsites__done
-    
+    if null prerequisites goto update_prerequsites_or_orderonly__done
     out_array = rule.'prerequisites'()
     iter = new 'Iterator', prerequisites
+    goto update_prerequsites_or_orderonly
+    
+    ############
+    ## local routine: update_prerequsites
+update_orderonly:
+    if null orderonly goto update_prerequsites_or_orderonly__done
+    out_array = rule.'orderonly'()
+    iter = new 'Iterator', orderonly
+    goto update_prerequsites_or_orderonly
 
+update_prerequsites_or_orderonly:
+    ##  IN: out_array, iter
+    ##  OUT: out_array
+    
 #     print "ps: "
 #     print prerequisites
 #     print ", target="
@@ -552,7 +566,7 @@ iterate_prerequisites: #############################
     push out_array, $P0
     goto iterate_prerequisites
 end_iterate_prerequisites: #########################
-    goto update_prerequsites__done
+    goto update_prerequsites_or_orderonly__done
 
     ## implicit prerequsites
 iterate_implicit_prerequisites: ########################################
@@ -586,7 +600,7 @@ push_implicit_prerequisite: ###########################
     ## TODO: should I unset the HLL global target named by $S0??
     goto iterate_implicit_prerequisites
 end_iterate_implicit_prerequisites: ####################################
-update_prerequsites__done:
+update_prerequsites_or_orderonly__done:
     local_return call_stack
     
     
@@ -696,7 +710,7 @@ check_wildcard_prerequsite__done_yes__iterate_items__end:
     $I0 = 1
 check_wildcard_prerequsite__done:
     local_return call_stack
-.end # sub "!update-makefile-rule"
+.end # sub "!UPDATE-RULE"
 
 
 

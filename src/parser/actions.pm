@@ -112,37 +112,6 @@ method makefile_variable_ref($/) {
 =item
   targets : prerequsites
 =cut
-method makefile_rule_($/) {
-    my $pack_targets := PAST::Op.new( :pasttype('call'),
-      :name('!expand-string-to-targets'), :returns('ResizablePMCArray') );
-    $pack_targets.push( PAST::Val.new( :value(1), :returns('Integer') ) );
-    $pack_targets.push( ~$<targets> );
-
-    my $pack_prerequisites := PAST::Op.new( :pasttype('call'),
-      :name('!expand-string-to-targets'), :returns('ResizablePMCArray') );
-    $pack_prerequisites.push( PAST::Val.new( :value(0), :returns('Integer') ) );
-    $pack_prerequisites.push( ~$<prerequisites> );
-
-    my $pack_actions := PAST::Op.new( :pasttype('call'),
-      :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
-    for $<makefile_rule_action> { $pack_actions.push( $( $_ ) ); }
-
-    my $match := ~$<targets>;
-    $match := strip( $match );
-    my $rule := PAST::Var.new( :lvalue(1), :viviself('Undef'),
-      :scope('package'), :name($match), :namespace('smart::makefile::rule') );
-    my $rule_ctr := PAST::Op.new( :pasttype('call'),
-      :name('!update-makefile-rule'), :returns('MakeRule') );
-    $rule_ctr.push( PAST::Val.new( :value($match), :returns('String') ) );
-    $rule_ctr.push( $pack_targets );
-    $rule_ctr.push( $pack_prerequisites );
-    $rule_ctr.push( $pack_actions );
-
-    make PAST::Op.new( $rule, $rule_ctr,
-                       :pasttype('bind'),
-                       :name('bind-makefile-rule-variable'),
-                       :node( $/ ) );
-}
 method makefile_rule($/) {
     if ( $<makefile_special_rule> ) {
         make $( $<makefile_special_rule> );
@@ -159,6 +128,16 @@ method makefile_rule($/) {
           :name('!makeilfe-rule-pack-targets'), :returns('ResizablePMCArray') );
         for $<makefile_prerequisite> { $pack_prerequisites.push( $( $_ ) ); }
 
+        my $pack_orderonly;
+        if $<order_only_prerequisites> {
+            #$pack_orderonly := $( $<order_only_prerequisites> );
+            #$pack_orderonly := PAST::Op.new( :pasttype('call'),
+            #  :name('!makeilfe-rule-pack-targets'),
+            #  :returns('ResizablePMCArray') );
+            #for $<oo><makefile_prerequisite>
+            #    { $pack_orderonly.push( $( $_ ) ); }
+        }
+
         my $pack_actions := PAST::Op.new( :pasttype('call'),
           :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
         for $<makefile_rule_action> { $pack_actions.push( $( $_ ) ); }
@@ -168,11 +147,12 @@ method makefile_rule($/) {
         my $rule := PAST::Var.new( :lvalue(1), :viviself('Undef'),
            :scope('package'), :name($match), :namespace('smart::makefile::rule') );
         my $rule_ctr := PAST::Op.new( :pasttype('call'),
-          :name('!update-makefile-rule'), :returns('MakeRule')
+          :name('!UPDATE-RULE'), :returns('MakeRule')
         );
         $rule_ctr.push( PAST::Val.new( :value($match), :returns('String') ) );
         $rule_ctr.push( $pack_targets );
         $rule_ctr.push( $pack_prerequisites );
+        $rule_ctr.push( $pack_orderonly );
         $rule_ctr.push( $pack_actions );
 
         make PAST::Op.new( $rule, $rule_ctr,
@@ -248,6 +228,12 @@ method makefile_prerequisite($/) {
                            :name('bind-makefile-prerequisite'),
                            :node($/) );
     }
+}
+method order_only_prerequisites($/) {
+    my $past := PAST::Op.new( :pasttype('call'),
+      :name('!makeilfe-rule-pack-targets'), :returns('ResizablePMCArray') );
+    for $<makefile_prerequisite> { $past.push( $( $_ ) ); }
+    make $past;
 }
 method makefile_rule_action($/) {
     my $past := PAST::Op.new( :pasttype('call'), :returns('MakeAction'),

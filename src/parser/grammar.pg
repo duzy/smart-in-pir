@@ -130,7 +130,8 @@ token makefile_rule {
           ]
          |[ $<targets>=[ [ <makefile_target> <.ws_inline> ]+ ]
             ':' <.ws_inline> [\\\n <.ws_inline>]?
-            [ <makefile_prerequisite> <.ws_inline> [\\\n <.ws_inline>]? ]*
+            [<makefile_prerequisite><.ws_inline>[\\\n<.ws_inline>]?]*
+            [ '|' <.ws_inline> <order_only_prerequisites> ]?
           ]
        ]
        [
@@ -148,12 +149,17 @@ token makefile_rule {
 token makefile_target {
 #     | <makefile_variable_ref> {*}
 #     | <-[ : \ \t \n ]>+ {*}
-      [<makefile_variable_ref>|<-[:\ \t\n$]>]+ {*}
+    [<makefile_variable_ref>|<-[:\ \t\n$]>]+ {*}
 }
 token makefile_prerequisite {
 #     | <makefile_variable_ref> {*}
 #     | <-[ ; \ \t \\ \n ]>+ {*}
-      [<makefile_variable_ref>|<-[;\ \t\\\n$]>]+ {*}
+    [<makefile_variable_ref>|<-[;|\ \t\\\n$]>]+ {*}
+}
+#    <?after '|' <.ws_inline> >
+token order_only_prerequisites {
+    [<makefile_prerequisite><.ws_inline>[\\\n <.ws_inline>]?]*
+    {*}
 }
 token makefile_rule_action {
     [[<!before \\\n><-[\n]>]+ [\\\n]?]* {*}
@@ -196,9 +202,7 @@ rule makefile_conditional_statement {
        [ | \' $<arg2>=[<-[ ' ]>*] \' <[ \ \t ]>*
          | \" $<arg2>=[<-[ " ]>*] \" <[ \ \t ]>* ]
     ]
-    {{
-      '!push-makefile-variable-switch'( match )
-    }}
+    {{ '!push-makefile-variable-switch'( match ) }}
     <if_stat=statement>*
     [ 'else'
       {{
