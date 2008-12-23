@@ -243,7 +243,7 @@ See also "~wildcard"()
 .end # sub "wildcard"
 
 =head1 <wildcard(pat)>
-Do wildcard returns ResizableStringArray result.
+Do wildcard and returns ResizableStringArray result.
 
 See also "wildcard"()
 =cut
@@ -295,6 +295,7 @@ glob_pattern:
     stat $I0, pat, .STAT_EXISTS
     unless $I0 goto do_real_globbing
     push result, pat
+    #unshift result, pat
     local_return call_stack
     
 do_real_globbing:
@@ -354,6 +355,7 @@ iterate_dir_loop_end:
     concat $S0, "/"
     concat $S0, d_name # append the item
     push result, $S0
+    #unshift result, $S0 # keeps the order as of filesystem
     goto iterate_dir
 iterate_dir_done:
     'libc::closedir'(curdir)

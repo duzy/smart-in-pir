@@ -1,7 +1,6 @@
 # -*- cperl -*-
 {
     pop @result; ## pop the last line "smart: Done, # targets updated"
-    my $result = join '', @result;
     my $expect = <<__END_EXPECT;
 --------------------------------------------------
 test-echo-off(uoo)
@@ -11,8 +10,10 @@ test-echo ---- done --------------------
 dollar-sign: \$
 test-dollar-sign ---- done --------------------
 todo: order-only prerequsites
+wildcard-more: build/gen_actions.pir build/gen_builtins.pir build/gen_grammar.pir
+test-wildcard-more ---- done --------------------
 test-wildcard ------------------------------
-wildcard: uoo src/constants.pir
+wildcard: uoo src/constants.pir src/database.pir test-wildcard-more
 test-wildcard ---- done --------------------
 foo.xxx <- foo.txt
 afoo in foo bar
@@ -23,5 +24,40 @@ prerequsites ---- done --------------------
 goal <- prerequsites(all: prerequsites)
 __END_EXPECT
     ;
-    $check_result = $result eq $expect;
+    #my $result = join '', @result;
+    #$check_result = $result eq $expect;
+    my @expect = split "\n", $expect;
+    my $na = join '', grep { !m/^(wildcard-more|wildcard).*?:/ } @result;
+    my $nb = join "\n", grep { !m/^(wildcard-more|wildcard).*?:/ } @expect;
+    $nb .= "\n";
+    $check_result = $na eq $nb;
+    #print $na, "\n";
+    #print $nb, "\n";
+    goto out unless $check_result;
+    my @a = grep { m/^(wildcard-more|wildcard).*?:/ } @result;
+    my @b = grep { m/^(wildcard-more|wildcard).*?:/ } @expect;
+    for my $a (@a) {
+        my ( $pre, $aitems ) = $a =~ m/^(.+?):(.+?)$/; #$
+        for my $b (@b) {
+            $b =~ m/^(.+?):(.+?)$/; #$
+            if ( $pre eq $1 ) {
+                $a = join " ", sort split " ", $aitems;
+                $b = join " ", sort split " ", $2;
+                do {
+                    print "\n";
+                    print "expecting: '$b'\n";
+                    print "result   : '$a'\n";
+                    goto out_fail;
+                } unless $a eq $b;
+            }
+        }
+    }
+  out_ok:
+    $check_result = 1;
+    goto out;
+  out_fail:
+    $check_result = 0;
+    goto out;
+  out:
+    print "";
 }
