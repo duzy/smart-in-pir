@@ -34,7 +34,7 @@ method TOP($/, $key) {
         }
 
         # push last op to the block to active target updating
-        $past.push( PAST::Op.new( :name('!update-makefile-targets'),
+        $past.push( PAST::Op.new( :name('!UPDATE-GOALS'),
           :pasttype('call'),
           :node( $/ )
         ) );
@@ -69,7 +69,7 @@ method makefile_variable_declaration($/) {
             #for $<makefile_variable_value_list><item> { @items.push( ~$_ ); }
             @items := $<makefile_variable_value_list><item>;
         }
-        declare_makefile_variable( $name, $sign, $<override>, @items );
+        declare_variable( $name, $sign, $<override>, @items );
     }
     make PAST::Op.new( :pirop("noop") );
 }
@@ -99,7 +99,7 @@ method makefile_variable_ref($/) {
       :node($/)
     );
     my $binder := PAST::Op.new( :pasttype('call'),
-      :name('!get-makefile-variable-object'),
+      :name('!BIND-VARIABLE'),
       :returns('MakeVariable') );
     $binder.push( PAST::Val.new( :value($var.name()), :returns('String') ) );
 
@@ -121,18 +121,18 @@ method makefile_rule($/) {
     }
     else {
         my $pack_targets := PAST::Op.new( :pasttype('call'),
-          :name('!makeilfe-rule-pack-targets'), :returns('ResizablePMCArray') );
+          :name('!PACK-RULE-TARGETS'), :returns('ResizablePMCArray') );
         for $<makefile_target> { $pack_targets.push( $( $_ ) ); }
 
         my $pack_prerequisites := PAST::Op.new( :pasttype('call'),
-          :name('!makeilfe-rule-pack-targets'), :returns('ResizablePMCArray') );
+          :name('!PACK-RULE-TARGETS'), :returns('ResizablePMCArray') );
         for $<makefile_prerequisite> { $pack_prerequisites.push( $( $_ ) ); }
 
         my $pack_orderonly;
         if $<order_only_prerequisites> {
             #$pack_orderonly := $( $<order_only_prerequisites> );
             #$pack_orderonly := PAST::Op.new( :pasttype('call'),
-            #  :name('!makeilfe-rule-pack-targets'),
+            #  :name('!PACK-RULE-TARGETS'),
             #  :returns('ResizablePMCArray') );
             #for $<oo><makefile_prerequisite>
             #    { $pack_orderonly.push( $( $_ ) ); }
@@ -163,11 +163,7 @@ method makefile_rule($/) {
 }
 method makefile_target($/) {
     if $<makefile_variable_ref> {
-#         my $past := PAST::Op.new( :name('!makefile-variable-to-targets'),
-#           :returns('ResizablePMCArray'), :pasttype('call') );
-#         $past.push( $( $<makefile_variable_ref> ) );
-#         make $past;
-        my $past := PAST::Op.new( :name('!expand-string-to-targets'),
+        my $past := PAST::Op.new( :name('!BIND-TARGETS-BY-EXPANDING-STRING'),
           :returns('ResizablePMCArray'), :pasttype('call') );
         #$past.push( PAST::Val.new( :value(1), :returns('Integer') ) );
         $past.push( ~$/ );
@@ -187,21 +183,17 @@ method makefile_target($/) {
           :node( $/ )
         );
         my $c := PAST::Op.new( :pasttype('call'), :returns('MakeTarget'),
-          :name('!bind-makefile-target') );
+          :name('!BIND-TARGET') );
         $c.push( PAST::Val.new( :value($t.name()), :returns('String') ) );
         $c.push( PAST::Val.new( :value(1), :returns('Integer') ) );
         make PAST::Op.new( $t, $c, :pasttype('bind'),
-                           :name('bind-makefile-target-variable'),
+                           :name('bind-target-variable'),
                            :node($/) );
     }
 }
 method makefile_prerequisite($/) {
     if $<makefile_variable_ref> {
-#         my $past := PAST::Op.new( :name('!makefile-variable-to-targets'),
-#           :returns('ResizablePMCArray'), :pasttype('call') );
-#         $past.push( $( $<makefile_variable_ref> ) );
-#         make $past;
-        my $past := PAST::Op.new( :name('!expand-string-to-targets'),
+        my $past := PAST::Op.new( :name('!BIND-TARGETS-BY-EXPANDING-STRING'),
           :returns('ResizablePMCArray'), :pasttype('call') );
         #$past.push( PAST::Val.new( :value(0), :returns('Integer') ) );
         $past.push( ~$/ );
@@ -220,31 +212,31 @@ method makefile_prerequisite($/) {
             :scope('lexical') );
         my $c := PAST::Op.new(
             :pasttype('call'),
-            :name('!bind-makefile-target'),
+            :name('!BIND-TARGET'),
             :returns('MakeTarget') );
         $c.push( PAST::Val.new( :value($p.name()), :returns('String') ) );
         $c.push( PAST::Val.new( :value(0), :returns('Integer') ) );
         make PAST::Op.new( $p, $c, :pasttype('bind'),
-                           :name('bind-makefile-prerequisite'),
+                           :name('bind-prerequisite'),
                            :node($/) );
     }
 }
 method order_only_prerequisites($/) {
     my $past := PAST::Op.new( :pasttype('call'),
-      :name('!makeilfe-rule-pack-targets'), :returns('ResizablePMCArray') );
+      :name('!PACK-RULE-TARGETS'), :returns('ResizablePMCArray') );
     for $<makefile_prerequisite> { $past.push( $( $_ ) ); }
     make $past;
 }
 method makefile_rule_action($/) {
     my $past := PAST::Op.new( :pasttype('call'), :returns('MakeAction'),
-      :name('!create-makefile-action'), :node($/) );
+      :name('!CREATE-ACTION'), :node($/) );
     $past.push( PAST::Val.new( :value(~$/), :returns('String') ) );
     make $past;
 }
 
 method makefile_special_rule($/) {
     my $past := PAST::Op.new( :pasttype('call'),
-      :name('!update-special-makefile-rule') );
+      :name('!UPDATE-SPECIAL-RULE') );
     $past.push( PAST::Val.new( :value(~$<name>), :returns('String') ) );
     for $<item> {
         $past.push( PAST::Val.new( :value(~$_), :returns('String') ) );

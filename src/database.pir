@@ -12,7 +12,7 @@
     .param string name
     .param string value
     ##.param int origin
-    $P0 = 'new:MakeVariable'( name, value, MAKEFILE_VARIABLE_ORIGIN_default )
+    $P0 = 'new:Variable'( name, value, MAKEFILE_VARIABLE_ORIGIN_default )
     set_hll_global ['smart';'makefile';'variable'], name, $P0
     .return($P0)
 .end

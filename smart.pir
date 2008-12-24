@@ -58,7 +58,7 @@ object.
     .param string name
     .param string value
     $I0 = MAKEFILE_VARIABLE_ORIGIN_command_line
-    $P0 = 'new:MakeVariable'( name, value, $I0 )
+    $P0 = 'new:Variable'( name, value, $I0 )
     set_hll_global ['smart';'makefile';'variable'], name, $P0
 .end # sub "override-variable-on-command-line"
 
@@ -73,7 +73,7 @@ iterate_env:
     unless it goto iterate_env_end
     name = shift it
     value = env[name]
-    $P0 = 'new:MakeVariable'( name, value, MAKEFILE_VARIABLE_ORIGIN_environment )
+    $P0 = 'new:Variable'( name, value, MAKEFILE_VARIABLE_ORIGIN_environment )
     set_hll_global ['smart';'makefile';'variable'], name, $P0
     goto iterate_env
 iterate_env_end:

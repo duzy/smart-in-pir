@@ -43,7 +43,7 @@ check_done:
     set_hll_global ['smart';'Grammar';'Actions'], '$VAR_ON', $P0
 .end
 
-.sub "declare_makefile_variable"
+.sub "declare_variable"
     .param string name
     .param string sign
     .param int override
@@ -59,7 +59,7 @@ check_done:
     existed = 0
     $S0 = ""
     $I0 = MAKEFILE_VARIABLE_ORIGIN_file
-    var = 'new:MakeVariable'( name, $S0, $I0 )
+    var = 'new:Variable'( name, $S0, $I0 )
     ## Store new makefile variable as a HLL global symbol
     set_hll_global ['smart';'makefile';'variable'], name, var
     
@@ -148,7 +148,7 @@ done:
 
 =item
 =cut
-.sub "!get-makefile-variable-object"
+.sub "!BIND-VARIABLE"
     .param string name
     .local pmc var
 #     print "ref: "
@@ -163,7 +163,7 @@ done:
 
 =item
 =cut
-.sub "!update-makefile-targets"
+.sub "!UPDATE-GOALS"
     .local pmc targets
     .local pmc target
     .local pmc iter
@@ -177,7 +177,7 @@ iterate_command_line_targets:
     $S0 = shift iter
     get_hll_global target, ['smart';'makefile';'target'], $S0
     unless null target goto got_command_line_target
-    target = 'new:MakeTarget'( $S0 )
+    target = 'new:Target'( $S0 )
     set_hll_global ['smart';'makefile';'target'], $S0, target
     got_command_line_target:
     $I0 = target.'update'()
@@ -249,7 +249,7 @@ no_number_one_target:
     .return (args)
 .end
 
-.sub "!makeilfe-rule-pack-targets"
+.sub "!PACK-RULE-TARGETS"
     .param pmc args :slurpy
     .local pmc result
     .local pmc it, ait
@@ -262,12 +262,12 @@ iterate_items:
 #     print $S0
 #     print ": "
 #     say $P0
-    if $S0 == "MakeTarget" goto iterate_items__pack_MakeTarget
+    if $S0 == "Target" goto iterate_items__pack_Target
     if $S0 == "ResizablePMCArray" goto iterate_items__pack_ResizablePMCArray
     ## PS: Unknown type here will be ignored.
     goto iterate_items
     
-iterate_items__pack_MakeTarget:
+iterate_items__pack_Target:
     push result, $P0
     goto iterate_items
     
@@ -329,7 +329,7 @@ Update the rule by 'match', created one if the rule is not existed.
 create_new_rule_object:
     implicit = 0
 
-    rule = 'new:MakeRule'( match )
+    rule = 'new:Rule'( match )
     $P0 = rule.'targets'()
     
     out_array = $P0
@@ -579,8 +579,8 @@ iterate_implicit_prerequisites: ########################################
     $S0 = $P0
     goto iterate_implicit_prerequisites__check_implicit_name
 iterate_implicit_prerequisites__not_an_string:
-    ## the prerequsite must be MakeTarget
-    ##if $S0 == 'MakeTarget' goto ERROR?
+    ## the prerequsite must be Target
+    ##if $S0 == 'Target' goto ERROR?
     $S0 = $P0.'object'()
 iterate_implicit_prerequisites__check_implicit_name:
     $I0 = index $S0, "%"
@@ -629,7 +629,7 @@ setup_number_one_target:
     $P1 = $P0[0]
     $S0 = $P1.'object'()
     set_hll_global ['smart';'makefile'], "$<0>", $P1
-    $P1 = 'new:MakeVariable'( ".DEFAULT_GOAL", $S0, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    $P1 = 'new:Variable'( ".DEFAULT_GOAL", $S0, MAKEFILE_VARIABLE_ORIGIN_automatic )
     set_hll_global ['smart';'makefile';'variable'], ".DEFAULT_GOAL", $P1
 setup_number_one_target_local_return:
     local_return call_stack
@@ -663,7 +663,7 @@ obtain_target_by_target_name:
     get_hll_global target, ['smart';'makefile';'target'], target_name
     unless null target goto obtain_target_by_target_name_local_return
     ## convert the makefile variable item into a target
-    target = 'new:MakeTarget'( target_name )    
+    target = 'new:Target'( target_name )    
     set_hll_global ['smart';'makefile';'target'], target_name, target
 obtain_target_by_target_name_local_return:
     local_return call_stack
@@ -671,7 +671,7 @@ obtain_target_by_target_name_local_return:
 
     ######################
     ## local routine: check_wildcard_prerequsite
-    ##          IN: $P0 (should be an MakeTarget which is the prerequsite to be checked)
+    ##          IN: $P0 (should be an Target which is the prerequsite to be checked)
     ##          OUT: $I0 (1/0, 1 indicates that's a wildcard)
 check_wildcard_prerequsite:
     $S0 = $P0
@@ -714,7 +714,7 @@ check_wildcard_prerequsite__done:
 
 
 
-.sub "!update-special-makefile-rule"
+.sub "!UPDATE-SPECIAL-RULE"
     .param string name
     .param pmc items    :slurpy
 
@@ -890,7 +890,7 @@ convert_items_into_array__iterate_items_end:
 convert_items_into_array__done:
     local_return call_stack
 
-.end # sub !update-special-makefile-rule
+.end # sub !UPDATE-SPECIAL-RULE
 
 .sub "!makefile-variable-to-targets"
     .param pmc var
@@ -904,14 +904,14 @@ convert_items_into_array__done:
 iterate_items:
     unless it goto iterate_items_end
     $S0 = shift it
-    $P0 = '!bind-makefile-target'( $S0, 1 )
+    $P0 = '!BIND-TARGET'( $S0, 1 )
     push result, $P0
     goto iterate_items
 iterate_items_end:
     .return(result)
 .end # sub "!makefile-variable-to-targets"
 
-.sub "!expand-string-to-targets"
+.sub "!BIND-TARGETS-BY-EXPANDING-STRING"
     .param string str
     .local pmc items
     .local pmc result
@@ -922,7 +922,7 @@ iterate_items:
     unless $P0 goto iterate_items_end
     $S0 = shift $P0
 #     say $S0
-    $P1 = '!bind-makefile-target'( $S0, 0 )
+    $P1 = '!BIND-TARGET'( $S0, 0 )
     push result, $P1
     goto iterate_items
 iterate_items_end:
@@ -931,13 +931,13 @@ iterate_items_end:
 .end
 
 
-=item <'!bind-makefile-target'(IN name, OPT is_rule)>
+=item <'!BIND-TARGET'(IN name, OPT is_rule)>
     Create or bind(if existed) 'name' to a makefile target object.
 
-    While target is updating(C<MakeTarget::update>), implicit targets will
+    While target is updating(C<Target::update>), implicit targets will
     be created on the fly, and the created implicit targets will be stored.
 =cut
-.sub "!bind-makefile-target"
+.sub "!BIND-TARGET"
     .param string name
     .param int is_target           ## is target declaraed as rule?
     .local pmc target
@@ -948,19 +948,19 @@ iterate_items_end:
     .return (target)
     
 create_new_makefile_target:
-    target = 'new:MakeTarget'( name )
+    target = 'new:Target'( name )
     
     ## store the new target object
     ## TODO: should escape implicit targets(patterns)?
     set_hll_global ['smart';'makefile';'target'], name, target
     
     .return(target)
-.end # sub "!bind-makefile-target"
+.end # sub "!BIND-TARGET"
 
 
 =item
 =cut
-.sub "!create-makefile-action"
+.sub "!CREATE-ACTION"
     .param string command
     .local int echo_on
     .local int ignore_error

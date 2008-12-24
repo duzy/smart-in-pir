@@ -14,12 +14,12 @@ The '@[%]' variable holds the list of implicit rules.
 =cut
 
 .namespace []
-.sub "new:MakeRule"
+.sub "new:Rule"
     .param pmc match
     .param pmc targets          :optional
     .param pmc prerequisites    :optional
     .local pmc rule
-    rule = new 'MakeRule'
+    rule = new 'Rule'
 
     unless null targets goto has_targets
     targets = new 'ResizablePMCArray'
@@ -36,9 +36,9 @@ has_prerequisites:
 .end
 
 
-.namespace ['MakeRule']
+.namespace ['Rule']
 .sub "__init_class" :anon :init :load
-    newclass $P0, 'MakeRule'
+    newclass $P0, 'Rule'
     addattribute $P0, 'match'
     addattribute $P0, 'targets' ## if implicit, it's patterns
     addattribute $P0, 'prerequisites'
