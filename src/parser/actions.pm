@@ -66,8 +66,8 @@ method make_variable_declaration($/) {
             @items.push( $value );
         }
         else {
-            #for $<make_variable_value_list><item> { @items.push( ~$_ ); }
-            @items := $<make_variable_value_list><item>;
+            #for $<item> { @items.push( ~$_ ); }
+            @items := $<item>;
         }
         declare_variable( $name, $sign, $<override>, @items );
     }
@@ -77,9 +77,7 @@ method make_variable_declaration($/) {
 method make_variable_method_call($/) {
     my $past := PAST::Op.new( $( $<make_variable_ref> ),
         :name( ~$<ident> ), :pasttype( 'callmethod' ) );
-    for $<expression> {
-        $past.push( $( $_ ) );
-    }
+    for $<expression> { $past.push( $( $_ ) ); }
     make $past;
 }
 method make_variable_ref($/) {

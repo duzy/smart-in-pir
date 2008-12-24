@@ -26,10 +26,10 @@ rule statement {
     | <empty_smart_statement> {*}               #= empty_smart_statement
     | <smart_builtin_statement> {*}		#= smart_builtin_statement
     | <smart_builtin_function> {*}              #= smart_builtin_function
-    | <make_variable_declaration> {*}	#= make_variable_declaration
-    | <make_rule> {*}                       #= make_rule
-    | <make_conditional_statement> {*}      #= make_conditional_statement
-    | <make_include_statement> {*}          #= make_include_statement
+    | <make_variable_declaration> {*}           #= make_variable_declaration
+    | <make_rule> {*}                           #= make_rule
+    | <make_conditional_statement> {*}          #= make_conditional_statement
+    | <make_include_statement> {*}              #= make_include_statement
 }
 
 token empty_smart_statement { <.ws> ';' {*} }
@@ -43,8 +43,8 @@ token make_variable_declaration {
          'endef' <.ws_inline> \n
        ]
       |[ $<name>=[ <-[ : = # \ \t \n ]> <-[ : = # + ? \n ]>*: ]
-         $<sign>=[ '=' | ':=' | '?=' | '+=' ]
-         <make_variable_value_list>
+         $<sign>=[ '=' | ':=' | '?=' | '+=' ] <.ws_inline> [\\\n]?
+         [ $<item>=[<-[ \\ \n ]>+] [\\\n]? ]*
          [ [\n | $] || <.panic: 'smart: * Unterminated makefile variable declaration'> ]
        ]
     ] {*}
@@ -75,48 +75,6 @@ token make_variable_declaration {
 #      #print "'\n"
 #    }}
 #}
-token make_variable_value_list {
-    [
-      <.ws_inline> [\\\n]?
-      [ $<item>=[<-[ \\ \n ]>+] [\\\n]? ]*
-    ]
-}
-# token make_variable_value_list {
-#     [
-#       |[ 
-#          [ <.ws_inline>
-#            [[
-#               | $<item>=[<-[ \ \t \\ \n $ ]>* '$(' <-[)]>+ ')']
-#               | $<item>=[<-[ \ \t \\ \n $ ]>* '${' <-[)]>+ '}']
-#               | $<item>=[\" <-[ \" ]>+ \"]
-#               | $<item>=[\' <-[ \' ]>+ \']
-#               | $<item>=[<-[ \ \t \\ \n ]>+]
-#             ]
-#             <.ws_inline> ]* \\
-#            [ \n || <.panic: 'smart: * Suspicious continuation'> ]
-#          ]+
-#          <.ws_inline>
-#          [[
-#             | $<item>=[<-[ \ \t \\ \n $ ]>* '$(' <-[)]>+ ')']
-#             | $<item>=[<-[ \ \t \\ \n $ ]>* '${' <-[)]>+ '}']
-#             | $<item>=[\" <-[ \" ]>+ \"]
-#             | $<item>=[\' <-[ \' ]>+ \']
-#             | $<item>=[<-[ \ \t \\ \n ]>+]
-#           ]
-#           <.ws_inline> ]*
-#        ]
-#       |[ <.ws_inline>
-#          [[
-#             | $<item>=[[<-[ \ \t \\ \n $ ]>* '$(' <-[)]>+ ')']+]
-#             | $<item>=[[<-[ \ \t \\ \n $ ]>* '${' <-[)]>+ '}']+]
-#             | $<item>=[\" <-[ \" ]>+ \"]
-#             | $<item>=[\' <-[ \' ]>+ \']
-#             | $<item>=[<-[ \ \t \\ \n ]>+]
-#           ]
-#           <.ws_inline> ]*
-#        ]
-#     ]
-# }
 
 token make_rule {
     |[ <make_special_rule> ] {*}

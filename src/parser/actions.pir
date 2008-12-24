@@ -116,7 +116,7 @@ iterate_items:
     concat $S0, " "
     goto iterate_items
 iterate_items_end:
-
+    
     if $S0  == ""   goto done
     if sign == "="  goto set_value
     if sign == ":=" goto assign_with_expansion
@@ -158,7 +158,7 @@ done:
 #     say name
     get_hll_global var, ['smart';'makefile';'variable'], name
     .return(var)
-.end # sub "!update-makefile-variable"
+.end # sub "!BIND-VARIABLE"
 
 
 =item
