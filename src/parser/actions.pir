@@ -8,40 +8,7 @@
 
 .namespace ["smart";"Grammar";"Actions"]
 
-
 .namespace []
-
-.sub "!push-makefile-variable-switch"
-    .param pmc match
-    $S0 = match['csta']
-    $S1 = match['arg1']
-    $S2 = match['arg2']
-    $S1 = 'expand'( $S1 )
-    $S2 = 'expand'( $S2 )
-    get_hll_global $P0, ['smart';'Grammar';'Actions'], '$VAR_ON'
-    get_hll_global $P1, ['smart';'Grammar';'Actions'], '@VAR_SWITCHES'
-    
-    ## save the the previous $VAR_ON value
-    push $P1, $P0
-    
-    ## change new $VAR_ON vlaue
-    unless $S0 == 'ifeq' goto check_ifneq
-    $I0 = $S1 == $S2
-    goto check_done
-check_ifneq:
-    $I0 = $S1 != $S2
-check_done:
-    $P0 = new 'Integer'
-    $P0 = $I0
-    set_hll_global ['smart';'Grammar';'Actions'], '$VAR_ON', $P0
-.end
-
-.sub "!pop-makefile-variable-switch"
-    .param pmc match
-    get_hll_global $P1, ['smart';'Grammar';'Actions'], '@VAR_SWITCHES'
-    pop $P0, $P1
-    set_hll_global ['smart';'Grammar';'Actions'], '$VAR_ON', $P0
-.end
 
 .sub "declare_variable"
     .param string name
@@ -244,7 +211,7 @@ no_number_one_target:
     exit -1
 .end
 
-.sub "!pack-args-into-array"
+.sub "!PACK-ARGS"
     .param pmc args :slurpy
     .return (args)
 .end
@@ -287,6 +254,124 @@ iterate_items_end:
     .return (result)
 .end
 
+
+.sub "!MAKE-RULE"
+    .param pmc mo_targets
+    .param pmc mo_prerequsites
+    .param pmc mo_orderonly
+    .param pmc mo_actions
+
+    .const int ACTION_T    = 0
+    .const int ACTION_P    = 1
+    .const int ACTION_O    = 2
+    .const int ACTION_A    = 3
+    
+    .local pmc call_stack
+    new call_stack, 'ResizableIntegerArray'
+
+    .local pmc targets
+    .local pmc prerequisites
+    .local pmc orderonly
+    .local pmc actions
+    new targets,        'ResizablePMCArray'
+    new prerequisites,  'ResizablePMCArray'
+    new orderonly,      'ResizablePMCArray'
+    new actions,        'ResizablePMCArray'
+
+    $P1 = mo_targets
+    $I1 = ACTION_T
+    local_branch call_stack, map_match_object_array
+    $P1 = mo_prerequsites
+    $I1 = ACTION_P
+    local_branch call_stack, map_match_object_array
+    $P1 = mo_orderonly
+    $I1 = ACTION_O
+    local_branch call_stack, map_match_object_array
+    $P1 = mo_actions
+    $I1 = ACTION_A
+    local_branch call_stack, map_match_object_array
+
+    #'!UPDATE-RULE'( targets, prerequisites, orderonly, actions )
+
+    .return()
+
+    ######################
+    ##  IN: $P1(the array), $I1(the action address)
+    ##  OUT: $P0
+map_match_object_array:
+    null $P0
+    if null $P1 goto map_match_object_array__done
+    typeof $S0, $P1
+    if $S0 == "Undef" goto map_match_object_array__done
+    .local pmc it
+    #new $P0, 'ResizablePMCArray'
+    new it, 'Iterator', $P1
+iterate_match_object_array_loop:
+    unless it goto iterate_match_object_array_loop_end
+    $P2 = shift it
+    $S1 = $P2.'text'()
+    if $I1 == ACTION_T goto to_action_pack_target
+    if $I1 == ACTION_P goto to_action_pack_prerequisite
+    if $I1 == ACTION_O goto to_action_pack_orderonly
+    if $I1 == ACTION_A goto to_action_pack_action
+    goto iterate_match_object_array_loop
+to_action_pack_target:
+    local_branch call_stack, action_pack_target
+    goto iterate_match_object_array_loop
+to_action_pack_prerequisite:
+    local_branch call_stack, action_pack_prerequisite
+    goto iterate_match_object_array_loop
+to_action_pack_orderonly:
+    local_branch call_stack, action_pack_orderonly
+    goto iterate_match_object_array_loop
+to_action_pack_action:
+    local_branch call_stack, action_pack_action
+    goto iterate_match_object_array_loop
+iterate_match_object_array_loop_end:
+map_match_object_array__done:
+    local_return call_stack
+
+    ######################
+    ##  IN: $S1(the text value)
+action_pack_target:
+    print "target: "
+    say $S1
+    $P1 = '!BIND-TARGET'( $S1, 1 )
+    #push $P0, $P1
+    push targets, $P1
+    local_return call_stack
+
+    ######################
+    ##  IN: $S1(the text value)
+action_pack_prerequisite:
+    #print "prerequisite: "
+    #say $S1
+    $P1 = '!BIND-TARGET'( $S1, 0 )
+    #push $P0, $P1
+    push prerequisites, $P1
+    local_return call_stack
+
+    ######################
+    ##  IN: $S1(the text value)
+action_pack_orderonly:
+    #print "orderonly: "
+    #say $S1
+    $P1 = '!BIND-TARGET'( $S1, 0 )
+    #push $P0, $P1
+    push orderonly, $P1
+    local_return call_stack
+
+    ######################
+    ##  IN: $S1(the text value)
+action_pack_action:
+    #print "action: "
+    #say $S1
+    $P1 = '!CREATE-ACTION'( $S1 )
+    #push $P0, $P1
+    push actions, $P1
+    local_return call_stack
+    
+.end # sub "!MAKE-RULE"
 
 
 =item <'!UPDATE-RULE'(IN match, IN target, OPT deps, OPT actions)>
@@ -979,7 +1064,7 @@ create_new_makefile_target:
 command_echo_is_on:
     
     .local pmc action
-    action = 'new:MakeAction'( command, echo_on, ignore_error )
+    action = 'new:Action'( command, echo_on, ignore_error )
     .return(action)
 .end
 

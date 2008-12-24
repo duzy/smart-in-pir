@@ -18,5 +18,6 @@ use lib qw( . lib ../lib ../../lib ../../lib );
     ;
 
 use Smart::Test::Unit   files   => [ 't/gnu-make-compatibility/*.t' ],
+path	=> [ 't', 't/smart', 't/misc' ],
                         smart   => '../../parrot smart.pbc';
 

@@ -160,7 +160,23 @@ rule make_conditional_statement {
        [ | \' $<arg2>=[<-[ ' ]>*] \' <[ \ \t ]>*
          | \" $<arg2>=[<-[ " ]>*] \" <[ \ \t ]>* ]
     ]
-    {{ '!push-makefile-variable-switch'( match ) }}
+    {{
+      $S0 = match['csta']
+      $S1 = match['arg1']
+      $S2 = match['arg2']
+      $S1 = 'expand'( $S1 )
+      $S2 = 'expand'( $S2 )
+      get_hll_global $P0, ['smart';'Grammar';'Actions'], '$VAR_ON'
+      get_hll_global $P1, ['smart';'Grammar';'Actions'], '@VAR_SWITCHES'
+      push $P1, $P0 ## save the the previous $VAR_ON value
+      $I0 = $S1 == $S2
+      if $S0 == 'ifeq' goto update_flag
+      $I0 = !$I0 # 'ifneq'
+    update_flag:
+      $P0 = new 'Integer'
+      $P0 = $I0
+      set_hll_global ['smart';'Grammar';'Actions'], '$VAR_ON', $P0
+    }}
     <if_stat=statement>*
     [ 'else'
       {{
@@ -172,7 +188,12 @@ rule make_conditional_statement {
       }}
       <else_stat=statement>*
     ]*
-    [ 'endif' {{ '!pop-makefile-variable-switch'(match) }}
+    [ 'endif'
+      {{
+        get_hll_global $P1, ['smart';'Grammar';'Actions'], '@VAR_SWITCHES'
+        pop $P0, $P1
+        set_hll_global ['smart';'Grammar';'Actions'], '$VAR_ON', $P0
+      }}
       | <.panic: "smart: * No 'endif'">
     ]
     {*}

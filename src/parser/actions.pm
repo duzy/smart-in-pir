@@ -98,7 +98,7 @@ method make_variable_ref($/) {
     );
     my $binder := PAST::Op.new( :pasttype('call'),
       :name('!BIND-VARIABLE'),
-      :returns('MakeVariable') );
+      :returns('Variable') );
     $binder.push( PAST::Val.new( :value($var.name()), :returns('String') ) );
 
     make PAST::Op.new( $var, $binder,
@@ -117,7 +117,7 @@ method make_rule($/) {
     elsif $<static_targets> {
         make PAST::Op.new( :inline('print "TODO: (actions.pm)static pattern rule\n"') );
     }
-    else {
+    elsif 0 {
         my $pack_targets := PAST::Op.new( :pasttype('call'),
           :name('!PACK-RULE-TARGETS'), :returns('ResizablePMCArray') );
         for $<make_target> { $pack_targets.push( $( $_ ) ); }
@@ -137,7 +137,7 @@ method make_rule($/) {
         }
 
         my $pack_actions := PAST::Op.new( :pasttype('call'),
-          :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
+          :name('!PACK-ARGS'), :returns('ResizablePMCArray') );
         for $<make_rule_action> { $pack_actions.push( $( $_ ) ); }
 
         my $match := ~$<targets>;
@@ -145,7 +145,7 @@ method make_rule($/) {
         my $rule := PAST::Var.new( :lvalue(1), :viviself('Undef'),
            :scope('package'), :name($match), :namespace('smart::makefile::rule') );
         my $rule_ctr := PAST::Op.new( :pasttype('call'),
-          :name('!UPDATE-RULE'), :returns('MakeRule')
+          :name('!UPDATE-RULE'), :returns('Rule')
         );
         $rule_ctr.push( PAST::Val.new( :value($match), :returns('String') ) );
         $rule_ctr.push( $pack_targets );
@@ -157,6 +157,19 @@ method make_rule($/) {
                        :pasttype('bind'),
                        :name('bind-makefile-rule-variable'),
                        :node( $/ ) );
+    }
+    else {
+        my @targets             := $<make_target>;
+        my @prerequisites       := $<make_prerequisite>;
+        my @orderonly        := $<order_only_prerequisites><make_prerequisite>;
+        my @actions             := $<make_rule_action>;
+        my @targets;
+        PIR q< find_lex $P1, "@targets" >;
+        PIR q< find_lex $P2, "@prerequisites" >;
+        PIR q< find_lex $P3, "@orderonly" >;
+        PIR q< find_lex $P4, "@actions" >;
+        PIR q< '!MAKE-RULE'( $P1, $P2, $P3, $P4 ) >;
+        make PAST::Op.new( :pirop('noop') );
     }
 }
 method make_target($/) {
@@ -180,7 +193,7 @@ method make_target($/) {
           :scope('lexical'),
           :node( $/ )
         );
-        my $c := PAST::Op.new( :pasttype('call'), :returns('MakeTarget'),
+        my $c := PAST::Op.new( :pasttype('call'), :returns('Target'),
           :name('!BIND-TARGET') );
         $c.push( PAST::Val.new( :value($t.name()), :returns('String') ) );
         $c.push( PAST::Val.new( :value(1), :returns('Integer') ) );
@@ -211,7 +224,7 @@ method make_prerequisite($/) {
         my $c := PAST::Op.new(
             :pasttype('call'),
             :name('!BIND-TARGET'),
-            :returns('MakeTarget') );
+            :returns('Target') );
         $c.push( PAST::Val.new( :value($p.name()), :returns('String') ) );
         $c.push( PAST::Val.new( :value(0), :returns('Integer') ) );
         make PAST::Op.new( $p, $c, :pasttype('bind'),

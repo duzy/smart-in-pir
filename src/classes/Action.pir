@@ -7,22 +7,22 @@
 #
 
 .namespace []
-.sub "new:MakeAction"
+.sub "new:Action"
     .param pmc command
     .param pmc echo_on
     .param pmc ignore_error
     .local pmc action
-    action = new 'MakeAction'
+    action = new 'Action'
     setattribute action, 'command', command
     setattribute action, 'echo_on', echo_on
     setattribute action, 'ignore_error', ignore_error
     .return(action)
-.end # sub "new:MakeAction"
+.end # sub "new:Action"
 
 
-.namespace ['MakeAction']
+.namespace ['Action']
 .sub '__init_class' :anon :init :load
-    newclass $P0, 'MakeAction'
+    newclass $P0, 'Action'
     addattribute $P0, 'type'
     addattribute $P0, 'command'
     addattribute $P0, 'echo_on'
