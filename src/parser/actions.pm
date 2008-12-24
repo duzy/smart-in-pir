@@ -51,7 +51,7 @@ method statement($/, $key) {
 
 method empty_smart_statement($/) { make PAST::Op.new( :pirop('noop') ); }
 
-method makefile_variable_declaration($/) {
+method make_variable_declaration($/) {
     our $VAR_ON;
     if ( $VAR_ON ) {
         my $name;
@@ -66,29 +66,29 @@ method makefile_variable_declaration($/) {
             @items.push( $value );
         }
         else {
-            #for $<makefile_variable_value_list><item> { @items.push( ~$_ ); }
-            @items := $<makefile_variable_value_list><item>;
+            #for $<make_variable_value_list><item> { @items.push( ~$_ ); }
+            @items := $<make_variable_value_list><item>;
         }
         declare_variable( $name, $sign, $<override>, @items );
     }
     make PAST::Op.new( :pirop("noop") );
 }
 
-method makefile_variable_method_call($/) {
-    my $past := PAST::Op.new( $( $<makefile_variable_ref> ),
+method make_variable_method_call($/) {
+    my $past := PAST::Op.new( $( $<make_variable_ref> ),
         :name( ~$<ident> ), :pasttype( 'callmethod' ) );
     for $<expression> {
         $past.push( $( $_ ) );
     }
     make $past;
 }
-method makefile_variable_ref($/) {
+method make_variable_ref($/) {
     my $name;
-    if $<makefile_variable_ref1> {
-        $name := ~$<makefile_variable_ref1><name>;
+    if $<make_variable_ref1> {
+        $name := ~$<make_variable_ref1><name>;
     }
-    elsif $<makefile_variable_ref2> {
-        $name := ~$<makefile_variable_ref2><name>;
+    elsif $<make_variable_ref2> {
+        $name := ~$<make_variable_ref2><name>;
     }
     my $var := PAST::Var.new( :name($name),
       :scope('package'),
@@ -112,9 +112,9 @@ method makefile_variable_ref($/) {
 =item
   targets : prerequsites
 =cut
-method makefile_rule($/) {
-    if ( $<makefile_special_rule> ) {
-        make $( $<makefile_special_rule> );
+method make_rule($/) {
+    if ( $<make_special_rule> ) {
+        make $( $<make_special_rule> );
     }
     elsif $<static_targets> {
         make PAST::Op.new( :inline('print "TODO: (actions.pm)static pattern rule\n"') );
@@ -122,11 +122,11 @@ method makefile_rule($/) {
     else {
         my $pack_targets := PAST::Op.new( :pasttype('call'),
           :name('!PACK-RULE-TARGETS'), :returns('ResizablePMCArray') );
-        for $<makefile_target> { $pack_targets.push( $( $_ ) ); }
+        for $<make_target> { $pack_targets.push( $( $_ ) ); }
 
         my $pack_prerequisites := PAST::Op.new( :pasttype('call'),
           :name('!PACK-RULE-TARGETS'), :returns('ResizablePMCArray') );
-        for $<makefile_prerequisite> { $pack_prerequisites.push( $( $_ ) ); }
+        for $<make_prerequisite> { $pack_prerequisites.push( $( $_ ) ); }
 
         my $pack_orderonly;
         if $<order_only_prerequisites> {
@@ -134,13 +134,13 @@ method makefile_rule($/) {
             #$pack_orderonly := PAST::Op.new( :pasttype('call'),
             #  :name('!PACK-RULE-TARGETS'),
             #  :returns('ResizablePMCArray') );
-            #for $<oo><makefile_prerequisite>
+            #for $<oo><make_prerequisite>
             #    { $pack_orderonly.push( $( $_ ) ); }
         }
 
         my $pack_actions := PAST::Op.new( :pasttype('call'),
           :name('!pack-args-into-array'), :returns('ResizablePMCArray') );
-        for $<makefile_rule_action> { $pack_actions.push( $( $_ ) ); }
+        for $<make_rule_action> { $pack_actions.push( $( $_ ) ); }
 
         my $match := ~$<targets>;
         $match := strip( $match );
@@ -161,8 +161,8 @@ method makefile_rule($/) {
                        :node( $/ ) );
     }
 }
-method makefile_target($/) {
-    if $<makefile_variable_ref> {
+method make_target($/) {
+    if $<make_variable_ref> {
         my $past := PAST::Op.new( :name('!BIND-TARGETS-BY-EXPANDING-STRING'),
           :returns('ResizablePMCArray'), :pasttype('call') );
         #$past.push( PAST::Val.new( :value(1), :returns('Integer') ) );
@@ -191,8 +191,8 @@ method makefile_target($/) {
                            :node($/) );
     }
 }
-method makefile_prerequisite($/) {
-    if $<makefile_variable_ref> {
+method make_prerequisite($/) {
+    if $<make_variable_ref> {
         my $past := PAST::Op.new( :name('!BIND-TARGETS-BY-EXPANDING-STRING'),
           :returns('ResizablePMCArray'), :pasttype('call') );
         #$past.push( PAST::Val.new( :value(0), :returns('Integer') ) );
@@ -224,17 +224,17 @@ method makefile_prerequisite($/) {
 method order_only_prerequisites($/) {
     my $past := PAST::Op.new( :pasttype('call'),
       :name('!PACK-RULE-TARGETS'), :returns('ResizablePMCArray') );
-    for $<makefile_prerequisite> { $past.push( $( $_ ) ); }
+    for $<make_prerequisite> { $past.push( $( $_ ) ); }
     make $past;
 }
-method makefile_rule_action($/) {
+method make_rule_action($/) {
     my $past := PAST::Op.new( :pasttype('call'), :returns('MakeAction'),
       :name('!CREATE-ACTION'), :node($/) );
     $past.push( PAST::Val.new( :value(~$/), :returns('String') ) );
     make $past;
 }
 
-method makefile_special_rule($/) {
+method make_special_rule($/) {
     my $past := PAST::Op.new( :pasttype('call'),
       :name('!UPDATE-SPECIAL-RULE') );
     $past.push( PAST::Val.new( :value(~$<name>), :returns('String') ) );
@@ -244,7 +244,7 @@ method makefile_special_rule($/) {
     make $past;
 }
 
-method makefile_conditional_statement($/) {
+method make_conditional_statement($/) {
     #our $?BLOCK;
     my $stat := ~$<csta>;
     my $arg1 := expand( ~$<arg1> );
@@ -275,7 +275,7 @@ method makefile_conditional_statement($/) {
     }
 }
 
-method makefile_include_statement($/) {
+method make_include_statement($/) {
     make PAST::Op.new( :inline('print "TODO: include statement\n"'), :node($/) );
 }
 

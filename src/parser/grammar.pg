@@ -26,15 +26,15 @@ rule statement {
     | <empty_smart_statement> {*}               #= empty_smart_statement
     | <smart_builtin_statement> {*}		#= smart_builtin_statement
     | <smart_builtin_function> {*}              #= smart_builtin_function
-    | <makefile_variable_declaration> {*}	#= makefile_variable_declaration
-    | <makefile_rule> {*}                       #= makefile_rule
-    | <makefile_conditional_statement> {*}      #= makefile_conditional_statement
-    | <makefile_include_statement> {*}          #= makefile_include_statement
+    | <make_variable_declaration> {*}	#= make_variable_declaration
+    | <make_rule> {*}                       #= make_rule
+    | <make_conditional_statement> {*}      #= make_conditional_statement
+    | <make_include_statement> {*}          #= make_include_statement
 }
 
 token empty_smart_statement { <.ws> ';' {*} }
 
-token makefile_variable_declaration {
+token make_variable_declaration {
     [ $<override>=['override'] <.ws> ]?
     [
       |[ $<sign>=['define'] <[ \ \t ]>+ <.ws_inline>
@@ -44,12 +44,12 @@ token makefile_variable_declaration {
        ]
       |[ $<name>=[ <-[ : = # \ \t \n ]> <-[ : = # + ? \n ]>*: ]
          $<sign>=[ '=' | ':=' | '?=' | '+=' ]
-         <makefile_variable_value_list>
+         <make_variable_value_list>
          [ [\n | $] || <.panic: 'smart: * Unterminated makefile variable declaration'> ]
        ]
     ] {*}
 }
-#token makefile_variable {
+#token make_variable {
 #    <-[ : = # \ \t \n ]> <-[ : = # + ? \n ]>*
 #    {{
 #      $S0 = match.'text'()
@@ -75,13 +75,13 @@ token makefile_variable_declaration {
 #      #print "'\n"
 #    }}
 #}
-token makefile_variable_value_list {
+token make_variable_value_list {
     [
       <.ws_inline> [\\\n]?
       [ $<item>=[<-[ \\ \n ]>+] [\\\n]? ]*
     ]
 }
-# token makefile_variable_value_list {
+# token make_variable_value_list {
 #     [
 #       |[ 
 #          [ <.ws_inline>
@@ -118,53 +118,53 @@ token makefile_variable_value_list {
 #     ]
 # }
 
-token makefile_rule {
-    |[ <makefile_special_rule> ] {*}
+token make_rule {
+    |[ <make_special_rule> ] {*}
     |[ [
-         |[ $<static_targets>=[ [ <makefile_target> <.ws_inline> ]+ ]
+         |[ $<static_targets>=[ [ <make_target> <.ws_inline> ]+ ]
             ':' <.ws_inline>
             $<target_pattern>=[<-[ : \n ]>+]
             ':' <.ws_inline>
             $<prereq_pattern>=[<-[ \\ \n ]>+]
             [\\\n <.ws_inline>]?
           ]
-         |[ $<targets>=[ [ <makefile_target> <.ws_inline> ]+ ]
+         |[ $<targets>=[ [ <make_target> <.ws_inline> ]+ ]
             ':' <.ws_inline> [\\\n <.ws_inline>]?
-            [<makefile_prerequisite><.ws_inline>[\\\n<.ws_inline>]?]*
+            [<make_prerequisite><.ws_inline>[\\\n<.ws_inline>]?]*
             [ '|' <.ws_inline> <order_only_prerequisites> ]?
           ]
        ]
        [
-         |[ ';' <.ws_inline> <makefile_rule_action>
-            [ \n \t <makefile_rule_action> ]*
+         |[ ';' <.ws_inline> <make_rule_action>
+            [ \n \t <make_rule_action> ]*
           ]
          |[
             [ \n <[ \ ]>* [ [ '#' \N* ] | <.comment_block> ] ]*
-            [ \n \t <makefile_rule_action> ]*
+            [ \n \t <make_rule_action> ]*
           ]
        ]
      ] {*}
 }
-#      $<item>=[ <makefile_variable_ref> | [<-[ : \ \t \n ]>+] ]
-token makefile_target {
-#     | <makefile_variable_ref> {*}
+#      $<item>=[ <make_variable_ref> | [<-[ : \ \t \n ]>+] ]
+token make_target {
+#     | <make_variable_ref> {*}
 #     | <-[ : \ \t \n ]>+ {*}
-    [<makefile_variable_ref>|<-[:\ \t\n$]>]+ {*}
+    [<make_variable_ref>|<-[:\ \t\n$]>]+ {*}
 }
-token makefile_prerequisite {
-#     | <makefile_variable_ref> {*}
+token make_prerequisite {
+#     | <make_variable_ref> {*}
 #     | <-[ ; \ \t \\ \n ]>+ {*}
-    [<makefile_variable_ref>|<-[;|\ \t\\\n$]>]+ {*}
+    [<make_variable_ref>|<-[;|\ \t\\\n$]>]+ {*}
 }
 #    <?after '|' <.ws_inline> >
 token order_only_prerequisites {
-    [<makefile_prerequisite><.ws_inline>[\\\n <.ws_inline>]?]*
+    [<make_prerequisite><.ws_inline>[\\\n <.ws_inline>]?]*
     {*}
 }
-token makefile_rule_action {
+token make_rule_action {
     [[<!before \\\n><-[\n]>]+ [\\\n]?]* {*}
 }
-token makefile_special_rule {
+token make_special_rule {
     <.ws_inline>
     [
     | $<name>=[ '.PHONY' ]
@@ -188,13 +188,13 @@ token makefile_special_rule {
     \n {*}
 }
 
-rule makefile_conditional_statement {
+rule make_conditional_statement {
     $<csta>=['ifeq'|'ifneq']
     [
       |[ '('
-         $<arg1>=[[<-[,)$]>|<.makefile_variable_ref>]*]
+         $<arg1>=[[<-[,)$]>|<.make_variable_ref>]*]
          ','
-         $<arg2>=[[<-[)$]>|<.makefile_variable_ref>]*]
+         $<arg2>=[[<-[)$]>|<.make_variable_ref>]*]
          ')'
        ]
       |[ | \' $<arg1>=[<-[ ' ]>*] \' <[ \ \t ]>*
@@ -220,7 +220,7 @@ rule makefile_conditional_statement {
     {*}
 }
 
-rule makefile_include_statement {
+rule make_include_statement {
     'include' \N+
     {*}
 }
@@ -244,8 +244,8 @@ rule smart_builtin_function {
 ##  terms
 token term {
     | <value> {*}                                #= value
-    | <makefile_variable_method_call> {*}        #= makefile_variable_method_call
-    | <makefile_variable_ref> {*}		 #= makefile_variable_ref
+    | <make_variable_method_call> {*}        #= make_variable_method_call
+    | <make_variable_ref> {*}		 #= make_variable_ref
     | <smart_builtin_function> {*}               #= smart_builtin_function
 }
 
@@ -261,17 +261,17 @@ rule quote {
     {*}
 }
 
-rule makefile_variable_method_call {
-    <makefile_variable_ref> '.' <ident>
+rule make_variable_method_call {
+    <make_variable_ref> '.' <ident>
         '(' [ <expression> [ ',' <expression> ]* ]?
         [ ')' || <.panic: "smart: * Require an ')' to terminate parameter list"> ]
     {*}
 }
 
-token makefile_variable_ref {
+token make_variable_ref {
     [
-     | <makefile_variable_ref1>
-     | <makefile_variable_ref2>
+     | <make_variable_ref1>
+     | <make_variable_ref2>
     ]
     {*}
 #    {{
@@ -279,14 +279,14 @@ token makefile_variable_ref {
 #    say $S0
 #    }}
 }
-token makefile_variable_ref1 {
+token make_variable_ref1 {
     '$'
-    [ '(' $<name>=[[<!before ')'><-[\n:=#$]>|<.makefile_variable_ref>]+]
+    [ '(' $<name>=[[<!before ')'><-[\n:=#$]>|<.make_variable_ref>]+]
     [ ')' || <.panic: "smart: * Make variable referencing expects ')'"> ]]
 }
-token makefile_variable_ref2 {
+token make_variable_ref2 {
     '$'
-    [ '{' $<name>=[[<!before '}'><-[\n:=#$]>|<.makefile_variable_ref>]+]
+    [ '{' $<name>=[[<!before '}'><-[\n:=#$]>|<.make_variable_ref>]+]
     [ '}' || <.panic: "smart: * Make variable referencing expects '}'"> ]]
 }
 
