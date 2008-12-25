@@ -290,6 +290,7 @@ iterate_items_end:
     set implicit, 0
 
     .local string text ## used as a temporary of mo.'text'()
+    .local pmc items ## splitted from text
 
     $P1 = mo_targets
     $I1 = ACTION_T
@@ -323,23 +324,30 @@ map_match_object_array:
 iterate_match_object_array_loop:
     unless it goto iterate_match_object_array_loop_end
     $P2 = shift it
-    text = $P2.'text'()
+    $S0 = $P2.'text'()
+    items = '~expanded-items'( $S0 )
+    new $P3, 'Iterator', items 
+iterate_match_object_array_loop_iterate_items:
+    unless $P3 goto iterate_match_object_array_loop_iterate_items_end
+    text = shift $P3
     if $I1 == ACTION_T goto to_action_pack_target
     if $I1 == ACTION_P goto to_action_pack_prerequisite
     if $I1 == ACTION_O goto to_action_pack_orderonly
     if $I1 == ACTION_A goto to_action_pack_action
-    goto iterate_match_object_array_loop
+    goto iterate_match_object_array_loop_iterate_items
 to_action_pack_target:
     local_branch call_stack, action_pack_target
-    goto iterate_match_object_array_loop
+    goto iterate_match_object_array_loop_iterate_items
 to_action_pack_prerequisite:
     local_branch call_stack, action_pack_prerequisite
-    goto iterate_match_object_array_loop
+    goto iterate_match_object_array_loop_iterate_items
 to_action_pack_orderonly:
     local_branch call_stack, action_pack_orderonly
-    goto iterate_match_object_array_loop
+    goto iterate_match_object_array_loop_iterate_items
 to_action_pack_action:
     local_branch call_stack, action_pack_action
+    goto iterate_match_object_array_loop_iterate_items
+iterate_match_object_array_loop_iterate_items_end:
     goto iterate_match_object_array_loop
 iterate_match_object_array_loop_end:
 map_match_object_array__done:
