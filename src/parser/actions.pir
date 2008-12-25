@@ -280,10 +280,11 @@ iterate_items_end:
     #new targets,        'ResizablePMCArray'
     #new prerequisites,  'ResizablePMCArray'
     #new orderonly,      'ResizablePMCArray'
-    new actions,        'ResizablePMCArray'
+    #new actions,        'ResizablePMCArray'
     targets = rule.'targets'()
     prerequisites = rule.'prerequisites'()
     orderonly = rule.'orderonly'()
+    actions = rule.'actions'()
 
     .local int implicit
     set implicit, 0
@@ -519,8 +520,8 @@ error_mixed_implicit_and_normal_rule:
     ######################
     ##  IN: text(the text value)
 action_pack_prerequisite:
-    #print "prerequisite: "
-    #say text
+    print "prerequisite: "
+    say text
     if implicit goto action_pack_prerequisite__push_implicit
 action_pack_prerequisite__push:
     $P1 = '!BIND-TARGET'( text, 0 )
@@ -535,8 +536,8 @@ action_pack_prerequisite__done:
     ######################
     ##  IN: text(the text value)
 action_pack_orderonly:
-    #print "orderonly: "
-    #say text
+    print "orderonly: "
+    say text
     $P1 = '!BIND-TARGET'( text, 0 )
     #push $P0, $P1
     push orderonly, $P1
