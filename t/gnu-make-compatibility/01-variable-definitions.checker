@@ -17,4 +17,5 @@ __END_EXPECTED__
 
     my $result = join '', @result;
     $check_result = $result eq $expected;
+    print "";
 }

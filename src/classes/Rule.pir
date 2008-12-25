@@ -18,6 +18,7 @@ The '@[%]' variable holds the list of implicit rules.
     .param pmc match
     .param pmc targets          :optional
     .param pmc prerequisites    :optional
+    .param pmc orderonly        :optional
     .local pmc rule
     rule = new 'Rule'
 
@@ -28,10 +29,15 @@ has_targets:
     unless null prerequisites goto has_prerequisites
     prerequisites = new 'ResizablePMCArray'
 has_prerequisites:
+
+    unless null orderonly goto has_orderonly
+    orderonly = new 'ResizablePMCArray'
+has_orderonly:
     
     setattribute rule, 'match', match
     setattribute rule, 'targets', targets
     setattribute rule, 'prerequisites', prerequisites
+    setattribute rule, 'order-only', orderonly
     .return(rule)
 .end
 
@@ -168,7 +174,7 @@ Returns the target list for which can the rule update
     .local pmc targets
     getattribute targets, self, 'targets'
     .return(targets)
-.end
+.end # sub "targets"
 
 
 =item <prerequisites()>

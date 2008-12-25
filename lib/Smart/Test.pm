@@ -103,6 +103,7 @@ sub runtests {
             }
             if ( -f $runner and open RH, "<", $runner ) {
                 my @code = <RH>;
+                $| = 1;
                 unless ( eval join '', @code ) {
                     carp "\n\terror: runner " . $runner_name . "\n\t$@";
                 }
@@ -142,6 +143,7 @@ sub runtests {
                 ++$self->{report}->{checkers};
                 my @code = <CH>;
                 my $check_result;
+                $| = 1;
                 if ( eval join '', @code ) {
                     do {
                         push @{ $self->{report}->{failed_checkers} }, $checker;

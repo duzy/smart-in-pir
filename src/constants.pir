@@ -8,6 +8,9 @@
 
 .namespace []
 
+.const int EXIT_OK                              = 0
+.const int EXIT_ERROR_MIXED_RULE                = 101
+
 .const int MAKEFILE_VARIABLE_ORIGIN_undefined           = 0
 .const int MAKEFILE_VARIABLE_ORIGIN_default             = 1
 .const int MAKEFILE_VARIABLE_ORIGIN_environment         = 2
@@ -17,3 +20,4 @@
 .const int MAKEFILE_VARIABLE_ORIGIN_override            = 6
 .const int MAKEFILE_VARIABLE_ORIGIN_automatic           = 7
 .const int MAKEFILE_VARIABLE_ORIGIN_smart_code          = 8
+

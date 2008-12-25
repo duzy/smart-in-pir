@@ -256,6 +256,7 @@ iterate_items_end:
 
 
 .sub "!MAKE-RULE"
+    .param string match
     .param pmc mo_targets
     .param pmc mo_prerequsites
     .param pmc mo_orderonly
@@ -269,14 +270,25 @@ iterate_items_end:
     .local pmc call_stack
     new call_stack, 'ResizableIntegerArray'
 
+    .local pmc rule
+    rule = 'new:Rule'( match )
+    
     .local pmc targets
     .local pmc prerequisites
     .local pmc orderonly
     .local pmc actions
-    new targets,        'ResizablePMCArray'
-    new prerequisites,  'ResizablePMCArray'
-    new orderonly,      'ResizablePMCArray'
+    #new targets,        'ResizablePMCArray'
+    #new prerequisites,  'ResizablePMCArray'
+    #new orderonly,      'ResizablePMCArray'
     new actions,        'ResizablePMCArray'
+    targets = rule.'targets'()
+    prerequisites = rule.'prerequisites'()
+    orderonly = rule.'orderonly'()
+
+    .local int implicit
+    set implicit, 0
+
+    .local string text ## used as a temporary of mo.'text'()
 
     $P1 = mo_targets
     $I1 = ACTION_T
@@ -292,6 +304,7 @@ iterate_items_end:
     local_branch call_stack, map_match_object_array
 
     #'!UPDATE-RULE'( targets, prerequisites, orderonly, actions )
+    
 
     .return()
 
@@ -309,7 +322,7 @@ map_match_object_array:
 iterate_match_object_array_loop:
     unless it goto iterate_match_object_array_loop_end
     $P2 = shift it
-    $S1 = $P2.'text'()
+    text = $P2.'text'()
     if $I1 == ACTION_T goto to_action_pack_target
     if $I1 == ACTION_P goto to_action_pack_prerequisite
     if $I1 == ACTION_O goto to_action_pack_orderonly
@@ -332,41 +345,209 @@ map_match_object_array__done:
     local_return call_stack
 
     ######################
-    ##  IN: $S1(the text value)
+    ##  IN: text(the text value)
 action_pack_target:
+    ## Check and convert suffix rules into pattern rule if any,
+    ## if the convertion did, text will be changed into pattern string
+    local_branch call_stack, check_and_convert_suffix_target
+    
+    ## If any target is a pattern, than the rule is a implicit rule.
+    ## The suffix target is converted into a pattern. If the rule is implicit,
+    ## then only pattern target could exists in the rule.
+    local_branch call_stack, check_and_handle_pattern_target
+    if $I0 goto action_pack_target__done ## got and handled pattern
+
+    #if implicit goto error_mixed_implicit_and_normal_rule
+
+    ## Normal targets are bind directly.
+    $P1 = '!BIND-TARGET'( text, 1 )
+    setattribute $P1, 'rule', rule
+
     print "target: "
-    say $S1
-    $P1 = '!BIND-TARGET'( $S1, 1 )
-    #push $P0, $P1
-    push targets, $P1
+    say $P1
+    
+    push targets, $P1 # push the target
+action_pack_target__done:
+    local_return call_stack
+    
+    ######################
+    ## local: check_and_convert_suffix_target
+    ##          IN: text(the target name)
+    ##          OUT: text(modified into pattern if suffix detected)
+check_and_convert_suffix_target:
+    set $I0, 0
+    substr $S0, text, 0, 1
+    unless $S0 == "." goto check_and_convert_suffix_target__done
+    index $I1, text, ".", 1
+    unless $I1 < 0 goto check_and_convert_suffix_target__check_two_suffixes
+    set $I0, 1 ## tells number of suffixes
+    
+    $S3 = text
+    local_branch call_stack, check_and_convert_suffix_target__check_suffixes
+    unless $I1 goto check_and_convert_suffix_target__done
+    
+    print "one-suffix-rule: "   #!!!
+    say text                    #!!!
+    $S2 = "%"
+    $S2 .= text ## implicit:  %.text
+    unshift prerequisites, $S2
+    text = "%"
+
+    goto check_and_convert_suffix_target__done
+    
+check_and_convert_suffix_target__check_two_suffixes:
+    unless 2 <= $I1 goto check_and_convert_suffix_target__done ## avoid ".."
+    $I2 = $I1 + 1
+    $I2 = index text, ".", $I2  ## no third "." should existed
+    unless $I2 < 0 goto check_and_convert_suffix_target__done
+    $I2 = length text
+    $I2 = $I2 - $I1
+    $I0 = 2 ## tells number of suffixes
+    $S0 = substr text, 0, $I1 ## the first suffix
+    $S1 = substr text, $I1, $I2 ## the second suffix
+
+    $S3 = $S0
+    local_branch call_stack, check_and_convert_suffix_target__check_suffixes
+    unless $I1 goto check_and_convert_suffix_target__done
+    
+    $S3 = $S1
+    local_branch call_stack, check_and_convert_suffix_target__check_suffixes
+    unless $I1 goto check_and_convert_suffix_target__done
+    
+    print "two-suffix-rule: "   #!!!
+    print $S0                   #!!! 
+    print ", "                  #!!!
+    say $S1                     #!!!
+    text = "%"
+    text .= $S1
+    $S2 = "%"
+    $S2 .= $S0 ## implicit: %.$S0
+    unshift prerequisites, $S2
+    
+check_and_convert_suffix_target__done:
     local_return call_stack
 
     ######################
-    ##  IN: $S1(the text value)
+    ## local: check_and_convert_suffix_target__check_suffixes
+    ##          IN: $S3
+    ##          OUT: $I1
+check_and_convert_suffix_target__check_suffixes:
+    .local pmc suffixes
+    get_hll_global suffixes, ['smart';'makefile';'rule'], ".SUFFIXES"
+    if null suffixes goto check_and_convert_suffix_target__check_suffixes__done
+    $P0 = new 'Iterator', suffixes
+    $I1 = 0
+check_and_convert_suffix_target__iterate_suffixes:
+    unless $P0 goto check_and_convert_suffix_target__iterate_suffixes_done
+    $S4 = shift $P0
+    unless $S4 == $S3 goto check_and_convert_suffix_target__iterate_suffixes
+    inc $I1
+check_and_convert_suffix_target__iterate_suffixes_done:
+    null $P0
+    if $I1 goto check_and_convert_suffix_target__check_suffixes__done
+    $S4 = "smart: Unknown suffix '"
+    $S4 .= $S3
+    $S4 .= "'\n"
+    print $S4
+check_and_convert_suffix_target__check_suffixes__done:
+    local_return call_stack
+    
+    ############
+    ##  IN: $S0
+conver_suffix_target_1:
+    local_return call_stack
+    
+    ############
+    ##  IN: $S0, $S1
+conver_suffix_target_2:
+    local_return call_stack
+    
+    
+    
+    ######################
+    ## local: check_and_handle_pattern_target
+    ##          IN: text(the target name)
+    ##          OUT: $I0(1/0, 1 if handled)
+check_and_handle_pattern_target:
+    set $I0, 0
+    
+    index $I1, text, "%"
+    if $I1 < 0 goto check_and_handle_pattern_target__validate_non_mixed
+    $I2 = $I1 + 1
+    index $I2, text, "%", $I2
+    unless $I2 < 0 goto check_and_handle_pattern_target__validate_non_mixed
+#     $P1 = 'new:Pattern'( text )
+#     $P2 = $P1.'pattern'()
+#     if null $P2 goto check_and_handle_pattern_target__done
+    print "pattern: "
+    say text
+    
+    $P1 = 'new:Target'( text )
+    new $P2, 'Integer'
+    assign $P2, 1
+    setattribute $P1, '%', $P2
+    setattribute $P1, 'rule', rule
+    null $P2
+    
+check_and_handle_pattern_target__store_pattern_target:
+    get_hll_global $P2, ['smart';'makefile'], "@<%>"
+    unless null $P2 goto check_and_handle_pattern_target__push_pattern_target
+    new $P2, 'ResizablePMCArray'
+    set_hll_global ['smart';'makefile'], "@<%>", $P2
+check_and_handle_pattern_target__push_pattern_target:
+    push $P2, $P1
+    null $P2
+    null $P1
+    
+    set implicit, 1 ## flag implicit for the rule
+    set $I0, 1 ## set the result
+    goto check_and_handle_pattern_target__done
+    
+check_and_handle_pattern_target__validate_non_mixed:
+    if implicit goto error_mixed_implicit_and_normal_rule
+    
+check_and_handle_pattern_target__done:
+    local_return call_stack
+    
+error_mixed_implicit_and_normal_rule:
+    $S0 = "smart: *** Mixed implicit and normal rules: "
+    $S0 .= match
+    $S0 .= "\n"
+    printerr $S0
+    exit EXIT_ERROR_MIXED_RULE
+    
+    ######################
+    ##  IN: text(the text value)
 action_pack_prerequisite:
     #print "prerequisite: "
-    #say $S1
-    $P1 = '!BIND-TARGET'( $S1, 0 )
-    #push $P0, $P1
+    #say text
+    if implicit goto action_pack_prerequisite__push_implicit
+action_pack_prerequisite__push:
+    $P1 = '!BIND-TARGET'( text, 0 )
     push prerequisites, $P1
+    goto action_pack_prerequisite__done
+action_pack_prerequisite__push_implicit:
+    $P1 = '!BIND-TARGET'( text, 0 )
+    push prerequisites, $P1
+action_pack_prerequisite__done:
     local_return call_stack
 
     ######################
-    ##  IN: $S1(the text value)
+    ##  IN: text(the text value)
 action_pack_orderonly:
     #print "orderonly: "
-    #say $S1
-    $P1 = '!BIND-TARGET'( $S1, 0 )
+    #say text
+    $P1 = '!BIND-TARGET'( text, 0 )
     #push $P0, $P1
     push orderonly, $P1
     local_return call_stack
 
     ######################
-    ##  IN: $S1(the text value)
+    ##  IN: text(the text value)
 action_pack_action:
     #print "action: "
-    #say $S1
-    $P1 = '!CREATE-ACTION'( $S1 )
+    #say text
+    $P1 = '!CREATE-ACTION'( text )
     #push $P0, $P1
     push actions, $P1
     local_return call_stack

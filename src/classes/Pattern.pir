@@ -70,6 +70,10 @@ setter:
     .return(pattern)
 
 setter_bad_pattern:
+    null $P0
+    setattribute self, 'pattern', $P0
+    setattribute self, 'prefix',  $P0
+    setattribute self, 'suffix',  $P0
     .return()
 
 getter:
