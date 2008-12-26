@@ -36,7 +36,7 @@
     .return(suffix)
 .end
 
-.sub "pattern" :method
+.sub "pattern" :method :vtable('get_string')
     .param pmc pattern          :optional
     .param int has_pattern      :opt_flag
     
@@ -107,4 +107,31 @@ getter:
 return_result:
     .return(stem)
 .end # sub "match"
+
+.sub "flatten" :method
+    .param string pat
+    .param string stem
+    .local string object
+    set object, ""
+
+    index $I0, pat, "%"
+    if $I0 < 0 goto return_object_normal
+    $I1 = $I0 + 1
+    index $I1, pat, "%", $I1
+    unless $I1 < 0 goto return_object_normal
+
+    length $I2, pat
+    $I1 = $I0 + 1
+    $I2 = $I2 - $I1
+    substr $S1, pat, 0, $I0
+    substr $S2, pat, $I1, $I2
+    concat object, $S1
+    concat object, stem
+    concat object, $S2
+
+    .return(object)
+
+return_object_normal:
+    .return(pat)
+.end
 

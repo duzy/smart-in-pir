@@ -117,47 +117,6 @@ method make_rule($/) {
     elsif $<static_targets> {
         make PAST::Op.new( :inline('print "TODO: (actions.pm)static pattern rule\n"') );
     }
-    elsif 0 {
-        my $pack_targets := PAST::Op.new( :pasttype('call'),
-          :name('!PACK-RULE-TARGETS'), :returns('ResizablePMCArray') );
-        for $<make_target> { $pack_targets.push( $( $_ ) ); }
-
-        my $pack_prerequisites := PAST::Op.new( :pasttype('call'),
-          :name('!PACK-RULE-TARGETS'), :returns('ResizablePMCArray') );
-        for $<make_prerequisite> { $pack_prerequisites.push( $( $_ ) ); }
-
-        my $pack_orderonly;
-        if $<order_only_prerequisites> {
-            #$pack_orderonly := $( $<order_only_prerequisites> );
-            #$pack_orderonly := PAST::Op.new( :pasttype('call'),
-            #  :name('!PACK-RULE-TARGETS'),
-            #  :returns('ResizablePMCArray') );
-            #for $<oo><make_prerequisite>
-            #    { $pack_orderonly.push( $( $_ ) ); }
-        }
-
-        my $pack_actions := PAST::Op.new( :pasttype('call'),
-          :name('!PACK-ARGS'), :returns('ResizablePMCArray') );
-        for $<make_action> { $pack_actions.push( $( $_ ) ); }
-
-        my $match := ~$<targets>;
-        $match := strip( $match );
-        my $rule := PAST::Var.new( :lvalue(1), :viviself('Undef'),
-           :scope('package'), :name($match), :namespace('smart::makefile::rule') );
-        my $rule_ctr := PAST::Op.new( :pasttype('call'),
-          :name('!UPDATE-RULE'), :returns('Rule')
-        );
-        $rule_ctr.push( PAST::Val.new( :value($match), :returns('String') ) );
-        $rule_ctr.push( $pack_targets );
-        $rule_ctr.push( $pack_prerequisites );
-        $rule_ctr.push( $pack_orderonly );
-        $rule_ctr.push( $pack_actions );
-
-        make PAST::Op.new( $rule, $rule_ctr,
-                       :pasttype('bind'),
-                       :name('bind-makefile-rule-variable'),
-                       :node( $/ ) );
-    }
     else {
         my $match := strip( ~$<targets> );
         my @targets             := $<make_target>;

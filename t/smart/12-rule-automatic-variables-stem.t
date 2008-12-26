@@ -1,4 +1,6 @@
 # -*- mode: makefile -*-
+#
+# checker: 12-rule-automatic-variables-stem
 
 all: t/a.foo.t.t.t foo
 

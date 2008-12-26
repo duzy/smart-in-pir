@@ -308,6 +308,8 @@ iterate_items_end:
 
     #'!UPDATE-RULE'( targets, prerequisites, orderonly, actions )
 
+    local_branch call_stack, store_implicit_rule
+
     .return(rule)
 
     ######################
@@ -475,16 +477,16 @@ check_and_handle_pattern_target:
     $I2 = $I1 + 1
     index $I2, text, "%", $I2
     unless $I2 < 0 goto check_and_handle_pattern_target__validate_non_mixed
-#     $P1 = 'new:Pattern'( text )
-#     $P2 = $P1.'pattern'()
-#     if null $P2 goto check_and_handle_pattern_target__done
-    print "pattern: "
-    say text
+    
+#    print "pattern: "
+#    say text
     
     $P1 = 'new:Target'( text )
-    new $P2, 'Integer'
-    assign $P2, 1
-    setattribute $P1, '%', $P2
+    #new $P2, 'Integer'
+    #assign $P2, 1
+    $P2 = 'new:Pattern'( text )
+    #setattribute $P1, '%', $P2
+    setattribute $P1, 'object', $P2
     setattribute $P1, 'rule', rule
     null $P2
     
@@ -562,6 +564,27 @@ setup_number_one_target:
     $P1 = 'new:Variable'( ".DEFAULT_GOAL", $S0, MAKEFILE_VARIABLE_ORIGIN_automatic )
     set_hll_global ['smart';'makefile';'variable'], ".DEFAULT_GOAL", $P1
 setup_number_one_target_local_return:
+    local_return call_stack
+
+    ######################
+    ## local: store_implicit_rule
+store_implicit_rule:
+    unless implicit goto store_implicit_rule__done
+    ## Store implicit rules in the list 'smart;makefile;@[%]'
+    new $P0, 'Integer'
+    $P0 = 1 ##implicit
+    setattribute rule, 'implicit', $P0
+    null $P0
+    get_hll_global $P0, ['smart';'makefile'], "@[%]"
+    unless null $P0 goto store_implicit_rule__push
+    new $P0, 'ResizablePMCArray'
+    set_hll_global ['smart';'makefile'], "@[%]", $P0
+store_implicit_rule__push:
+    ## TODO: think about the ordering of implicit rules, should I use unshift
+    ##       instead of push?
+    push $P0, rule
+    null $P0
+store_implicit_rule__done:
     local_return call_stack
     
 .end # sub "!MAKE-RULE"

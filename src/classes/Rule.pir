@@ -250,3 +250,11 @@ got_actions:
 invalid_arg:
     die "smart: *** Not an ResizablePMCArray object."
 .end
+
+
+.sub "update-prerequsites" :method
+    .param pmc requestor
+    .local int count_updated
+    .local int count_newer
+    .return (count_updated, count_newer)
+.end # sub "update-prerequsites"

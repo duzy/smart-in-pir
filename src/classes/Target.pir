@@ -35,19 +35,18 @@ return_target:
 .namespace ['Target']
 .sub "__init_class" :anon :init :load
     newclass $P0, 'Target'
-    addattribute $P0, 'object'  ## the filename of the object 
+    addattribute $P0, 'object'  ## filename of the object or instance of Pattern
     addattribute $P0, 'member'  ## for Archive target, indicates the member name
     addattribute $P0, 'rule'    ## the Rule object
     addattribute $P0, 'stem'    ## used with implicit rule -- pattern
     addattribute $P0, 'updated' ## 1/0, wether the object has been updated
-    addattribute $P0, '%'       ## 1/0, 1 if it's an target pattern
 .end
 
 
 =item <object()>
     Returns the object file updated by the target.
 =cut
-.sub "object" :method
+.sub "object" :method :vtable('get_string')
     getattribute $P0, self, 'object'
     unless null $P0 goto got_object
     $P0 = new 'String'
@@ -537,9 +536,74 @@ invalid_stem: ## another internal error
     are newer than the target, '%3' tells the number of actions executed of the
     rule binded to the target.
 =cut
-.sub "update" :method
+.sub "update" :method # :multi()
     ($I0, $I1, $I2) = 'update-target'( self, self )
     .return ($I0, $I1, $I2)
+.end
+
+.sub "update%" :method # :multi(String)
+    .param pmc object
+    
+    .local pmc pattern
+    getattribute pattern, self, "object"
+    if null pattern goto return_nothing
+
+    .local string prefix
+    .local string suffix
+    .local string stem
+    prefix = pattern.'prefix'()
+    suffix = pattern.'suffix'()
+    stem = pattern.'match'( object )
+    if stem == "" goto return_nothing
+
+    .local pmc rule
+    getattribute rule, self, 'rule'
+
+    print "pattern ["
+    print pattern
+    print "] matched with '"
+    print object
+    print "', the stem is '"
+    print stem
+    print "'\n"
+    
+    .local pmc cs
+    new cs, 'ResizableIntegerArray'
+    local_branch cs, update_prerequisites
+    
+    .return($I0, $I1, $I2)
+
+return_nothing:
+    .return(-1, -1, -1)
+
+    ######################
+    ## local: update_prerequisites
+update_prerequisites:
+    .local pmc prerequisites
+    prerequisites = rule.'prerequisites'()
+    new $P1, 'Iterator', prerequisites 
+update_prerequisites__iterate:
+    unless $P1 goto update_prerequisites__iterate_end
+    shift $P2, $P1
+    $S0 = pattern.'flatten'( $P2, stem )
+    
+#    print "prerequsite: "
+#    say $S0
+    
+    unless $P2 == $S0 goto flatten_ok
+    $P2.'update'()
+    goto update_prerequisites__iterate
+    
+flatten_ok:
+    get_hll_global $P3, ['smart';'makefile';'target'], $S0
+    $P3.'update'()
+    goto update_prerequisites__iterate
+    
+update_prerequisites__iterate_end:
+    null prerequisites
+    null $P1
+update_prerequisites_end:
+    local_return cs
 .end
 
 .sub "is_phony" :method
@@ -550,7 +614,7 @@ invalid_stem: ## another internal error
     
     get_hll_global array, ['smart';'makefile';'rule'], ".PHONY"
     if null array goto return_result
-
+    
     $P0 = new 'Iterator', array
 iterate_phony:
     unless $P0 goto iterate_phony_end
@@ -579,6 +643,85 @@ return_result:
 .end # .sub "changetime"
 
 .sub "update-target" :anon
+    .param pmc target
+    .param pmc requestor
+    
+    .local int count_newer
+    .local int count_updated
+    set count_newer,    0
+    set count_updated,  0
+    
+    ## If the target itself has been updated, than nothing should be done.
+    $I0 = target.'updated'()
+    if $I0 goto return_result
+    
+    .local pmc call_stack
+    new call_stack, 'ResizableIntegerArray'
+    
+    .local string object
+    object = target #.'object'()
+    
+    .local pmc rule
+    getattribute rule, target, 'rule'
+    
+    ##unless null rule goto update_normal_target
+    ##local_branch call_stack, check_out_pattern_targets_for_updating
+    ##update_normal_target:
+    if null rule goto check_out_pattern_targets_for_updating
+    
+    #(count_updated, count_newer) = rule.'update-prerequsites'( requestor )
+    local_branch call_stack, update_prerequisites
+    
+return_result:
+    .return (count_updated, count_newer)
+    
+    
+    ######################
+    ## local: check_out_pattern_targets_for_updating
+check_out_pattern_targets_for_updating:
+    .local pmc patterns
+    get_hll_global patterns, ['smart';'makefile'], "@<%>"
+    if null patterns goto check_out_pattern_targets_for_updating__done
+    new $P1, 'Iterator', patterns
+check_out_pattern_targets_for_updating__iterate:
+    unless $P1 goto check_out_pattern_targets_for_updating__iterate_end
+    shift $P2, $P1
+
+    ## Skip the match-anything pattern
+    if $P2 == "%" goto check_out_pattern_targets_for_updating__iterate
+    
+    ($I1, $I2) = $P2.'update%'( object )
+    goto check_out_pattern_targets_for_updating__iterate
+    
+check_out_pattern_targets_for_updating__iterate_end:
+    null patterns
+    null $P1
+    null $P2
+check_out_pattern_targets_for_updating__done:
+    #local_return call_stack
+    goto return_result
+    
+    
+    ######################
+    ## local: update_prerequisites
+update_prerequisites:
+    .local pmc prerequisites
+    prerequisites = rule.'prerequisites'()
+    new $P1, 'Iterator', prerequisites 
+update_prerequisites__iterate:
+    unless $P1 goto update_prerequisites__iterate_end
+    shift $P2, $P1
+    $P2.'update'()
+    goto update_prerequisites__iterate
+update_prerequisites__iterate_end:
+    null prerequisites
+    null $P1
+update_prerequisites_end:
+    local_return call_stack
+    
+.end # sub "update-target"
+
+.sub "update-target~" :anon
     .param pmc target
     .param pmc requestor
 
@@ -611,6 +754,7 @@ return_result:
     getattribute rule, target, 'rule'
     unless null rule goto we_got_the_rule
     local_branch call_stack, check_out_implicit_rules
+    #local_branch call_stack, check_out_pattern_targets
     
 we_got_the_rule:
     
@@ -759,6 +903,7 @@ check_out_implicit_rules_iterate:
     unless iter goto check_out_implicit_rules_iterate_end
     implicit_rule = shift iter
     $S0 = implicit_rule.'match'()
+    #say $S0
     ## skip any match-anything rule
     if $S0 == "%" goto check_out_implicit_rules_iterate
     $S0 = implicit_rule.'match_patterns'( target )
@@ -795,6 +940,27 @@ report_no_rule_error:
     report_no_rule_error_done:
     print $S0
     exit -1
+
+    ######################
+    ## local: check_out_pattern_targets
+check_out_pattern_targets:
+    .local pmc patterns
+    get_hll_global patterns, ['smart';'makefile'], "@<%>"
+    if null patterns goto check_out_pattern_targets__done
+    new $P1, 'Iterator', patterns
+check_out_pattern_targets__iterate:
+    unless $P1 goto check_out_pattern_targets__iterate_end
+    shift $P2, $P1
+    ## TODO: ...
+    print "check-pattern: "
+    say $P2
+    goto check_out_pattern_targets__iterate
+check_out_pattern_targets__iterate_end:
+    null patterns
+    null $P1
+    null $P2
+check_out_pattern_targets__done:
+    local_return call_stack
     
     ##############
     ## local routine: report_droped_recursive_dependency
@@ -819,7 +985,3 @@ invalid_rule_object:
 .end # sub "update"
 
 
-.sub get_string :method :vtable
-    $S0 = self.'object'()
-    .return ($S0)
-.end

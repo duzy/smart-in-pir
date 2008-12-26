@@ -1,0 +1,20 @@
+# -*- cperl -*-
+{
+    pop @result;
+    my $expect = <<"____EXPECT";
+1..8
+ok, target:t/foo.t.t.a, stem:foo.t.t
+ok, target:t/a.foo.t.t.t, stem:foo.t.t
+ok, target:t/\%.a, stem:\%
+ok, target:foo.a, stem:a
+ok, target:foo.b, stem:b
+ok, target:a.bar, stem:a
+ok, target:b.bar, stem:b
+ok, target:foo, prerequsites:t/\%.a foo.a foo.b a.bar b.bar, stem:
+\%, target:all, stem:all
+____EXPECT
+    ;
+    my $result = join '', @result;
+    $check_result = $result eq $expect;
+    print "";
+}

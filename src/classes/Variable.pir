@@ -168,7 +168,7 @@ return_result:
 
 =item <count()>
 =cut
-.sub "count" :method
+.sub "count" :method :vtable('get_integer')
     $P0 = self.'items'()
     elements $I0, $P0
     .return ($I0)
@@ -196,7 +196,7 @@ return_result:
 
 =item <value()>
 =cut
-.sub "value" :method
+.sub "value" :method :vtable('get_string')
     .local pmc value
     getattribute value, self, 'value'
     if null value goto set_initial_value
@@ -220,18 +220,18 @@ set_initial_value:
 .end # sub "join"
 
 
-=item <get_string()>
-=cut
-.sub get_string :method :vtable
-    $S0 = self.'value'()
-    .return ($S0)
-.end
+# =item <get_string()>
+# =cut
+# .sub get_string :method :vtable
+#     $S0 = self.'value'()
+#     .return ($S0)
+# .end
 
 
-=item <get_integer()>
-=cut
-.sub get_integer :method :vtable
-    $I0 = self.'count'()
-    .return ($I0)
-.end
+# =item <get_integer()>
+# =cut
+# .sub get_integer :method :vtable
+#     $I0 = self.'count'()
+#     .return ($I0)
+# .end
 
