@@ -1,0 +1,31 @@
+# -*- cperl -*-
+{
+    my $s = <<"____END_EXPECT";
+ok, dir t
+ok, file foo
+.
+trick1.txt
+ok, trick1.txt, [t], [foo]
+.
+trick2.txt
+ok, trick2.txt, [t], [foo]
+.
+trick3.txt
+ok, trick3.txt, [t], [foo]
+anything: foo
+anything: bar
+contents: 
+.
+trick1.txt
+.
+trick2.txt
+.
+trick3.txt
+ok, [trick1.txt trick2.txt trick3.txt], [trick1.txt trick2.txt trick3.txt], [foo bar cat]
+____END_EXPECT
+    ;
+    pop @result;
+    my $r = join '', @result;
+    $check_result = $r eq $s;
+    print "";
+}

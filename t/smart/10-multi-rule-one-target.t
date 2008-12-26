@@ -1,20 +1,25 @@
 # -*- mode: Makefile -*-
-say "1..5";
+#
+# checker: 10-multi-rule-one-target
+# 
 
 foo: a
 foo: b
 foo: c
-foo: d
+foo: d|bar
+	@echo "$@ <- $^ | $|"
+
+.PHONY: foo a b c d e bar
 
 a:
-	@echo "ok, a"
+	@echo "ok, $@"
 b:
-	@echo "ok, b"
+	@echo "ok, $@"
 c:
-	@echo "ok, c"
-d: e ;	@echo "ok, d, command 1"
-	@echo "ok, d, command 2"
-e:;	@echo "ok, e, command 1"
-	@echo "ok, e, command 2"
+	@echo "ok, $@"
+d: e ;	@echo "ok, $@ <- $^, command 1"
+	@echo "ok, $@ <- $^, command 2"
+e:;	@echo "ok, $@, command 1"
+	@echo "ok, $@, command 2"
 
-bar:;   @echo "foobar, never invoked by default"
+bar:;   @echo "foobar, invoked by foo"

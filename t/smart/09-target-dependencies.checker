@@ -1,0 +1,21 @@
+# -*- cperl -*-
+{
+    my $s = <<"____END_EXPECT";
+update foo.txt
+update bar.txt
+update foobar.txt
+bar.txt
+foobar.txt
+foo.txt
+foobar
+1 foobar.txt
+rm -f {foo,bar,foobar}.txt
+echo all done
+all done
+____END_EXPECT
+    ;
+    pop @result;
+    my $r = join '', @result;
+    $check_result = $r eq $s;
+    print "";
+}

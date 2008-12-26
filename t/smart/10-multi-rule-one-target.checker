@@ -1,0 +1,19 @@
+# -*- cperl -*-
+{
+    my $s = <<"____END_EXPECT";
+ok, e, command 1
+ok, e, command 2
+ok, d <- e, command 1
+ok, d <- e, command 2
+foobar, invoked by foo
+ok, a
+ok, b
+ok, c
+foo <- d a b c | bar
+____END_EXPECT
+    ;
+    pop @result;
+    my $r = join '', @result;
+    $check_result = $r eq $s;
+    print "";
+}

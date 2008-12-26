@@ -1,9 +1,15 @@
 # -*- mode: Makefile -*-
+#
+# checker: 08-target-dependencies
+# 
 
 # NOTE: all targets should always be updated
 
-all: foobar more
-	@ls -lh foo.txt bar.txt foobar.txt
+all: foobar more check clean
+	@echo $@ done
+
+check:
+	@ls foo.txt bar.txt foobar.txt
 	@cat foobar.txt
 	@wc -l foobar.txt
 foobar: foobar.txt
@@ -34,3 +40,6 @@ more1:
 more2:
 more3:
 more4:
+
+clean:
+	@rm -vf foo.txt bar.txt foobar.txt
