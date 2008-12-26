@@ -221,17 +221,18 @@ loop_tag_end:
 =cut
 .sub ".!setup-automatic-variables" :anon
     .param pmc target
+    .param pmc stem
     .local pmc rule, prerequisites
     getattribute rule, target, "rule"
 
     prerequisites = rule.'prerequisites'()
 
-    .local string stem
-    stem = ""
-    $P0 = getattribute target, 'stem'
-    if null $P0 goto no_stem
-    stem = $P0
-no_stem:
+#     .local string stem
+#     stem = ""
+#     $P0 = getattribute target, 'stem'
+#     if null $P0 goto no_stem
+#     stem = $P0
+# no_stem:
     
     .local pmc var0, var1, var2, var3, var4, var5, var6, var7, var8, var9
     .local pmc var10, var11, var12, var13, var14, var15, var16, var17
@@ -559,17 +560,21 @@ invalid_stem: ## another internal error
     .local pmc rule
     getattribute rule, self, 'rule'
 
-    print "pattern ["
-    print pattern
-    print "] matched with '"
-    print object
-    print "', the stem is '"
-    print stem
-    print "'\n"
+#     print "pattern ["
+#     print pattern
+#     print "] matched with '"
+#     print object
+#     print "', the stem is '"
+#     print stem
+#     print "'\n"
     
     .local pmc cs
     new cs, 'ResizableIntegerArray'
     local_branch cs, update_prerequisites
+
+    '.!setup-automatic-variables'( self, stem )
+    rule.'execute_actions'()
+    '.!clear-automatic-variables'( self )
     
     .return($I0, $I1, $I2)
 
@@ -585,23 +590,20 @@ update_prerequisites:
 update_prerequisites__iterate:
     unless $P1 goto update_prerequisites__iterate_end
     shift $P2, $P1
+    
     $S0 = pattern.'flatten'( $P2, stem )
+    unless $P2 == $S0 goto update_prerequisites_go
+    get_hll_global $P2, ['smart';'makefile';'target'], $S0
     
-#    print "prerequsite: "
-#    say $S0
-    
-    unless $P2 == $S0 goto flatten_ok
+update_prerequisites_go:
     $P2.'update'()
-    goto update_prerequisites__iterate
-    
-flatten_ok:
-    get_hll_global $P3, ['smart';'makefile';'target'], $S0
-    $P3.'update'()
     goto update_prerequisites__iterate
     
 update_prerequisites__iterate_end:
     null prerequisites
     null $P1
+    null $P2
+    null $S0
 update_prerequisites_end:
     local_return cs
 .end
