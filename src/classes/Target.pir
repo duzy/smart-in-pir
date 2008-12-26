@@ -219,148 +219,136 @@ loop_tag_end:
 =item
     Setup automatic variables for updating the target.
 =cut
-.sub ".!setup-automatic-variables" :anon
-    .param pmc target
-    .param pmc stem
-    .local pmc rule, prerequisites
-    getattribute rule, target, "rule"
-
-    prerequisites = rule.'prerequisites'()
-
-#     .local string stem
-#     stem = ""
-#     $P0 = getattribute target, 'stem'
-#     if null $P0 goto no_stem
-#     stem = $P0
-# no_stem:
+.sub "!setup-automatic-variables" :anon
+    .param pmc target # must be a normal-target
     
-    .local pmc var0, var1, var2, var3, var4, var5, var6, var7, var8, var9
-    .local pmc var10, var11, var12, var13, var14, var15, var16, var17
-    .local pmc var18, var19, var20, var21, var22, var23
-    .local pmc value, h
-
-    h = new 'Hash'
+    .local pmc rule
+    getattribute rule, target, "rule"
+    
+    .local pmc prerequisites
+    prerequisites = rule.'prerequisites'()
+    
+    .local pmc var0,    var1,   var2,   var3,   var4,   var5,   var6,   var7
+    .local pmc var8,    var9,   var10,  var11,  var12,  var13,  var14,  var15
+    .local pmc var16,   var17,  var18,  var19,  var20,  var21,  var22,  var23
     
     ## var0 => $@
-    value = new 'String'
-    h["@"] = value
+    new var0, 'String'
     $S0 = target.'object'()
-    value = $S0
-
+    assign var0, $S0
+    
     ## var1 => $%
-    value = new 'String'
-    h["%"] = value
+    new var1, 'String'
     $S0 = target.'member'()
-    value = $S0
+    assign var1, $S0
     
     ## var2 => $<
-    value = new 'String'
-    h["<"] = value
-    $I0 = exists prerequisites[0]
-    unless $I0 goto var2_no_prerequisites
+    new var2, 'String'
+    elements $I0, prerequisites
+    unless 0 < $I0 goto var2_no_prerequisites
     $P1 = prerequisites[0]
-    $S0 = '.!calculate-object-of-prerequisite'( target, $P1 )
-    if $S0 == "" goto var2_done
-    value = $S0
+    $S0 = $P1
+    assign var2, $S0
+    goto var2_done
 var2_no_prerequisites:
 var2_done:
 
     ## var3 => $?
     ## var4 => $^
     ## var5 => $+
-    ## var6 => $|
-    .local pmc array
-    array = new 'ResizablePMCArray'
-    h["?"] = array
-    array = new 'ResizablePMCArray'
-    h["^"] = array
-    array = new 'ResizablePMCArray'
-    h["|"] = array
-    array = new 'ResizablePMCArray'
-    h["+"] = array
-    $P1 = new 'Iterator', prerequisites
-    $S0 = target.'object'() ## $S0 used
+    new var3, 'ResizableStringArray'
+    new var4, 'ResizableStringArray'
+    new var5, 'ResizableStringArray'
+    new $P1, 'Iterator', prerequisites
+    set $S0, var0 ## the target name ($@)
 loop_prerequisites:
-    unless $P1 goto end_loop_prerequisites
-    $P0 = shift $P1       ## $P0, $P1 used
-    $S1 = '.!calculate-object-of-prerequisite'( target, $P0 ) ## $S1 used
-    
-    ## skip empty object, e.g. variable prerequisite will returns empty
+    unless $P1 goto loop_prerequisites_end
+    shift $P0, $P1       ## $P0, $P1 used
+
+    ## The name of prerequisite
+    $S1 = $P0.'object'() ## $S1 used
     if $S1 == "" goto loop_prerequisites
     
-    ## var3 => $?, prerequsites newer than the target
-    array = h["?"]
+    ## var3 => $?, prerequsites newer than the target($@)
     stat $I0, $S0, .STAT_EXISTS # EXISTS
-    unless $I0 goto push_var3 # object not exists
+    unless $I0 goto var3_push   # object not exists
     stat $I0, $S1, .STAT_EXISTS # EXISTS
-    unless $I0 goto end_var3
+    unless $I0 goto var3_end
     stat $I0, $S0, .STAT_CHANGETIME #7 # CHANGETIME
     stat $I1, $S1, .STAT_CHANGETIME #7 # CHANGETIME
     $I0 = $I0 < $I1 # if newer...
-    if $I0 goto push_var3
-    goto end_var3
-push_var3:
-    push array, $S1
-end_var3:
+    if $I0 goto var3_push
+    goto var3_end
+var3_push:
+    push var3, $S1
+var3_end:
     
-    ## var4 => $^
-    array = h["^"]
-    $P2 = new 'Iterator', array
-iterate_var4_items:
-    unless $P2 goto push_var4
-    $P3 = shift $P2
-    $S2 = $P3
-    if $S1 == $S2 goto end_var4
-    goto iterate_var4_items
-push_var4:
-    push array, $S1
-end_var4:
+    ## var4 => $^, all the prerequisites
+    $P2 = new 'Iterator', var4
+var4_iterate_items:
+    unless $P2 goto var4_push
+    shift $S2, $P2
+    if $S1 == $S2 goto var4_end
+    goto var4_iterate_items
+var4_push:
+    push var4, $S1
+var4_end:
     
     ## var5 => $+
-    array = h["+"]
-    push array, $S1
-end_var5:
+    push var5, $S1
+var5_end:
+    
+    goto loop_prerequisites
+loop_prerequisites_end:
+    null $P1
+    null $P2
+
+    .local pmc orderonly
+    orderonly = rule.'orderonly'()
     
     ## var6 => $|
-    array = h["|"] # order-only??
-    push array, $S1
-end_var6:
-    goto loop_prerequisites
-end_loop_prerequisites:
-    
-    array = h["?"]
-    $S0 = join " ", array
-    h["?"] = $S0
-    
-    array = h["^"]
-    $S0 = join " ", array
-    h["^"] = $S0
-    
-    array = h["|"]
-    $S0 = join " ", array
-    h["|"] = $S0
-    
-    array = h["+"]
-    $S0 = join " ", array
-    h["+"] = $S0
+    new var6, 'ResizableStringArray'
+    new $P1, 'Iterator', orderonly
+loop_orderonly:
+    unless $P1 goto loop_orderonly_end
+    shift $P2, $P1
+    push var6, $P2
+    goto loop_orderonly
+loop_orderonly_end:
 
+    ## Reset var3, var4, var5, var6, convert them into String
+    ## var3 => $?
+    $S0 = join " ", var3
+    new var3, 'String'
+    assign var3, $S0
+
+    ## var4 => $^
+    $S0 = join " ", var4
+    new var4, 'String'
+    assign var4, $S0
+
+    ## var5 => $+
+    $S0 = join " ", var5
+    new var5, 'String'
+    assign var5, $S0
+
+    ## var6 => $|
+    $S0 = join " ", var6
+    new var6, 'String'
+    assign var6, $S0
+    
     ## var7 => $* , the stem
-    value = new 'String'
-    h["*"] = value
-    if stem == "" goto var7_got_empty_stem
-    value = stem
-var7_got_empty_stem:
+    new var7, 'String'
+    assign var7, ""
 
-    .MAKEFILE_VARIABLE( var0, "@", h )
-    .MAKEFILE_VARIABLE( var1, "%", h )
-    .MAKEFILE_VARIABLE( var2, "<", h )
-    .MAKEFILE_VARIABLE( var3, "?", h )
-    .MAKEFILE_VARIABLE( var4, "^", h )
-    .MAKEFILE_VARIABLE( var5, "+", h )
-    .MAKEFILE_VARIABLE( var6, "|", h )
-    .MAKEFILE_VARIABLE( var7, "*", h )
-
-    null h
+    var0 = 'new:Variable'( "@", var0, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    var1 = 'new:Variable'( "%", var1, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    var2 = 'new:Variable'( "<", var2, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    var3 = 'new:Variable'( "?", var3, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    var4 = 'new:Variable'( "^", var4, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    var5 = 'new:Variable'( "+", var5, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    var6 = 'new:Variable'( "|", var6, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    var7 = 'new:Variable'( "*", var7, MAKEFILE_VARIABLE_ORIGIN_automatic )
 
     (var8 , var9 ) = "!get<?D?F>"( "@D", "@F", var0 )
     (var10, var11) = "!get<?D?F>"( "%D", "%F", var1 )
@@ -395,16 +383,185 @@ var7_got_empty_stem:
     set_hll_global ['smart';'makefile';'variable'], '|F', var21
     set_hll_global ['smart';'makefile';'variable'], '*D', var22
     set_hll_global ['smart';'makefile';'variable'], '*F', var23
-.end
+.end # sub "!setup-automatic-variables"
+
+.sub "!setup-automatic-variables%" :anon
+    .param pmc target # must be a pattern-target, which the 'object' attribute is Pattern
+    .param pmc object
+    .param pmc stem
+    
+    .local pmc rule
+    getattribute rule, target, "rule"
+    
+    .local pmc prerequisites
+    prerequisites = rule.'prerequisites'()
+    
+    .local pmc pattern
+    getattribute pattern, target, "object"
+
+    .local pmc var0,    var1,   var2,   var3,   var4,   var5,   var6,   var7
+    .local pmc var8,    var9,   var10,  var11,  var12,  var13,  var14,  var15
+    .local pmc var16,   var17,  var18,  var19,  var20,  var21,  var22,  var23
+    
+    ## var0 => $@
+    new var0, 'String'
+    $S0 = pattern.'flatten'( object, stem )
+    assign var0, $S0
+    
+    ## var1 => $%
+    new var1, 'String'
+    $S0 = target.'member'()
+    assign var1, $S0
+    
+    ## var2 => $<
+    new var2, 'String'
+    elements $I0, prerequisites
+    unless 0 < $I0 goto var2_no_prerequisites
+    $P1 = prerequisites[0]
+    $S0 = pattern.'flatten'( $P1, stem )
+    assign var2, $S0
+    goto var2_done
+var2_no_prerequisites:
+var2_done:
+
+    ## var3 => $?
+    ## var4 => $^
+    ## var5 => $+
+    new var3, 'ResizableStringArray'
+    new var4, 'ResizableStringArray'
+    new var5, 'ResizableStringArray'
+    new $P1, 'Iterator', prerequisites
+    set $S0, var0 ## the target name ($@)
+loop_prerequisites:
+    unless $P1 goto loop_prerequisites_end
+    shift $P0, $P1       ## $P0, $P1 used
+
+    ## The name of prerequisite
+    $S1 = pattern.'flatten'( $P0, stem ) ## $S1 used
+    if $S1 == "" goto loop_prerequisites
+    
+    ## var3 => $?, prerequsites newer than the target($@)
+    stat $I0, $S0, .STAT_EXISTS # EXISTS
+    unless $I0 goto var3_push   # object not exists
+    stat $I0, $S1, .STAT_EXISTS # EXISTS
+    unless $I0 goto var3_end
+    stat $I0, $S0, .STAT_CHANGETIME #7 # CHANGETIME
+    stat $I1, $S1, .STAT_CHANGETIME #7 # CHANGETIME
+    $I0 = $I0 < $I1 # if newer...
+    if $I0 goto var3_push
+    goto var3_end
+var3_push:
+    push var3, $S1
+var3_end:
+    
+    ## var4 => $^, all the prerequisites
+    $P2 = new 'Iterator', var4
+var4_iterate_items:
+    unless $P2 goto var4_push
+    shift $S2, $P2
+    if $S1 == $S2 goto var4_end
+    goto var4_iterate_items
+var4_push:
+    push var4, $S1
+var4_end:
+    
+    ## var5 => $+
+    push var5, $S1
+var5_end:
+    
+    goto loop_prerequisites
+loop_prerequisites_end:
+    null $P1
+    null $P2
+
+    .local pmc orderonly
+    orderonly = rule.'orderonly'()
+    
+    ## var6 => $|
+    new var6, 'ResizableStringArray'
+    new $P1, 'Iterator', orderonly
+loop_orderonly:
+    unless $P1 goto loop_orderonly_end
+    shift $P2, $P1
+    push var6, $P2
+    goto loop_orderonly
+loop_orderonly_end:
+
+    ## Reset var3, var4, var5, var6, convert them into String
+    ## var3 => $?
+    $S0 = join " ", var3
+    new var3, 'String'
+    assign var3, $S0
+
+    ## var4 => $^
+    $S0 = join " ", var4
+    new var4, 'String'
+    assign var4, $S0
+
+    ## var5 => $+
+    $S0 = join " ", var5
+    new var5, 'String'
+    assign var5, $S0
+
+    ## var6 => $|
+    $S0 = join " ", var6
+    new var6, 'String'
+    assign var6, $S0
+    
+    ## var7 => $* , the stem
+    new var7, 'String'
+    assign var7, stem
+
+    var0 = 'new:Variable'( "@", var0, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    var1 = 'new:Variable'( "%", var1, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    var2 = 'new:Variable'( "<", var2, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    var3 = 'new:Variable'( "?", var3, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    var4 = 'new:Variable'( "^", var4, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    var5 = 'new:Variable'( "+", var5, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    var6 = 'new:Variable'( "|", var6, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    var7 = 'new:Variable'( "*", var7, MAKEFILE_VARIABLE_ORIGIN_automatic )
+
+    (var8 , var9 ) = "!get<?D?F>"( "@D", "@F", var0 )
+    (var10, var11) = "!get<?D?F>"( "%D", "%F", var1 )
+    (var12, var13) = "!get<?D?F>"( "<D", "<F", var2 )
+    (var14, var15) = "!get<?D?F>"( "?D", "?F", var3 )
+    (var16, var17) = "!get<?D?F>"( "^D", "^F", var4 )
+    (var18, var19) = "!get<?D?F>"( "+D", "+F", var5 )
+    (var20, var21) = "!get<?D?F>"( "|D", "|F", var6 )
+    (var22, var23) = "!get<?D?F>"( "*D", "*F", var7 )
+
+    set_hll_global ['smart';'makefile';'variable'], '@',  var0
+    set_hll_global ['smart';'makefile';'variable'], '%',  var1
+    set_hll_global ['smart';'makefile';'variable'], '<',  var2
+    set_hll_global ['smart';'makefile';'variable'], '?',  var3
+    set_hll_global ['smart';'makefile';'variable'], '^',  var4
+    set_hll_global ['smart';'makefile';'variable'], '+',  var5
+    set_hll_global ['smart';'makefile';'variable'], '|',  var6
+    set_hll_global ['smart';'makefile';'variable'], '*',  var7
+    set_hll_global ['smart';'makefile';'variable'], '@D', var8
+    set_hll_global ['smart';'makefile';'variable'], '@F', var9
+    set_hll_global ['smart';'makefile';'variable'], '%D', var10
+    set_hll_global ['smart';'makefile';'variable'], '%F', var11
+    set_hll_global ['smart';'makefile';'variable'], '<D', var12
+    set_hll_global ['smart';'makefile';'variable'], '<F', var13
+    set_hll_global ['smart';'makefile';'variable'], '?D', var14
+    set_hll_global ['smart';'makefile';'variable'], '?F', var15
+    set_hll_global ['smart';'makefile';'variable'], '^D', var16
+    set_hll_global ['smart';'makefile';'variable'], '^F', var17
+    set_hll_global ['smart';'makefile';'variable'], '+D', var18
+    set_hll_global ['smart';'makefile';'variable'], '+F', var19
+    set_hll_global ['smart';'makefile';'variable'], '|D', var20
+    set_hll_global ['smart';'makefile';'variable'], '|F', var21
+    set_hll_global ['smart';'makefile';'variable'], '*D', var22
+    set_hll_global ['smart';'makefile';'variable'], '*F', var23
+.end # sub "!setup-automatic-variables%"
 
 =item
    Unset all automatic varables.
 =cut
-.sub ".!clear-automatic-variables" :anon
-    .param pmc target
-    .local pmc empty ## null
-    #empty = new 'String'
-    #empty = ''
+.sub "!clear-automatic-variables" :anon
+    .local pmc empty
+    null empty
     set_hll_global ['smart';'makefile';'variable'], '@', empty
     set_hll_global ['smart';'makefile';'variable'], '%', empty
     set_hll_global ['smart';'makefile';'variable'], '<', empty
@@ -431,54 +588,54 @@ var7_got_empty_stem:
     set_hll_global ['smart';'makefile';'variable'], '*F', empty
 .end
 
-=item
-    A prerequisite could be a Target or an implicit prerequisite which
-    is an pattern-string -- contains one "%".
-=cut
-.sub ".!calculate-object-of-prerequisite" :anon
-    .param pmc self
-    .param pmc prerequisite
-    .local string stem
-    $S0 = typeof prerequisite
-    unless $S0 == "String" goto got_normal_prerequisite
-    $S0 = prerequisite
-    $I0 = index $S0, "%"
-    if $I0 < 0 goto invalid_implicit_prerequisite
-    $I1 = $I0 + 1
-    $I2 = index $S0, "%", $I1
-    unless $I2 < 0 goto invalid_implicit_prerequisite
+# =item
+#     A prerequisite could be a Target or an implicit prerequisite which
+#     is an pattern-string -- contains one "%".
+# =cut
+# .sub ".!calculate-object-of-prerequisite" :anon
+#     .param pmc self
+#     .param pmc prerequisite
+#     .local string stem
+#     $S0 = typeof prerequisite
+#     unless $S0 == "String" goto got_normal_prerequisite
+#     $S0 = prerequisite
+#     $I0 = index $S0, "%"
+#     if $I0 < 0 goto invalid_implicit_prerequisite
+#     $I1 = $I0 + 1
+#     $I2 = index $S0, "%", $I1
+#     unless $I2 < 0 goto invalid_implicit_prerequisite
     
-    getattribute $P0, self, 'stem'
-    if null $P0 goto invalid_stem
-    stem = $P0
-    if stem == "" goto invalid_stem
+#     getattribute $P0, self, 'stem'
+#     if null $P0 goto invalid_stem
+#     stem = $P0
+#     if stem == "" goto invalid_stem
     
-    $S1 = substr $S0, 0, $I0
-    $I0 = length $S0
-    $I0 = $I0 - $I1
-    $S2 = substr $S0, $I1, $I0
-    $S1 .= stem
-    $S1 .= $S2
+#     $S1 = substr $S0, 0, $I0
+#     $I0 = length $S0
+#     $I0 = $I0 - $I1
+#     $S2 = substr $S0, $I1, $I0
+#     $S1 .= stem
+#     $S1 .= $S2
     
-    .return ($S1)
+#     .return ($S1)
     
-got_normal_prerequisite:
-    ## as to normal prerequisite, 'prerequisite' muste be a Target
-    $S0 = prerequisite.'object'()
-    .return ($S0)
+# got_normal_prerequisite:
+#     ## as to normal prerequisite, 'prerequisite' muste be a Target
+#     $S0 = prerequisite.'object'()
+#     .return ($S0)
 
-invalid_implicit_prerequisite: ## it's an internal error!
-    $S1 = "smart: ** Expecting a implicit prerequisite '"
-    $S1 .= $S0
-    $S1 .= "'\n"
-    ##print $S1
-    ##exit -1
-    die $S1 ## it's an internal error
+# invalid_implicit_prerequisite: ## it's an internal error!
+#     $S1 = "smart: ** Expecting a implicit prerequisite '"
+#     $S1 .= $S0
+#     $S1 .= "'\n"
+#     ##print $S1
+#     ##exit -1
+#     die $S1 ## it's an internal error
 
-invalid_stem: ## another internal error
-    $S1 = "smart: ** The stem is empty."
-    die $S1 ## it's an internal error!
-.end
+# invalid_stem: ## another internal error
+#     $S1 = "smart: ** The stem is empty."
+#     die $S1 ## it's an internal error!
+# .end
 
 # =item
 # =cut
@@ -522,92 +679,6 @@ invalid_stem: ## another internal error
 # .end # sub ".!update-variable-prerequisite"
 
 
-######################################################################
-
-=item <update(OPT requestor)>
-    Update the target if neccesary.
-
-    The argument 'requestor' is optional, telling some other target which
-    make the update request on the target('self'). If this argument is emitted,
-    we can make the judgement that the target itself is act as a prerequisite
-    of some other target.
-
-    The return value of this method is tuple '(%1, %2, %3)', which the '%1'
-    means how many prerequisites are updated, '%2' tells how many prerequsites
-    are newer than the target, '%3' tells the number of actions executed of the
-    rule binded to the target.
-=cut
-.sub "update" :method # :multi()
-    ($I0, $I1, $I2) = 'update-target'( self, self )
-    .return ($I0, $I1, $I2)
-.end
-
-.sub "update%" :method # :multi(String)
-    .param pmc object
-    
-    .local pmc pattern
-    getattribute pattern, self, "object"
-    if null pattern goto return_nothing
-
-    .local string prefix
-    .local string suffix
-    .local string stem
-    prefix = pattern.'prefix'()
-    suffix = pattern.'suffix'()
-    stem = pattern.'match'( object )
-    if stem == "" goto return_nothing
-
-    .local pmc rule
-    getattribute rule, self, 'rule'
-
-#     print "pattern ["
-#     print pattern
-#     print "] matched with '"
-#     print object
-#     print "', the stem is '"
-#     print stem
-#     print "'\n"
-    
-    .local pmc cs
-    new cs, 'ResizableIntegerArray'
-    local_branch cs, update_prerequisites
-
-    '.!setup-automatic-variables'( self, stem )
-    rule.'execute_actions'()
-    '.!clear-automatic-variables'( self )
-    
-    .return($I0, $I1, $I2)
-
-return_nothing:
-    .return(-1, -1, -1)
-
-    ######################
-    ## local: update_prerequisites
-update_prerequisites:
-    .local pmc prerequisites
-    prerequisites = rule.'prerequisites'()
-    new $P1, 'Iterator', prerequisites 
-update_prerequisites__iterate:
-    unless $P1 goto update_prerequisites__iterate_end
-    shift $P2, $P1
-    
-    $S0 = pattern.'flatten'( $P2, stem )
-    unless $P2 == $S0 goto update_prerequisites_go
-    get_hll_global $P2, ['smart';'makefile';'target'], $S0
-    
-update_prerequisites_go:
-    $P2.'update'()
-    goto update_prerequisites__iterate
-    
-update_prerequisites__iterate_end:
-    null prerequisites
-    null $P1
-    null $P2
-    null $S0
-update_prerequisites_end:
-    local_return cs
-.end
-
 .sub "is_phony" :method
     .local pmc array
     .local string object
@@ -644,6 +715,92 @@ return_result:
     .return($I0)
 .end # .sub "changetime"
 
+######################################################################
+
+=item <update(OPT requestor)>
+    Update the target if neccesary.
+
+    The argument 'requestor' is optional, telling some other target which
+    make the update request on the target('self'). If this argument is emitted,
+    we can make the judgement that the target itself is act as a prerequisite
+    of some other target.
+
+    The return value of this method is tuple '(%1, %2, %3)', which the '%1'
+    means how many prerequisites are updated, '%2' tells how many prerequsites
+    are newer than the target, '%3' tells the number of actions executed of the
+    rule binded to the target.
+=cut
+.sub "update" :method # :multi()
+    ($I0, $I1, $I2) = 'update-target'( self, self )
+    .return ($I0, $I1, $I2)
+.end
+
+.sub "update%" :method # :multi(String)
+    .param pmc object # the file object to be updated
+    
+    .local pmc pattern
+    getattribute pattern, self, "object"
+    if null pattern goto return_nothing
+
+    .local string prefix
+    .local string suffix
+    .local string stem
+    prefix = pattern.'prefix'()
+    suffix = pattern.'suffix'()
+    stem = pattern.'match'( object )
+    if stem == "" goto return_nothing
+
+    .local pmc rule
+    getattribute rule, self, 'rule'
+
+#     print "pattern ["
+#     print pattern
+#     print "] matched with '"
+#     print object
+#     print "', the stem is '"
+#     print stem
+#     print "'\n"
+    
+    .local pmc cs
+    new cs, 'ResizableIntegerArray'
+    local_branch cs, update_prerequisites
+
+    '!setup-automatic-variables%'( self, object, stem )
+    ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
+    '!clear-automatic-variables'()
+    
+    .return($I0, $I1, $I2)
+
+return_nothing:
+    .return(-1, -1, -1)
+
+    ######################
+    ## local: update_prerequisites
+update_prerequisites:
+    .local pmc prerequisites
+    prerequisites = rule.'prerequisites'()
+    new $P1, 'Iterator', prerequisites 
+update_prerequisites__iterate:
+    unless $P1 goto update_prerequisites__iterate_end
+    shift $P2, $P1
+    
+    $S0 = pattern.'flatten'( $P2, stem )
+    unless $P2 == $S0 goto update_prerequisites_go
+    get_hll_global $P2, ['smart';'makefile';'target'], $S0
+    
+update_prerequisites_go:
+    $P2.'update'()
+    goto update_prerequisites__iterate
+    
+update_prerequisites__iterate_end:
+    null prerequisites
+    null $P1
+    null $P2
+    null $S0
+update_prerequisites_end:
+    local_return cs
+.end
+
 .sub "update-target" :anon
     .param pmc target
     .param pmc requestor
@@ -671,8 +828,11 @@ return_result:
     ##update_normal_target:
     if null rule goto check_out_pattern_targets_for_updating
     
-    #(count_updated, count_newer) = rule.'update-prerequsites'( requestor )
     local_branch call_stack, update_prerequisites
+
+    '!setup-automatic-variables'( target )
+    ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
+    '!clear-automatic-variables'()
     
 return_result:
     .return (count_updated, count_newer)
@@ -796,9 +956,9 @@ execute_update_actions:
     goto return_update_results
     
 do_actions_execution:
-    '.!setup-automatic-variables'( target )
+    '!setup-automatic-variables'( target )
     ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
-    '.!clear-automatic-variables'( target )
+    '!clear-automatic-variables'( target )
     
     ## TODO: should check to see if the object existed
     
