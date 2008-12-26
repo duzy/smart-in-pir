@@ -1,0 +1,15 @@
+# -*- cperl -*-
+{
+    my $s = <<"____END_EXPECT";
+ok, bar
+ok, foo
+ok, foobar <- bar foo
+phony: all foobar foo bar tell-phony
+all done
+____END_EXPECT
+    ;
+    pop @result;
+    my $r = join '', @result;
+    $check_result = $r eq $s;
+    print "";
+}
