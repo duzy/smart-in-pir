@@ -1,4 +1,7 @@
 # -*- mode: makefile -*-
+#
+# checker: 02-makefile-variables
+#
 
 say '1..10';
 
@@ -25,16 +28,16 @@ A = $(A B)
 
 EMPTY =
 
-say 'ok CC =', $(CC);
-say 'ok CFLAGS =', ${CFLAGS};
-say 'ok DDD=', ${DDD};
-say 'ok D> =', ${D>};
-say 'ok >F =', $(>F);
-say 'ok D =', ${D};
-say 'ok A B =', $(A B);
-say 'ok A  B =', $(A  B);
-say 'ok A	B =', ${A	B} #{ separates with tab } ;
-say 'ok A = ', $(A);
+say 'check:CC(gcc -I.):', $(CC);
+say 'check:CFLAGS(-g  -ggdb -shared):', ${CFLAGS};
+say 'check:DDD(a b c):', ${DDD};
+say 'check:D>(xxx):', ${D>};
+say 'check:>F(fff):', $(>F);
+say 'check:D(test):', ${D};
+say 'check:A B(pre-space and in-space...):', $(A B);
+say 'check:A  B("variable with in-space is ok"):', $(A  B);
+say 'check:A	B("variable with in-tab is ok"):', ${A	B} #{ separates with tab } ;
+say 'check:A($(A B)):', $(A);
 
 #say $(AAAA); # this should emit a error
 

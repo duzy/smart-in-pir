@@ -1,0 +1,14 @@
+# -*- cperl -*-
+{
+    my $expect = <<'____END_EXPECT';
+1..2
+ok: foobar (no echo)
+echo "ok: foobar, all"
+ok: foobar, all
+smart: Nothing to be done for 'all'.
+____END_EXPECT
+    ;
+    my $result = join '', @result;
+    $check_result = $result eq $expect;
+    print "";
+}

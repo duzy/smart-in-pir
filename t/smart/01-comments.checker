@@ -1,0 +1,16 @@
+# -*- cperl -*-
+{
+    pop @result;
+    my $expect = <<"____END_EXPECT";
+1..5
+ok: Statements after a inline comment
+ok: Statements after a multi-line comment block
+ok: Simple statement.
+ok: Simple statement..
+ok
+____END_EXPECT
+    ;
+    my $result = join '', @result;
+    $check_result = $result eq $expect;
+    print "";
+}

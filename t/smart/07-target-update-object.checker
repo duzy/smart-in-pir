@@ -1,0 +1,28 @@
+# -*- cperl -*-
+{
+    pop @result;
+    my $expect = <<'____END_EXPECT';
+start
+stem
+1..1
+echo "foobar" > a.txt
+ok
+====================
+start
+stem
+====================
+start
+stem
+1..1
+echo "foobar" > a.txt
+ok
+====================
+start
+stem
+====================
+____END_EXPECT
+    ;
+    my $result = join '', @result;
+    $check_result = $result eq $expect;
+    print "";
+}

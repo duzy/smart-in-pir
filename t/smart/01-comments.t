@@ -1,4 +1,7 @@
 # -*- mode: makefile -*-
+# 
+# checker: 01-comments
+# 
 say '1..5';
 
 # this is simple comment to EOL, no more needed to say for this

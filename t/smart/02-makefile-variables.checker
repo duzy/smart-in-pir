@@ -1,0 +1,22 @@
+# -*- cperl -*-
+{
+    pop @result;
+    my $expect = <<"____END_EXPECT";
+1..10
+check:CC(gcc -I.):gcc -I.
+check:CFLAGS(-g  -ggdb -shared):-g  -ggdb -shared
+check:DDD(a b c):a b c
+check:D>(xxx):xxx
+check:>F(fff):fff
+check:D(test):test
+check:A B(pre-space and in-space...):pre-space and in-space...
+check:A  B("variable with in-space is ok"):"variable with in-space is ok"
+check:A	B("variable with in-tab is ok"):"variable with in-tab is ok"
+check:A(\$(A B)):\$(A B)
+____END_EXPECT
+    ;
+    my $result = join '', @result;
+    $check_result = $result eq $expect;
+    print "";
+}
+

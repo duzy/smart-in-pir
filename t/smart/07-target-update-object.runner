@@ -1,0 +1,42 @@
+# -*- cperl -*-
+{
+    $_ = "a.txt";
+    unlink if -f;
+
+    my $runner = $smart . ' -f ' . $file;
+    my @temp = `$runner`;
+    -f "a.txt" or do {
+        @result = ( "FAILED: a.txt not created" );
+        die "file a.txt does generated";
+    };
+    pop @temp;
+    push @result, @temp;
+    push @result, "====================\n";
+
+    @temp = `$runner`;
+    pop @temp;
+    push @result, @temp;
+    push @result, "====================\n";
+
+    system("touch a.txt") == 0 or do {
+        push @result, "ERROR: can't touch a.txt\n";
+        die "can't touch file a.txt";
+    };
+
+    @temp = `$runner`;
+    pop @temp;
+    push @result, @temp;
+    push @result, "====================\n";
+
+    @temp = `$runner`;
+    pop @temp;
+    push @result, @temp;
+    push @result, "====================\n";
+
+    $_ = "a.txt";
+    unlink if -f;
+
+    #print join '', @result;
+
+    print "";
+}

@@ -1,0 +1,20 @@
+# -*- cperl -*-
+{
+    my $expect = <<'____END_EXPECT';
+1..7
+check:expand(item1	item2):item1	item2
+check:expand(item1	item2 item3):item1	item2 item3
+check:expand(item1	item2 item3 item4):item1	item2 item3 item4
+ok $(D).expand = prefix-{item1	item2 item3 item4}-mid-{item1	item2}-suffix
+ok $(E).expand = {[prefix-{item1	item2 item3 item4}-mid-{item1	item2}-suffix]} aa--bb
+check:value($($(N)) item5):$($(N)) item5
+check:expand(item1	item2 item3 item4 item5):item1	item2 item3 item4 item5
+check:(aabb):aabb
+smart: ** unterminated variable reference '${unterminated'. Stop.
+aaa${unterminated
+____END_EXPECT
+    ;
+    my $result = join '', @result;
+    $check_result = $result eq $expect;
+    print "";
+}

@@ -1,6 +1,6 @@
 # -*- mode: makefile -*-
 
-say '1..9';
+say '1..7';
 
 A = item0
 A += item1
