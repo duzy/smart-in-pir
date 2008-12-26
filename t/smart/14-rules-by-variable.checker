@@ -1,0 +1,24 @@
+# -*- cperl -*-
+{
+    my $uname = `uname`;
+    chop $uname;
+    my $s = <<"____END_EXPECT";
+1..9
+ok, target:t/smart/14-rules-by-variable.t, stem:t/smart/14-rules-by-variable
+ok, target:foo.t, stem:foo
+ok, target:tt1.t, stem:tt1
+ok, target:t1.t, stem:t1
+ok, target:t2.t, stem:t2
+ok, target:tt2.t, stem:tt2
+ok, target:bar.t, stem:bar
+ok, target:ttt1.t, stem:ttt1
+ok, target:ttt2.t, stem:ttt2
+ok, foobar, prerequisites:foo.t tt1.t t1.t t2.t tt2.t bar.t ttt1.t ttt2.t
+$uname
+____END_EXPECT
+    ;
+    pop @result;
+    my $r = join '', @result;
+    $check_result = $r eq $s;
+    print "";
+}

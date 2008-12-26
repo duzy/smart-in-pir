@@ -1,4 +1,7 @@
 # -*- mode: Makefile -*-
+#
+# checker: 14-rules-by-variable-2
+# 
 
 FOO = foo
 
@@ -9,16 +12,16 @@ $(FOO): foobar.a
 	@echo ">> $@, $(FOO)"
 
 %.a: %.b
-	@echo "$^ <- $@"
+	@echo "$@ <- $^"
 
 %.b: %.e
-	@echo "$^ <- $@"
+	@echo "$@ <- $^"
 
 %.e: %.d
-	@echo "$^ <- $@"
+	@echo "$@ <- $^"
 
 %.d:
-	@echo "$^ <- $@"
+	@echo "$@ <- $^"
 
 
 FOO += bar
