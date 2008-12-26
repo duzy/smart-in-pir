@@ -295,6 +295,7 @@ iterate_items_end:
     $P1 = mo_targets
     $I1 = ACTION_T
     local_branch call_stack, map_match_object_array
+    local_branch call_stack, setup_number_one_target
     $P1 = mo_prerequsites
     $I1 = ACTION_P
     local_branch call_stack, map_match_object_array
@@ -306,9 +307,8 @@ iterate_items_end:
     local_branch call_stack, map_match_object_array
 
     #'!UPDATE-RULE'( targets, prerequisites, orderonly, actions )
-    
 
-    .return()
+    .return(rule)
 
     ######################
     ##  IN: $P1(the array), $I1(the action address)
@@ -325,6 +325,9 @@ iterate_match_object_array_loop:
     unless it goto iterate_match_object_array_loop_end
     $P2 = shift it
     $S0 = $P2.'text'()
+    
+    if $I1 == ACTION_A goto to_action_pack_action
+    
     items = '~expanded-items'( $S0 )
     new $P3, 'Iterator', items 
 iterate_match_object_array_loop_iterate_items:
@@ -333,7 +336,6 @@ iterate_match_object_array_loop_iterate_items:
     if $I1 == ACTION_T goto to_action_pack_target
     if $I1 == ACTION_P goto to_action_pack_prerequisite
     if $I1 == ACTION_O goto to_action_pack_orderonly
-    if $I1 == ACTION_A goto to_action_pack_action
     goto iterate_match_object_array_loop_iterate_items
 to_action_pack_target:
     local_branch call_stack, action_pack_target
@@ -344,15 +346,18 @@ to_action_pack_prerequisite:
 to_action_pack_orderonly:
     local_branch call_stack, action_pack_orderonly
     goto iterate_match_object_array_loop_iterate_items
-to_action_pack_action:
-    local_branch call_stack, action_pack_action
-    goto iterate_match_object_array_loop_iterate_items
 iterate_match_object_array_loop_iterate_items_end:
     goto iterate_match_object_array_loop
+    
+to_action_pack_action:
+    text = $S0
+    local_branch call_stack, action_pack_action
+    goto iterate_match_object_array_loop
+    
 iterate_match_object_array_loop_end:
 map_match_object_array__done:
     local_return call_stack
-
+    
     ######################
     ##  IN: text(the text value)
 action_pack_target:
@@ -365,15 +370,12 @@ action_pack_target:
     ## then only pattern target could exists in the rule.
     local_branch call_stack, check_and_handle_pattern_target
     if $I0 goto action_pack_target__done ## got and handled pattern
-
+    
     #if implicit goto error_mixed_implicit_and_normal_rule
-
+    
     ## Normal targets are bind directly.
     $P1 = '!BIND-TARGET'( text, 1 )
     setattribute $P1, 'rule', rule
-
-    print "target: "
-    say $P1
     
     push targets, $P1 # push the target
 action_pack_target__done:
@@ -461,18 +463,6 @@ check_and_convert_suffix_target__iterate_suffixes_done:
 check_and_convert_suffix_target__check_suffixes__done:
     local_return call_stack
     
-    ############
-    ##  IN: $S0
-conver_suffix_target_1:
-    local_return call_stack
-    
-    ############
-    ##  IN: $S0, $S1
-conver_suffix_target_2:
-    local_return call_stack
-    
-    
-    
     ######################
     ## local: check_and_handle_pattern_target
     ##          IN: text(the target name)
@@ -528,8 +518,6 @@ error_mixed_implicit_and_normal_rule:
     ######################
     ##  IN: text(the text value)
 action_pack_prerequisite:
-    print "prerequisite: "
-    say text
     if implicit goto action_pack_prerequisite__push_implicit
 action_pack_prerequisite__push:
     $P1 = '!BIND-TARGET'( text, 0 )
@@ -544,8 +532,6 @@ action_pack_prerequisite__done:
     ######################
     ##  IN: text(the text value)
 action_pack_orderonly:
-    print "orderonly: "
-    say text
     $P1 = '!BIND-TARGET'( text, 0 )
     #push $P0, $P1
     push orderonly, $P1
@@ -554,11 +540,28 @@ action_pack_orderonly:
     ######################
     ##  IN: text(the text value)
 action_pack_action:
-    #print "action: "
-    #say text
     $P1 = '!CREATE-ACTION'( text )
     #push $P0, $P1
     push actions, $P1
+    local_return call_stack
+
+    
+    ######################
+    ## local: setup_number_one_target
+setup_number_one_target:
+    ## the first rule should defines the number-one target
+    if implicit goto setup_number_one_target_local_return
+    get_hll_global $P0, ['smart';'makefile'], "$<0>"
+    unless null $P0 goto setup_number_one_target_local_return
+    getattribute $P0, rule, 'targets'
+    exists $I0, $P0[0]
+    unless $I0 goto setup_number_one_target_local_return
+    $P1 = $P0[0]
+    $S0 = $P1.'object'()
+    set_hll_global ['smart';'makefile'], "$<0>", $P1
+    $P1 = 'new:Variable'( ".DEFAULT_GOAL", $S0, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    set_hll_global ['smart';'makefile';'variable'], ".DEFAULT_GOAL", $P1
+setup_number_one_target_local_return:
     local_return call_stack
     
 .end # sub "!MAKE-RULE"
@@ -899,7 +902,7 @@ setup_number_one_target:
     get_hll_global $P0, ['smart';'makefile'], "$<0>"
     unless null $P0 goto setup_number_one_target_local_return
     getattribute $P0, rule, 'targets'
-    $I0 = exists $P0[0]
+    exists $I0, $P0[0]
     unless $I0 goto setup_number_one_target_local_return
     $P1 = $P0[0]
     $S0 = $P1.'object'()

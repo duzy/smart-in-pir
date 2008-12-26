@@ -89,16 +89,17 @@ token make_rule {
          |[ $<targets>=[ [ <make_target> <.ws_inline> ]+ ]
             ':' <.ws_inline> [\\\n <.ws_inline>]?
             [<make_prerequisite><.ws_inline>[\\\n<.ws_inline>]?]*
-            [ '|' <.ws_inline> <order_only_prerequisites> ]?
+            [ '|' <.ws_inline>
+              [<make_prerequisite_oo><.ws_inline>[\\\n<.ws_inline>]?]* ]?
           ]
        ]
        [
-         |[ ';' <.ws_inline> <make_rule_action>
-            [ \n \t <make_rule_action> ]*
+         |[ ';' <.ws_inline> <make_action>
+            [ \n \t <make_action> ]*
           ]
          |[
             [ \n <[ \ ]>* [ [ '#' \N* ] | <.comment_block> ] ]*
-            [ \n \t <make_rule_action> ]*
+            [ \n \t <make_action> ]*
           ]
        ]
      ] {*}
@@ -107,20 +108,22 @@ token make_rule {
 token make_target {
 #     | <make_variable_ref> {*}
 #     | <-[ : \ \t \n ]>+ {*}
-    [<make_variable_ref>|<-[:\ \t\n$]>]+ {*}
+    [<make_variable_ref>|<-[:\ \t\n$]>]+
+#    {*}
 }
 token make_prerequisite {
 #     | <make_variable_ref> {*}
 #     | <-[ ; \ \t \\ \n ]>+ {*}
-    [<make_variable_ref>|<-[;|\ \t\\\n$]>]+ {*}
+    [<make_variable_ref>|<-[;|\ \t\\\n$]>]+
+#    {*}
 }
 #    <?after '|' <.ws_inline> >
-token order_only_prerequisites {
-    [<make_prerequisite><.ws_inline>[\\\n <.ws_inline>]?]*
-    {*}
+token make_prerequisite_oo {
+    [<make_variable_ref>|<-[;|\ \t\\\n$]>]+
 }
-token make_rule_action {
-    [[<!before \\\n><-[\n]>]+ [\\\n]?]* {*}
+token make_action {
+    [[<!before \\\n><-[\n]>]+ [\\\n]?]*
+#    {*}
 }
 token make_special_rule {
     <.ws_inline>
