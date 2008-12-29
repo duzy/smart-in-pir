@@ -1,14 +1,32 @@
 # -*- cperl -*-
 {
-    $_ = "a.txt";
-    unlink if -f;
+    my @files = (
+        "a.txt", "b.txt",
+    );
+    do { unlink if -f } for @files;
 
     my $runner = $smart . ' -f ' . $file;
     my @temp = `$runner`;
-    -f "a.txt" or do {
-        push @result, "FAILED: a.txt not created";
-        die "file a.txt does generated";
+    do {
+        -f or do {
+            push @result, "FAILED: $_ not created";
+            die "file $_ does generated";
+        }
+    } for @files;
+    pop @temp;
+    push @result, @temp;
+    push @result, "====================\n";
+
+    @temp = `$runner`;
+    pop @temp;
+    push @result, @temp;
+    push @result, "====================\n";
+
+    system("rm -f " . join " ", @files ) == 0 or do {
+        push @result, "ERROR: can't rm @files\n";
+        die "can't rm files @files";
     };
+    @temp = `$runner`;
     pop @temp;
     push @result, @temp;
     push @result, "====================\n";
@@ -18,11 +36,10 @@
     push @result, @temp;
     push @result, "====================\n";
 
-    system("touch a.txt") == 0 or do {
-        push @result, "ERROR: can't touch a.txt\n";
-        die "can't touch file a.txt";
+    system("touch b.txt" ) == 0 or do {
+        push @result, "ERROR: can't touch b.txt\n";
+        die "can't touch file b.txt";
     };
-
     @temp = `$runner`;
     pop @temp;
     push @result, @temp;
@@ -32,6 +49,7 @@
     pop @temp;
     push @result, @temp;
     push @result, "====================\n";
+    push @result, "\n";
 
     {
         open F, "<a.txt" or do {
@@ -41,14 +59,10 @@
         @temp = <F>;
         my $str = join '', @temp;
         push @result, "FAILED: a.txt not contains with 'foobar\\n'\n"
-            unless $str eq "foobar\n";
+            unless $str eq "foobar: a.txt <- b.txt\n";
         close F;
     }
 
-    $_ = "a.txt";
-    unlink if -f;
-
-    #print join '', @result;
-
+    do { unlink if -f } for @files;
     print "";
 }

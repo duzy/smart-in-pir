@@ -6,9 +6,13 @@
 
 say "start";
 
-a.txt:
+a.txt: b.txt
 	@echo "1..1"
-	echo "foobar" > $@
+	echo "foobar: $@ <- $^" > $@
+	@echo "ok"
+
+b.txt:
+	echo "foobar: $@" > $@
 	@echo "ok"
 
 say match("aaa%bbb", "aaastembbb");
