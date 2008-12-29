@@ -24,5 +24,14 @@ ____END_EXPECT
     ;
     my $result = join '', @result;
     $check_result = $result eq $expect;
+    do {
+        open F, ">$file.log" or die "$!";
+        print F "==================== expecting ==\n";
+        print F $expect;
+        print F "\n";
+        print F "==================== received ===\n";
+        print F $result;
+        close F;
+    } unless $check_result;
     print "";
 }

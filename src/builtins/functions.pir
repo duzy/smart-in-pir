@@ -392,7 +392,7 @@ glob_a_single_pattern_done:
 
 .sub "origin"
     .param string name
-    get_hll_global $P0, ['smart';'makefile';'variable'], name
+    get_hll_global $P0, ['smart';'make';'variable'], name
     unless null $P0 goto get_origin
     $I0 = MAKEFILE_VARIABLE_ORIGIN_undefined
     goto get_origin_string

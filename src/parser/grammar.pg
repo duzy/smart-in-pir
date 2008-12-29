@@ -143,10 +143,9 @@ token make_special_rule {
     | $<name>=[ '.NOTPARALLEL' ]
     ]
     <.ws_inline>
-    ':'
-    [ <.ws_inline> $<item>=[ <-[ \n \t \ ]>+ ] ]*
-    <.ws_inline>
-    \n {*}
+    ':' [ <.ws_inline> $<item>=[ <-[ \n \t \ ]>+ ] ]* <.ws_inline>
+    [ \n\t[<!before [\\\n|\n]>.]*[\\\n<.ws_inline>]? ]*
+    {*}
 }
 
 rule make_conditional_statement {

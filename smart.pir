@@ -59,7 +59,7 @@ object.
     .param string value
     $I0 = MAKEFILE_VARIABLE_ORIGIN_command_line
     $P0 = 'new:Variable'( name, value, $I0 )
-    set_hll_global ['smart';'makefile';'variable'], name, $P0
+    set_hll_global ['smart';'make';'variable'], name, $P0
 .end # sub "override-variable-on-command-line"
 
 =item <"import-environment-variables"()>
@@ -74,7 +74,7 @@ iterate_env:
     name = shift it
     value = env[name]
     $P0 = 'new:Variable'( name, value, MAKEFILE_VARIABLE_ORIGIN_environment )
-    set_hll_global ['smart';'makefile';'variable'], name, $P0
+    set_hll_global ['smart';'make';'variable'], name, $P0
     goto iterate_env
 iterate_env_end:
 .end # sub "import-environment-variables"
@@ -156,10 +156,10 @@ check_arg_else:
     push new_args, arg
     goto check_arg_end
 check_arg_targets:
-    get_hll_global $P0, ['smart';'makefile'], "@<?>"
+    get_hll_global $P0, ['smart';'make'], "@<?>"
     unless null $P0 goto got_target_list_variable
     $P0 = new 'ResizableStringArray'
-    set_hll_global ['smart';'makefile'], "@<?>", $P0
+    set_hll_global ['smart';'make'], "@<?>", $P0
     got_target_list_variable:
     push $P0, arg
     

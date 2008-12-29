@@ -20,7 +20,7 @@
     .local int existed
     
     existed = 1
-    get_hll_global var, ['smart';'makefile';'variable'], name
+    get_hll_global var, ['smart';'make';'variable'], name
     
     unless null var goto makefile_variable_exists
     existed = 0
@@ -28,7 +28,7 @@
     $I0 = MAKEFILE_VARIABLE_ORIGIN_file
     var = 'new:Variable'( name, $S0, $I0 )
     ## Store new makefile variable as a HLL global symbol
-    set_hll_global ['smart';'makefile';'variable'], name, var
+    set_hll_global ['smart';'make';'variable'], name, var
     
 makefile_variable_exists:
     
@@ -123,7 +123,7 @@ done:
 #     print " => "
     name = 'expand'( name )
 #     say name
-    get_hll_global var, ['smart';'makefile';'variable'], name
+    get_hll_global var, ['smart';'make';'variable'], name
     .return(var)
 .end # sub "!BIND-VARIABLE"
 
@@ -136,16 +136,16 @@ done:
     .local pmc iter
     
     ## the target list from command line arguments
-    get_hll_global targets, ['smart';'makefile'], "@<?>"
+    get_hll_global targets, ['smart';'make'], "@<?>"
     if null targets goto update_number_one_target
     iter = new 'Iterator', targets
 iterate_command_line_targets:
     unless iter goto end_iterate_command_line_targets
     $S0 = shift iter
-    get_hll_global target, ['smart';'makefile';'target'], $S0
+    get_hll_global target, ['smart';'make';'target'], $S0
     unless null target goto got_command_line_target
     target = 'new:Target'( $S0 )
-    set_hll_global ['smart';'makefile';'target'], $S0, target
+    set_hll_global ['smart';'make';'target'], $S0, target
     got_command_line_target:
     $I0 = target.'update'()
     if 0 < $I0 goto command_line_target_update_ok
@@ -169,7 +169,7 @@ end_iterate_command_line_targets:
 update_number_one_target:
     
     ## the number-one target from the Makefile(Smartfile)
-    get_hll_global target, ['smart';'makefile'], "$<0>"
+    get_hll_global target, ['smart';'make'], "$<0>"
     if null target goto no_number_one_target
     
     ($I0, $I1, $I2) = target.'update'()
@@ -446,7 +446,7 @@ check_and_convert_suffix_target__done:
     ##          OUT: $I1
 check_and_convert_suffix_target__check_suffixes:
     .local pmc suffixes
-    get_hll_global suffixes, ['smart';'makefile';'rule'], ".SUFFIXES"
+    get_hll_global suffixes, ['smart';'make';'rule'], ".SUFFIXES"
     if null suffixes goto check_and_convert_suffix_target__check_suffixes__done
     $P0 = new 'Iterator', suffixes
     $I1 = 0
@@ -491,10 +491,10 @@ check_and_handle_pattern_target:
     null $P2
     
 check_and_handle_pattern_target__store_pattern_target:
-    get_hll_global $P2, ['smart';'makefile'], "@<%>"
+    get_hll_global $P2, ['smart';'make'], "@<%>"
     unless null $P2 goto check_and_handle_pattern_target__push_pattern_target
     new $P2, 'ResizablePMCArray'
-    set_hll_global ['smart';'makefile'], "@<%>", $P2
+    set_hll_global ['smart';'make'], "@<%>", $P2
 check_and_handle_pattern_target__push_pattern_target:
     push $P2, $P1
     null $P2
@@ -553,16 +553,16 @@ action_pack_action:
 setup_number_one_target:
     ## the first rule should defines the number-one target
     if implicit goto setup_number_one_target_local_return
-    get_hll_global $P0, ['smart';'makefile'], "$<0>"
+    get_hll_global $P0, ['smart';'make'], "$<0>"
     unless null $P0 goto setup_number_one_target_local_return
     getattribute $P0, rule, 'targets'
     exists $I0, $P0[0]
     unless $I0 goto setup_number_one_target_local_return
     $P1 = $P0[0]
     $S0 = $P1.'object'()
-    set_hll_global ['smart';'makefile'], "$<0>", $P1
+    set_hll_global ['smart';'make'], "$<0>", $P1
     $P1 = 'new:Variable'( ".DEFAULT_GOAL", $S0, MAKEFILE_VARIABLE_ORIGIN_automatic )
-    set_hll_global ['smart';'makefile';'variable'], ".DEFAULT_GOAL", $P1
+    set_hll_global ['smart';'make';'variable'], ".DEFAULT_GOAL", $P1
 setup_number_one_target_local_return:
     local_return call_stack
 
@@ -575,10 +575,10 @@ store_implicit_rule:
     $P0 = 1 ##implicit
     setattribute rule, 'implicit', $P0
     null $P0
-    get_hll_global $P0, ['smart';'makefile'], "@[%]"
+    get_hll_global $P0, ['smart';'make'], "@[%]"
     unless null $P0 goto store_implicit_rule__push
     new $P0, 'ResizablePMCArray'
-    set_hll_global ['smart';'makefile'], "@[%]", $P0
+    set_hll_global ['smart';'make'], "@[%]", $P0
 store_implicit_rule__push:
     ## TODO: think about the ordering of implicit rules, should I use unshift
     ##       instead of push?
@@ -612,7 +612,7 @@ Update the rule by 'match', created one if the rule is not existed.
     implicit = 0    
     
     ## Retreive or create the 'rule' object, identified by 'match'
-    get_hll_global rule, ['smart';'makefile';'rule'], match
+    get_hll_global rule, ['smart';'make';'rule'], match
     unless null rule goto update_prerequsites_and_actions_of_the_rule
     local_branch call_stack, create_new_rule_object
     local_branch call_stack, setup_number_one_target
@@ -700,7 +700,7 @@ store_rule_object:
     if implicit goto store_implicit_rule
     ## only normal rule should be stored as HLL global in "smart;makefile;rule"
     ## or without storing normal rules should be ok
-    set_hll_global ['smart';'makefile';'rule'], match, rule
+    set_hll_global ['smart';'make';'rule'], match, rule
     local_return call_stack
     
 store_implicit_rule:
@@ -709,10 +709,10 @@ store_implicit_rule:
     $P0 = new 'Integer'
     $P0 = 1 ##implicit
     setattribute rule, 'implicit', $P0
-    implicit_rules = get_hll_global ['smart';'makefile'], "@[%]"
+    implicit_rules = get_hll_global ['smart';'make'], "@[%]"
     unless null implicit_rules goto push_implict_rule
     implicit_rules = new 'ResizablePMCArray'
-    set_hll_global ['smart';'makefile'], "@[%]", implicit_rules
+    set_hll_global ['smart';'make'], "@[%]", implicit_rules
     push_implict_rule:
     ## TODO: think about the ordering of implicit rules, should I use unshift
     ##       instead of push?
@@ -770,7 +770,7 @@ convert_suffix_target_if_any__done:
     ##  OUT: $I1
 convert_suffix_target_if_any__check_suffixes:
     .local pmc suffixes
-    get_hll_global suffixes, ['smart';'makefile';'rule'], ".SUFFIXES"
+    get_hll_global suffixes, ['smart';'make';'rule'], ".SUFFIXES"
     if null suffixes goto convert_suffix_target_if_any__check_suffixes__done
     $P0 = new 'Iterator', suffixes
     $I1 = 0
@@ -922,16 +922,16 @@ update_actions_local_return:
 setup_number_one_target:
     ## the first rule should defines the number-one target
     if implicit goto setup_number_one_target_local_return
-    get_hll_global $P0, ['smart';'makefile'], "$<0>"
+    get_hll_global $P0, ['smart';'make'], "$<0>"
     unless null $P0 goto setup_number_one_target_local_return
     getattribute $P0, rule, 'targets'
     exists $I0, $P0[0]
     unless $I0 goto setup_number_one_target_local_return
     $P1 = $P0[0]
     $S0 = $P1.'object'()
-    set_hll_global ['smart';'makefile'], "$<0>", $P1
+    set_hll_global ['smart';'make'], "$<0>", $P1
     $P1 = 'new:Variable'( ".DEFAULT_GOAL", $S0, MAKEFILE_VARIABLE_ORIGIN_automatic )
-    set_hll_global ['smart';'makefile';'variable'], ".DEFAULT_GOAL", $P1
+    set_hll_global ['smart';'make';'variable'], ".DEFAULT_GOAL", $P1
 setup_number_one_target_local_return:
     local_return call_stack
     
@@ -961,11 +961,11 @@ end_iterate_variable_expanded_prerequsites: #############
     ##          IN: target_name
     ##          OUT: target
 obtain_target_by_target_name:
-    get_hll_global target, ['smart';'makefile';'target'], target_name
+    get_hll_global target, ['smart';'make';'target'], target_name
     unless null target goto obtain_target_by_target_name_local_return
     ## convert the makefile variable item into a target
     target = 'new:Target'( target_name )    
-    set_hll_global ['smart';'makefile';'target'], target_name, target
+    set_hll_global ['smart';'make';'target'], target_name, target
 obtain_target_by_target_name_local_return:
     local_return call_stack
 
@@ -1163,10 +1163,10 @@ update_special_NOTPARALLEL:
     ##          IN: $S0(the name of the rule)
 update_special_array_rule:
     .local pmc array
-    get_hll_global array, ['smart';'makefile';'rule'], $S0
+    get_hll_global array, ['smart';'make';'rule'], $S0
     unless null array goto update_special_PHONY__got_phony_array
     array = new 'ResizableStringArray'
-    set_hll_global ['smart';'makefile';'rule'], $S0, array
+    set_hll_global ['smart';'make';'rule'], $S0, array
 update_special_PHONY__got_phony_array:
     $P0 = array
     local_branch call_stack, convert_items_into_array
@@ -1244,7 +1244,7 @@ iterate_items_end:
     .local pmc target
     .local string name
     
-    get_hll_global target, ['smart';'makefile';'target'], name
+    get_hll_global target, ['smart';'make';'target'], name
     if null target goto create_new_makefile_target
     .return (target)
     
@@ -1253,7 +1253,7 @@ create_new_makefile_target:
     
     ## store the new target object
     ## TODO: should escape implicit targets(patterns)?
-    set_hll_global ['smart';'makefile';'target'], name, target
+    set_hll_global ['smart';'make';'target'], name, target
     
     .return(target)
 .end # sub "!BIND-TARGET"

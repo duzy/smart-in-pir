@@ -1,7 +1,7 @@
 #
 #    Copyright 2008-11-04 DuzySoft.com, by Duzy Chan
 #    All rights reserved by Duzy Chan
-#    Email: <duzy@duzy.ws, duzy.chan@gmail.com>
+#    Email: <duzy@duzy.info, duzy.chan@gmail.com>
 #
 #    $Id$
 #
@@ -29,7 +29,7 @@ pattern targets(the match-anything rule is excluded).
     
 return_target:
     .return(target)
-.end
+.end # sub "new:Target"
 
 
 .namespace ['Target']
@@ -55,7 +55,7 @@ return_target:
 got_object:     
     $S0 = $P0
     .return($S0)
-.end
+.end # sub "object"
 
 
 =item <member()>
@@ -70,7 +70,7 @@ got_object:
 got_member:
     $S0 = $P0
     .return($S0)
-.end
+.end # sub "member"
 
 =item
 =cut
@@ -93,76 +93,75 @@ return_only:
 got_updated:
     updated = $P0
     .return(updated)
-.end
+.end # sub "updated"
 
-=item <out_of_date()>
-=cut
-.sub "out_of_date" :method
-    .local pmc rule
-    getattribute rule, self, 'rule'
-    if null rule goto no_rule_found
+# =item <out_of_date()>
+# =cut
+# .sub "out_of_date" :method
+#     .local pmc rule
+#     getattribute rule, self, 'rule'
+#     if null rule goto no_rule_found
     
-    .local int out
-    out = 0
+#     .local int out
+#     out = 0
     
-    $S0 = self.'object'()
-    stat $I0, $S0, .STAT_EXISTS
-    if $I0 goto object_already_exists
+#     $S0 = self.'object'()
+#     stat $I0, $S0, .STAT_EXISTS
+#     if $I0 goto object_already_exists
     
-    goto out_of
+#     goto out_of
     
-object_already_exists:
-    .local int changetime
-    stat changetime, $S0, .STAT_CHANGETIME #7 # CHANGETIME
+# object_already_exists:
+#     .local int changetime
+#     stat changetime, $S0, .STAT_CHANGETIME #7 # CHANGETIME
     
-#     print "time: "
+# #     print "time: "
+# #     print $S0
+# #     print "->"
+# #     say changetime
+
+#     .local pmc prerequisites, prerequisite, iter
+#     prerequisites = rule.'prerequisites'()
+#     iter = new 'Iterator', prerequisites
+# iterate_prerequisites:
+#     unless iter goto end_iterate_prerequisites
+#     prerequisite = shift iter
+#     $S1 = prerequisite.'object'()
+#     stat $I0, $S1, .STAT_EXISTS # EXISTS
+#     unless $I0 goto out_of # prerequisite not exists
+#     stat $I0, $S1, .STAT_CHANGETIME #7 # CHANGETIME
+    
+# #     print "time: "
+# #     print $S1
+# #     print "->"
+# #     say $I0
+    
+#     $I0 = changetime < $I0
+#     if $I0 goto out_of
+#     $I0 = $P0.'out_of_date'()
+#     if $I0 goto out_of
+#     goto iterate_prerequisites
+# out_of:
+#     out = 1
+# end_iterate_prerequisites:
+    
+#     .return (out)
+    
+# no_rule_found:
+#     $S0 = "smart: ** No rule to make target '"
+#     $S1 = self.'object'()
+#     $S0 .= $S1
+#     $S0 .= "', needed by '"
+#     $S0 .= "'. Stop.\n"
 #     print $S0
-#     print "->"
-#     say changetime
+#     exit -1
+# .end # sub "out_of_date"
 
-    .local pmc prerequisites, prerequisite, iter
-    prerequisites = rule.'prerequisites'()
-    iter = new 'Iterator', prerequisites
-iterate_prerequisites:
-    unless iter goto end_iterate_prerequisites
-    prerequisite = shift iter
-    $S1 = prerequisite.'object'()
-    stat $I0, $S1, .STAT_EXISTS # EXISTS
-    unless $I0 goto out_of # prerequisite not exists
-    stat $I0, $S1, .STAT_CHANGETIME #7 # CHANGETIME
-    
-#     print "time: "
-#     print $S1
-#     print "->"
-#     say $I0
-    
-    $I0 = changetime < $I0
-    if $I0 goto out_of
-    $I0 = $P0.'out_of_date'()
-    if $I0 goto out_of
-    goto iterate_prerequisites
-out_of:
-    out = 1
-end_iterate_prerequisites:
-    
-    .return (out)
-    
-no_rule_found:
-    $S0 = "smart: ** No rule to make target '"
-    $S1 = self.'object'()
-    $S0 .= $S1
-    $S0 .= "', needed by '"
-    $S0 .= "'. Stop.\n"
-    print $S0
-    exit -1
-.end
-
-.macro MAKEFILE_VARIABLE( var, name, h )
-    $P1 = h[.name]
-    $S1 = $P1
-    .var = 'new:Variable'( .name, $S1, MAKEFILE_VARIABLE_ORIGIN_automatic )
-.endm
-
+# .macro MAKEFILE_VARIABLE( var, name, h )
+#     $P1 = h[.name]
+#     $S1 = $P1
+#     .var = 'new:Variable'( .name, $S1, MAKEFILE_VARIABLE_ORIGIN_automatic )
+# .endm
 
 =item
     Separate directory and file parts of the object name.
@@ -359,30 +358,30 @@ loop_orderonly_end:
     (var20, var21) = "!get<?D?F>"( "|D", "|F", var6 )
     (var22, var23) = "!get<?D?F>"( "*D", "*F", var7 )
 
-    set_hll_global ['smart';'makefile';'variable'], '@', var0
-    set_hll_global ['smart';'makefile';'variable'], '%', var1
-    set_hll_global ['smart';'makefile';'variable'], '<', var2
-    set_hll_global ['smart';'makefile';'variable'], '?', var3
-    set_hll_global ['smart';'makefile';'variable'], '^', var4
-    set_hll_global ['smart';'makefile';'variable'], '+', var5
-    set_hll_global ['smart';'makefile';'variable'], '|', var6
-    set_hll_global ['smart';'makefile';'variable'], '*', var7
-    set_hll_global ['smart';'makefile';'variable'], '@D', var8
-    set_hll_global ['smart';'makefile';'variable'], '@F', var9
-    set_hll_global ['smart';'makefile';'variable'], '%D', var10
-    set_hll_global ['smart';'makefile';'variable'], '%F', var11
-    set_hll_global ['smart';'makefile';'variable'], '<D', var12
-    set_hll_global ['smart';'makefile';'variable'], '<F', var13
-    set_hll_global ['smart';'makefile';'variable'], '?D', var14
-    set_hll_global ['smart';'makefile';'variable'], '?F', var15
-    set_hll_global ['smart';'makefile';'variable'], '^D', var16
-    set_hll_global ['smart';'makefile';'variable'], '^F', var17
-    set_hll_global ['smart';'makefile';'variable'], '+D', var18
-    set_hll_global ['smart';'makefile';'variable'], '+F', var19
-    set_hll_global ['smart';'makefile';'variable'], '|D', var20
-    set_hll_global ['smart';'makefile';'variable'], '|F', var21
-    set_hll_global ['smart';'makefile';'variable'], '*D', var22
-    set_hll_global ['smart';'makefile';'variable'], '*F', var23
+    set_hll_global ['smart';'make';'variable'], '@', var0
+    set_hll_global ['smart';'make';'variable'], '%', var1
+    set_hll_global ['smart';'make';'variable'], '<', var2
+    set_hll_global ['smart';'make';'variable'], '?', var3
+    set_hll_global ['smart';'make';'variable'], '^', var4
+    set_hll_global ['smart';'make';'variable'], '+', var5
+    set_hll_global ['smart';'make';'variable'], '|', var6
+    set_hll_global ['smart';'make';'variable'], '*', var7
+    set_hll_global ['smart';'make';'variable'], '@D', var8
+    set_hll_global ['smart';'make';'variable'], '@F', var9
+    set_hll_global ['smart';'make';'variable'], '%D', var10
+    set_hll_global ['smart';'make';'variable'], '%F', var11
+    set_hll_global ['smart';'make';'variable'], '<D', var12
+    set_hll_global ['smart';'make';'variable'], '<F', var13
+    set_hll_global ['smart';'make';'variable'], '?D', var14
+    set_hll_global ['smart';'make';'variable'], '?F', var15
+    set_hll_global ['smart';'make';'variable'], '^D', var16
+    set_hll_global ['smart';'make';'variable'], '^F', var17
+    set_hll_global ['smart';'make';'variable'], '+D', var18
+    set_hll_global ['smart';'make';'variable'], '+F', var19
+    set_hll_global ['smart';'make';'variable'], '|D', var20
+    set_hll_global ['smart';'make';'variable'], '|F', var21
+    set_hll_global ['smart';'make';'variable'], '*D', var22
+    set_hll_global ['smart';'make';'variable'], '*F', var23
 .end # sub "!setup-automatic-variables"
 
 .sub "!setup-automatic-variables%" :anon
@@ -530,30 +529,30 @@ loop_orderonly_end:
     (var20, var21) = "!get<?D?F>"( "|D", "|F", var6 )
     (var22, var23) = "!get<?D?F>"( "*D", "*F", var7 )
 
-    set_hll_global ['smart';'makefile';'variable'], '@',  var0
-    set_hll_global ['smart';'makefile';'variable'], '%',  var1
-    set_hll_global ['smart';'makefile';'variable'], '<',  var2
-    set_hll_global ['smart';'makefile';'variable'], '?',  var3
-    set_hll_global ['smart';'makefile';'variable'], '^',  var4
-    set_hll_global ['smart';'makefile';'variable'], '+',  var5
-    set_hll_global ['smart';'makefile';'variable'], '|',  var6
-    set_hll_global ['smart';'makefile';'variable'], '*',  var7
-    set_hll_global ['smart';'makefile';'variable'], '@D', var8
-    set_hll_global ['smart';'makefile';'variable'], '@F', var9
-    set_hll_global ['smart';'makefile';'variable'], '%D', var10
-    set_hll_global ['smart';'makefile';'variable'], '%F', var11
-    set_hll_global ['smart';'makefile';'variable'], '<D', var12
-    set_hll_global ['smart';'makefile';'variable'], '<F', var13
-    set_hll_global ['smart';'makefile';'variable'], '?D', var14
-    set_hll_global ['smart';'makefile';'variable'], '?F', var15
-    set_hll_global ['smart';'makefile';'variable'], '^D', var16
-    set_hll_global ['smart';'makefile';'variable'], '^F', var17
-    set_hll_global ['smart';'makefile';'variable'], '+D', var18
-    set_hll_global ['smart';'makefile';'variable'], '+F', var19
-    set_hll_global ['smart';'makefile';'variable'], '|D', var20
-    set_hll_global ['smart';'makefile';'variable'], '|F', var21
-    set_hll_global ['smart';'makefile';'variable'], '*D', var22
-    set_hll_global ['smart';'makefile';'variable'], '*F', var23
+    set_hll_global ['smart';'make';'variable'], '@',  var0
+    set_hll_global ['smart';'make';'variable'], '%',  var1
+    set_hll_global ['smart';'make';'variable'], '<',  var2
+    set_hll_global ['smart';'make';'variable'], '?',  var3
+    set_hll_global ['smart';'make';'variable'], '^',  var4
+    set_hll_global ['smart';'make';'variable'], '+',  var5
+    set_hll_global ['smart';'make';'variable'], '|',  var6
+    set_hll_global ['smart';'make';'variable'], '*',  var7
+    set_hll_global ['smart';'make';'variable'], '@D', var8
+    set_hll_global ['smart';'make';'variable'], '@F', var9
+    set_hll_global ['smart';'make';'variable'], '%D', var10
+    set_hll_global ['smart';'make';'variable'], '%F', var11
+    set_hll_global ['smart';'make';'variable'], '<D', var12
+    set_hll_global ['smart';'make';'variable'], '<F', var13
+    set_hll_global ['smart';'make';'variable'], '?D', var14
+    set_hll_global ['smart';'make';'variable'], '?F', var15
+    set_hll_global ['smart';'make';'variable'], '^D', var16
+    set_hll_global ['smart';'make';'variable'], '^F', var17
+    set_hll_global ['smart';'make';'variable'], '+D', var18
+    set_hll_global ['smart';'make';'variable'], '+F', var19
+    set_hll_global ['smart';'make';'variable'], '|D', var20
+    set_hll_global ['smart';'make';'variable'], '|F', var21
+    set_hll_global ['smart';'make';'variable'], '*D', var22
+    set_hll_global ['smart';'make';'variable'], '*F', var23
 .end # sub "!setup-automatic-variables%"
 
 =item
@@ -562,30 +561,30 @@ loop_orderonly_end:
 .sub "!clear-automatic-variables" :anon
     .local pmc empty
     null empty
-    set_hll_global ['smart';'makefile';'variable'], '@', empty
-    set_hll_global ['smart';'makefile';'variable'], '%', empty
-    set_hll_global ['smart';'makefile';'variable'], '<', empty
-    set_hll_global ['smart';'makefile';'variable'], '?', empty
-    set_hll_global ['smart';'makefile';'variable'], '^', empty
-    set_hll_global ['smart';'makefile';'variable'], '+', empty
-    set_hll_global ['smart';'makefile';'variable'], '|', empty
-    set_hll_global ['smart';'makefile';'variable'], '*', empty
-    set_hll_global ['smart';'makefile';'variable'], '@D', empty
-    set_hll_global ['smart';'makefile';'variable'], '@F', empty
-    set_hll_global ['smart';'makefile';'variable'], '%D', empty
-    set_hll_global ['smart';'makefile';'variable'], '%F', empty
-    set_hll_global ['smart';'makefile';'variable'], '<D', empty
-    set_hll_global ['smart';'makefile';'variable'], '<F', empty
-    set_hll_global ['smart';'makefile';'variable'], '?D', empty
-    set_hll_global ['smart';'makefile';'variable'], '?F', empty
-    set_hll_global ['smart';'makefile';'variable'], '^D', empty
-    set_hll_global ['smart';'makefile';'variable'], '^F', empty
-    set_hll_global ['smart';'makefile';'variable'], '+D', empty
-    set_hll_global ['smart';'makefile';'variable'], '+F', empty
-    set_hll_global ['smart';'makefile';'variable'], '|D', empty
-    set_hll_global ['smart';'makefile';'variable'], '|F', empty
-    set_hll_global ['smart';'makefile';'variable'], '*D', empty
-    set_hll_global ['smart';'makefile';'variable'], '*F', empty
+    set_hll_global ['smart';'make';'variable'], '@', empty
+    set_hll_global ['smart';'make';'variable'], '%', empty
+    set_hll_global ['smart';'make';'variable'], '<', empty
+    set_hll_global ['smart';'make';'variable'], '?', empty
+    set_hll_global ['smart';'make';'variable'], '^', empty
+    set_hll_global ['smart';'make';'variable'], '+', empty
+    set_hll_global ['smart';'make';'variable'], '|', empty
+    set_hll_global ['smart';'make';'variable'], '*', empty
+    set_hll_global ['smart';'make';'variable'], '@D', empty
+    set_hll_global ['smart';'make';'variable'], '@F', empty
+    set_hll_global ['smart';'make';'variable'], '%D', empty
+    set_hll_global ['smart';'make';'variable'], '%F', empty
+    set_hll_global ['smart';'make';'variable'], '<D', empty
+    set_hll_global ['smart';'make';'variable'], '<F', empty
+    set_hll_global ['smart';'make';'variable'], '?D', empty
+    set_hll_global ['smart';'make';'variable'], '?F', empty
+    set_hll_global ['smart';'make';'variable'], '^D', empty
+    set_hll_global ['smart';'make';'variable'], '^F', empty
+    set_hll_global ['smart';'make';'variable'], '+D', empty
+    set_hll_global ['smart';'make';'variable'], '+F', empty
+    set_hll_global ['smart';'make';'variable'], '|D', empty
+    set_hll_global ['smart';'make';'variable'], '|F', empty
+    set_hll_global ['smart';'make';'variable'], '*D', empty
+    set_hll_global ['smart';'make';'variable'], '*F', empty
 .end
 
 # =item
@@ -659,10 +658,10 @@ loop_orderonly_end:
 # #     print "object: '"
 # #     print object_name
 # #     print "'\n"
-#     get_hll_global object, ['smart';'makefile';'target'], object_name
+#     get_hll_global object, ['smart';'make';'target'], object_name
 #     unless null object goto got_stored_target_object
 #     object = 'new:Target'( object_name )
-#     set_hll_global ['smart';'makefile';'target'], object_name, object
+#     set_hll_global ['smart';'make';'target'], object_name, object
     
 # got_stored_target_object:
 #     ($I0, $I1) = 'update-target'( object, requestor )
@@ -678,14 +677,15 @@ loop_orderonly_end:
 #     .return (update_count, newer_count)
 # .end # sub ".!update-variable-prerequisite"
 
-
+=item <Target::is_phony()>
+=cut
 .sub "is_phony" :method
     .local pmc array
     .local string object
     object = self.'object'()
     $I0 = 0
     
-    get_hll_global array, ['smart';'makefile';'rule'], ".PHONY"
+    get_hll_global array, ['smart';'make';'rule'], ".PHONY"
     if null array goto return_result
     
     $P0 = new 'Iterator', array
@@ -705,6 +705,8 @@ return_result:
 #.sub "touch" :method
 #.end
 
+=item <Target::changetime()>
+=cut
 .sub "changetime" :method
     .local string object
     object = self.'object'()
@@ -763,16 +765,22 @@ return_result:
     
     .local pmc cs
     new cs, 'ResizableIntegerArray'
-    local_branch cs, update_prerequisites
 
+    .local int count_updated
+    .local int count_newer
+    set count_updated, 0
+    set count_newer, 0
+    
+    local_branch cs, update_prerequisites
+    
     '!setup-automatic-variables%'( self, object, stem )
     ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
     '!clear-automatic-variables'()
     
-    .return($I0, $I1, $I2)
-
+    .return(count_updated, count_newer, $I1, 1) ##( u)
+    
 return_nothing:
-    .return(-1, -1, -1)
+    .return(-1, -1, -1, 0)
 
     ######################
     ## local: update_prerequisites
@@ -786,10 +794,12 @@ update_prerequisites__iterate:
     
     $S0 = pattern.'flatten'( $P2, stem )
     unless $P2 == $S0 goto update_prerequisites_go
-    get_hll_global $P2, ['smart';'makefile';'target'], $S0
+    get_hll_global $P2, ['smart';'make';'target'], $S0
     
 update_prerequisites_go:
-    $P2.'update'()
+    ($I1, $I2, $I3) = $P2.'update'()
+    count_updated += $I1
+    count_newer += $I2
     goto update_prerequisites__iterate
     
 update_prerequisites__iterate_end:
@@ -814,8 +824,8 @@ update_prerequisites_end:
     $I0 = target.'updated'()
     if $I0 goto return_result
     
-    .local pmc call_stack
-    new call_stack, 'ResizableIntegerArray'
+    .local pmc cs
+    new cs, 'ResizableIntegerArray'
     
     .local string object
     object = target #.'object'()
@@ -824,43 +834,64 @@ update_prerequisites_end:
     getattribute rule, target, 'rule'
     
     ##unless null rule goto update_normal_target
-    ##local_branch call_stack, check_out_pattern_targets_for_updating
+    ##local_branch cs, check_out_pattern_targets_for_updating
     ##update_normal_target:
     if null rule goto check_out_pattern_targets_for_updating
-    
-    local_branch call_stack, update_prerequisites
 
+    .local int object_changetime
+    object_changetime = target.'changetime'()
+
+    local_branch cs, update_prerequisites
+    if 0 < count_updated goto execute_actions
+
+    $I0 = target.'is_phony'()
+    if $I0 goto execute_actions
+
+    ## If the object of the target not extsted, the target will be updated.
+    if object_changetime == 0 goto execute_actions
+
+    ## If no prerequisites is updated but some of them is newer than the taget,
+    ## the target will be updated.
+    if 0 < count_newer goto execute_actions
+    
+return_without_execution:
+    .return(0, count_newer, 0)
+    
+execute_actions:
     '!setup-automatic-variables'( target )
     ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
     '!clear-automatic-variables'()
     
+    ## TODO: do something if $I0 is not zero!
+    
 return_result:
-    .return (count_updated, count_newer)
+    .return (count_updated, count_newer, $I1)
     
     
     ######################
     ## local: check_out_pattern_targets_for_updating
 check_out_pattern_targets_for_updating:
     .local pmc patterns
-    get_hll_global patterns, ['smart';'makefile'], "@<%>"
+    get_hll_global patterns, ['smart';'make'], "@<%>"
     if null patterns goto check_out_pattern_targets_for_updating__done
     new $P1, 'Iterator', patterns
 check_out_pattern_targets_for_updating__iterate:
     unless $P1 goto check_out_pattern_targets_for_updating__iterate_end
     shift $P2, $P1
-
+    
     ## Skip the match-anything pattern
     if $P2 == "%" goto check_out_pattern_targets_for_updating__iterate
     
-    ($I1, $I2) = $P2.'update%'( object )
-    goto check_out_pattern_targets_for_updating__iterate
+    ($I1, $I2, $I3, $I4) = $P2.'update%'( object )
+    unless $I4 goto check_out_pattern_targets_for_updating__iterate
+    count_updated += $I1
+    count_newer   += $I2
     
 check_out_pattern_targets_for_updating__iterate_end:
     null patterns
     null $P1
     null $P2
 check_out_pattern_targets_for_updating__done:
-    #local_return call_stack
     goto return_result
     
     
@@ -873,15 +904,19 @@ update_prerequisites:
 update_prerequisites__iterate:
     unless $P1 goto update_prerequisites__iterate_end
     shift $P2, $P1
-    $P2.'update'()
+    ($I1, $I2, $I3) = $P2.'update'()
+    unless 0 < $I3 goto update_prerequisites__iterate
+    count_updated += $I1
+    count_newer   += $I2
     goto update_prerequisites__iterate
 update_prerequisites__iterate_end:
     null prerequisites
     null $P1
 update_prerequisites_end:
-    local_return call_stack
+    local_return cs
     
 .end # sub "update-target"
+
 
 .sub "update-target~" :anon
     .param pmc target
@@ -905,8 +940,8 @@ update_prerequisites_end:
     $I0 = target.'updated'()
     if $I0 goto return_without_execution
     
-    .local pmc call_stack
-    call_stack = new 'ResizableIntegerArray'
+    .local pmc cs
+    cs = new 'ResizableIntegerArray'
     
     .local string object
     object = target.'object'()
@@ -915,8 +950,8 @@ update_prerequisites_end:
     .local pmc rule
     getattribute rule, target, 'rule'
     unless null rule goto we_got_the_rule
-    local_branch call_stack, check_out_implicit_rules
-    #local_branch call_stack, check_out_pattern_targets
+    local_branch cs, check_out_implicit_rules
+    #local_branch cs, check_out_pattern_targets
     
 we_got_the_rule:
     
@@ -927,7 +962,7 @@ we_got_the_rule:
     is_phony = target.'is_phony'()
     
     ## this will set 'update_count' and 'newer_count' variables
-    local_branch call_stack, check_and_update_prerequisites
+    local_branch cs, check_and_update_prerequisites
     ## If any prerequsites got updated, the target will be updated.
     if 0 < update_count goto execute_update_actions ## if any prerequisites updated
     
@@ -952,7 +987,7 @@ execute_update_actions:
     unless $I0 == 0 goto do_actions_execution
     if object_changetime   goto return_update_results
     if is_phony         goto return_update_results
-    local_branch call_stack, try_chaining_rules_for_updating
+    local_branch cs, try_chaining_rules_for_updating
     goto return_update_results
     
 do_actions_execution:
@@ -1001,10 +1036,10 @@ iterate_prerequisites:
 handle_with_implicit_prerequsite:
     $S1 = '.!calculate-object-of-prerequisite'( target, prerequisite )
     ## Get stored prerequsite, or create a new one if none existed.
-    get_hll_global prerequisite, ['smart';'makefile';'target'], $S1
+    get_hll_global prerequisite, ['smart';'make';'target'], $S1
     unless null prerequisite goto handle_with_normal_prerequisite
     prerequisite = 'new:Target'( $S1 )
-    set_hll_global ['smart';'makefile';'target'], $S1,  prerequisite
+    set_hll_global ['smart';'make';'target'], $S1,  prerequisite
     
 handle_with_normal_prerequisite: ## normal prerequisite: Target object
     ## Here, The 'prerequsite' is a 'Target' object.
@@ -1015,7 +1050,7 @@ handle_with_normal_prerequisite: ## normal prerequisite: Target object
     
     ## checking recursive...
     unless object == $S1 goto process_the_prerequsite
-    local_branch call_stack, report_droped_recursive_dependency
+    local_branch cs, report_droped_recursive_dependency
     ##TODO: check recursive dependancy here...
     goto iterate_prerequisites
     process_the_prerequsite:
@@ -1051,14 +1086,14 @@ invalid_implicit_prerequisite:
     $S1 .= "'"
     die $S1
 end_iterate_prerequisites:
-    local_return call_stack
+    local_return cs
     
     ######################
     ## local routine: check_out_implicit_rules
     ##          OUT: rule
 check_out_implicit_rules:
     unless null rule goto check_out_implicit_rules_local_return
-    implict_rules = get_hll_global ['smart';'makefile'], "@[%]"
+    implict_rules = get_hll_global ['smart';'make'], "@[%]"
     if null implict_rules goto no_rule_found
     iter = new 'Iterator', implict_rules
 check_out_implicit_rules_iterate:
@@ -1078,7 +1113,7 @@ check_out_implicit_rules_iterate:
 check_out_implicit_rules_iterate_end:
     if null rule goto no_rule_found
 check_out_implicit_rules_local_return:
-    local_return call_stack
+    local_return cs
     
 no_rule_found:
     ## If the object does not exists, it should report "no-rule-error" error.
@@ -1107,7 +1142,7 @@ report_no_rule_error:
     ## local: check_out_pattern_targets
 check_out_pattern_targets:
     .local pmc patterns
-    get_hll_global patterns, ['smart';'makefile'], "@<%>"
+    get_hll_global patterns, ['smart';'make'], "@<%>"
     if null patterns goto check_out_pattern_targets__done
     new $P1, 'Iterator', patterns
 check_out_pattern_targets__iterate:
@@ -1122,7 +1157,7 @@ check_out_pattern_targets__iterate_end:
     null $P1
     null $P2
 check_out_pattern_targets__done:
-    local_return call_stack
+    local_return cs
     
     ##############
     ## local routine: report_droped_recursive_dependency
@@ -1133,13 +1168,13 @@ report_droped_recursive_dependency:
     $S2 .= $S0
     $S2 .= " dependency. Droped.\n"
     print $S2
-    local_return call_stack
+    local_return cs
     
     ##############
     ## local routine: try_chaining_rules_for_updating
 try_chaining_rules_for_updating:
     print "TODO: No actions, should serach intermediate rules\n"
-    local_return call_stack
+    local_return cs
     
 invalid_rule_object:
     $S0 = "smart: *** Invalid rule object"

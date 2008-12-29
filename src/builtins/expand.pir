@@ -258,7 +258,7 @@ expand_variable__done:
     ##          OUT: result(modifying)
 append_result_by_name:
     if name == "$" goto append_result_by_name__escape_SS
-    get_hll_global $P0, ['smart';'makefile';'variable'], name
+    get_hll_global $P0, ['smart';'make';'variable'], name
     unless null $P0 goto append_result_by_name__do_expanding
     local_branch call_stack, report_null_variable
     local_return call_stack
@@ -444,7 +444,7 @@ parse_pattern_substitution:
 #     say $S2
     name = $S0
     inc n ## skip the right paren
-    get_hll_global $P0, ['smart';'makefile';'variable'], name
+    get_hll_global $P0, ['smart';'make';'variable'], name
     if null $P0 goto parse_pattern_substitution____failed____null_var
     $S3 = $P0.'expand'()
     $S3 = 'patsubst'( $S1, $S2, $S3 )
