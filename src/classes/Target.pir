@@ -863,10 +863,40 @@ execute_actions:
     '!clear-automatic-variables'()
     
     ## TODO: do something if $I0 is not zero!
+
+    ## Make the target as updated
+    target.'updated'( 1 )
     
 return_result:
     .return (count_updated, count_newer, $I1)
-    
+
+    ######################
+    ## local: update_prerequisites
+update_prerequisites:
+    .local pmc prerequisites
+    prerequisites = rule.'prerequisites'()
+    new $P1, 'Iterator', prerequisites 
+update_prerequisites__iterate:
+    unless $P1 goto update_prerequisites__iterate_end
+    shift $P2, $P1
+    ## Checking prerequsite-newer...
+    $I0 = $P2.'changetime'()
+#     unless $I0 goto update_prerequisites__invoke_update
+    unless object_changetime < $I0 goto update_prerequisites__invoke_update
+    inc count_newer
+update_prerequisites__invoke_update:
+    #($I1, $I2, $I3) = $P2.'update'()
+    ($I1, $I2, $I3) = 'update-target'( $P2, requestor )
+    unless 0 < $I3 goto update_prerequisites__iterate
+    count_updated += $I1
+    count_newer   += $I2
+    goto update_prerequisites__iterate
+update_prerequisites__iterate_end:
+    null prerequisites
+    null $P1
+update_prerequisites_end:
+    local_return cs
+
     
     ######################
     ## local: check_out_pattern_targets_for_updating
@@ -893,27 +923,6 @@ check_out_pattern_targets_for_updating__iterate_end:
     null $P2
 check_out_pattern_targets_for_updating__done:
     goto return_result
-    
-    
-    ######################
-    ## local: update_prerequisites
-update_prerequisites:
-    .local pmc prerequisites
-    prerequisites = rule.'prerequisites'()
-    new $P1, 'Iterator', prerequisites 
-update_prerequisites__iterate:
-    unless $P1 goto update_prerequisites__iterate_end
-    shift $P2, $P1
-    ($I1, $I2, $I3) = $P2.'update'()
-    unless 0 < $I3 goto update_prerequisites__iterate
-    count_updated += $I1
-    count_newer   += $I2
-    goto update_prerequisites__iterate
-update_prerequisites__iterate_end:
-    null prerequisites
-    null $P1
-update_prerequisites_end:
-    local_return cs
     
 .end # sub "update-target"
 

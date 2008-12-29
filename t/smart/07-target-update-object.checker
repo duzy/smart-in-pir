@@ -26,8 +26,6 @@ stem
 ====================
 start
 stem
-echo "foobar: b.txt" > b.txt
-ok
 1..1
 echo "foobar: a.txt <- b.txt" > a.txt
 ok
