@@ -220,7 +220,7 @@ loop_tag_end:
 .end
 
 
-.sub "!get-prerequisites" :anon
+.sub "!get-prerequisites-of-target" :anon
     .param pmc target
     
     .local pmc prerequisites, orderonly
@@ -262,7 +262,7 @@ collect_prerequisites_of_rules__iterate_orderonly_end:
 collect_prerequisites_of_rules__iterate_end:
 collect_prerequisites_of_rules_done:
     .return(prerequisites, orderonly)
-.end # sub "!get-prerequisites"
+.end # sub "!get-prerequisites-of-target"
 
 =item
     Setup automatic variables for updating the target.
@@ -271,7 +271,7 @@ collect_prerequisites_of_rules_done:
     .param pmc target # must be a normal-target
     
     .local pmc prerequisites, orderonly
-    (prerequisites, orderonly) = '!get-prerequisites'( target )
+    (prerequisites, orderonly) = '!get-prerequisites-of-target'( target )
     
     .local pmc var0,    var1,   var2,   var3,   var4,   var5,   var6,   var7
     .local pmc var8,    var9,   var10,  var11,  var12,  var13,  var14,  var15
@@ -433,7 +433,7 @@ loop_orderonly_end:
     .param pmc stem
     
     .local pmc prerequisites, orderonly
-    (prerequisites, orderonly) = '!get-prerequisites'( target )
+    (prerequisites, orderonly) = '!get-prerequisites-of-target'( target )
     
     .local pmc pattern
     getattribute pattern, target, "object"

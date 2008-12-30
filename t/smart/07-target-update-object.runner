@@ -36,7 +36,7 @@
     push @result, @temp;
     push @result, "====================\n";
 
-    system("touch b.txt" ) == 0 or do {
+    system("touch b.txt; sleep 1" ) == 0 or do {
         push @result, "ERROR: can't touch b.txt\n";
         die "can't touch file b.txt";
     };
