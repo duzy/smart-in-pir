@@ -876,12 +876,6 @@ update_prerequisites_end:
     .local string object
     object = target #.'object'()
     
-#     .local pmc rule
-#     getattribute rule, target, 'rule'
-#     ##unless null rule goto update_normal_target
-#     ##local_branch cs, check_out_pattern_targets_for_updating
-#     ##update_normal_target:
-#     if null rule goto check_out_pattern_targets_for_updating
     .local pmc rules, rule
     getattribute rules, target, 'rules'
     elements $I0, rules
@@ -890,8 +884,10 @@ update_prerequisites_end:
     .local int object_changetime
     object_changetime = target.'changetime'()
 
-    #local_branch cs, update_prerequisites
+    .local pmc rule_it
     local_branch cs, update_prerequisites_of_rules
+    local_branch cs, update_oo_prerequisites_of_rules
+    
     if 0 < count_updated goto execute_actions
 
     $I0 = target.'is_phony'()
@@ -923,7 +919,6 @@ return_result:
     ######################
     ## local: update_prerequisites_of_rules
 update_prerequisites_of_rules:
-    .local pmc rule_it
     new rule_it, 'Iterator', rules
 update_prerequisites_of_rules__iterate:
     unless rule_it goto update_prerequisites_of_rules__iterate_end
@@ -951,7 +946,6 @@ update_prerequisites__iterate:
     unless object_changetime < $I0 goto update_prerequisites__invoke_update
     inc count_newer
 update_prerequisites__invoke_update:
-    #($I1, $I2, $I3) = $P2.'update'()
     ($I1, $I2, $I3) = 'update-target'( $P2, requestor )
     unless 0 < $I3 goto update_prerequisites__iterate
     count_updated += $I1
@@ -961,6 +955,43 @@ update_prerequisites__iterate_end:
     null prerequisites
     null $P1
 update_prerequisites_end:
+    local_return cs
+
+
+    ######################
+    ## local: update_oo_prerequisites_of_rules
+update_oo_prerequisites_of_rules:
+    .local pmc oo_rule
+    new rule_it, 'Iterator', rules
+update_oo_prerequisites_of_rules_iterate:
+    unless rule_it goto update_oo_prerequisites_of_rules_iterate_end
+    shift oo_rule, rule_it
+    local_branch cs, update_oo_prerequisites
+    goto update_oo_prerequisites_of_rules_iterate
+update_oo_prerequisites_of_rules_iterate_end:
+    null oo_rule
+    null rule_it
+update_oo_prerequisites_of_rules__done:
+    local_return cs
+
+
+    ######################
+    ## local: update_oo_prerequisites
+update_oo_prerequisites:
+    .local pmc oo_prerequisites, oo
+    oo_prerequisites = oo_rule.'orderonly'()
+    new oo, 'Iterator', oo_prerequisites 
+update_oo_prerequisites_iterate:
+    unless oo goto update_oo_prerequisites_iterate_end
+    shift $P1, oo
+    ## order-only prerequisite will not affect count_updated and count_newer
+    #($I1, $I2, $I3) = 'update-target'( $P1, requestor )
+    'update-target'( $P1, requestor )
+    goto update_oo_prerequisites_iterate
+update_oo_prerequisites_iterate_end:
+    null oo_prerequisites
+    null oo
+update_oo_prerequisites__done:
     local_return cs
     
     
