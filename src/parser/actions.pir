@@ -1,7 +1,7 @@
 #
 #    Copyright 2008-10-27 DuzySoft.com, by Duzy Chan
 #    All rights reserved by Duzy Chan
-#    Email: <duzy@duzy.ws, duzy.chan@gmail.com>
+#    Email: <duzy@duzy.info, duzy.chan@gmail.com>
 #
 #    $Id$
 #
@@ -517,21 +517,33 @@ error_mixed_implicit_and_normal_rule:
     $S0 .= "\n"
     printerr $S0
     exit EXIT_ERROR_MIXED_RULE
+
     
     ######################
     ##  IN: text(the text value)
 action_pack_prerequisite:
     if implicit goto action_pack_prerequisite__push_implicit
+
+    ## Firstly, check to see if wildcard, and handle it if yes
+    local_branch call_stack, check_wildcard_prerequsite
+    if $I0 goto action_pack_prerequisite__done
+
 action_pack_prerequisite__push:
+    ## Than dealing with the normal prerequisite
     $P1 = '!BIND-TARGET'( text, 0 )
     push prerequisites, $P1
     goto action_pack_prerequisite__done
+    
 action_pack_prerequisite__push_implicit:
+    ## Handle with the implicit target
+    ## TODO: ???
     $P1 = '!BIND-TARGET'( text, 0 )
     push prerequisites, $P1
+    
 action_pack_prerequisite__done:
     local_return call_stack
 
+    
     ######################
     ##  IN: text(the text value)
 action_pack_orderonly:
@@ -539,6 +551,7 @@ action_pack_orderonly:
     push orderonly, $P1
     local_return call_stack
 
+    
     ######################
     ##  IN: text(the text value)
 action_pack_action:
@@ -582,6 +595,48 @@ store_implicit_rule__push:
     push $P0, rule
     null $P0
 store_implicit_rule__done:
+    local_return call_stack
+
+
+    ######################
+    ## local: check_wildcard_prerequsite
+    ##          IN: text
+    ##          OUT: $I0 (1/0, 1 indicates that's a wildcard)
+check_wildcard_prerequsite:
+    $I0 = 0
+check_wildcard_prerequsite__case1:
+    index $I1, text, "*"
+    if $I1 < 0 goto check_wildcard_prerequsite__case2
+    goto check_wildcard_prerequsite__done_yes
+check_wildcard_prerequsite__case2:
+    index $I1, text, "?"
+    if $I1 < 0 goto check_wildcard_prerequsite__case3
+    goto check_wildcard_prerequsite__done_yes
+check_wildcard_prerequsite__case3:
+    index $I1, text, "["
+    if $I1 < 0 goto check_wildcard_prerequsite__case4
+    index $I2, text, "]", $I1
+    if $I2 < 0 goto check_wildcard_prerequsite__case4
+    goto check_wildcard_prerequsite__done_yes
+check_wildcard_prerequsite__case4:
+    ## more other case?
+    goto check_wildcard_prerequsite__done
+    
+check_wildcard_prerequsite__done_yes:
+    $P1 = '~wildcard'( text )
+    new $P2, 'Iterator', $P1
+check_wildcard_prerequsite__done_yes__iterate_items:
+    unless $P2 goto check_wildcard_prerequsite__done_yes__iterate_items__end
+    shift $S1, $P2
+#     print "wildcard: "
+#     say $S1
+    $P1 = '!BIND-TARGET'( $S1, 0 )
+    push prerequisites, $P1
+    goto check_wildcard_prerequsite__done_yes__iterate_items
+check_wildcard_prerequsite__done_yes__iterate_items__end:
+    null $P1
+    $I0 = 1
+check_wildcard_prerequsite__done:
     local_return call_stack
     
 .end # sub "!MAKE-RULE"

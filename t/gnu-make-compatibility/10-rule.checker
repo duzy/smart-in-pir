@@ -45,8 +45,8 @@ __END_EXPECT
                 $b = join " ", sort split " ", $2;
                 do {
                     print "\n";
-                    print "expecting: '$b'\n";
-                    print "result   : '$a'\n";
+                    print "  expecting: '$b'\n";
+                    print "  result   : '$a'\n";
                     goto out_fail;
                 } unless $a eq $b;
             }
