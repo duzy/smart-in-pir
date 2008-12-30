@@ -15,7 +15,7 @@ The '@[%]' variable holds the list of implicit rules.
 
 .namespace []
 .sub "new:Rule"
-    .param pmc match
+    #.param pmc match
     .param pmc targets          :optional
     .param pmc prerequisites    :optional
     .param pmc orderonly        :optional
@@ -34,7 +34,7 @@ has_prerequisites:
     orderonly = new 'ResizablePMCArray'
 has_orderonly:
     
-    setattribute rule, 'match', match
+    #setattribute rule, 'match', match
     setattribute rule, 'targets', targets
     setattribute rule, 'prerequisites', prerequisites
     setattribute rule, 'order-only', orderonly
@@ -45,7 +45,7 @@ has_orderonly:
 .namespace ['Rule']
 .sub "__init_class" :anon :init :load
     newclass $P0, 'Rule'
-    addattribute $P0, 'match'
+    #addattribute $P0, 'match'
     addattribute $P0, 'targets' ## if implicit, it's patterns
     addattribute $P0, 'prerequisites'
     addattribute $P0, 'order-only' ## order-only prerequisites
@@ -54,18 +54,18 @@ has_orderonly:
 .end
 
 
-=item <rule()>
-    Returns the match string.
-=cut
-.sub "match" :method
-    getattribute $P0, self, 'match'
-    unless null $P0 goto got_rule
-    $P0 = new 'String'
-    $P0 = '<uninit>'
-    setattribute self, 'match', $P0
-got_rule:
-    .return ($P0)
-.end
+# =item <rule()>
+#     Returns the match string.
+# =cut
+# .sub "match" :method
+#     getattribute $P0, self, 'match'
+#     unless null $P0 goto got_rule
+#     $P0 = new 'String'
+#     $P0 = '<uninit>'
+#     setattribute self, 'match', $P0
+# got_rule:
+#     .return ($P0)
+# .end
 
 
 =item <match_pattern(IN target)>

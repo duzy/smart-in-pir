@@ -118,18 +118,19 @@ method make_rule($/) {
         make PAST::Op.new( :inline('print "TODO: (actions.pm)static pattern rule\n"') );
     }
     else {
-        my $match := strip( ~$<targets> );
+        #my $match := strip( ~$<targets> );
         my @targets             := $<make_target>;
         my @prerequisites       := $<make_prerequisite>;
         my @orderonly           := $<make_prerequisite_oo>;
         my @actions             := $<make_action>;
         my @targets;
-        PIR q< find_lex $P0, "$match" >;
+        #PIR q< find_lex $P0, "$match" >;
         PIR q< find_lex $P1, "@targets" >;
         PIR q< find_lex $P2, "@prerequisites" >;
         PIR q< find_lex $P3, "@orderonly" >;
         PIR q< find_lex $P4, "@actions" >;
-        PIR q< '!MAKE-RULE'( $P0, $P1, $P2, $P3, $P4 ) >;
+        #PIR q< '!MAKE-RULE'( $P0, $P1, $P2, $P3, $P4 ) >;
+        PIR q< '!MAKE-RULE'( $P1, $P2, $P3, $P4 ) >;
         make PAST::Op.new( :pirop('noop') );
     }
 }

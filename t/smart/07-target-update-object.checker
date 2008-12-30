@@ -37,6 +37,8 @@ ____END_EXPECT
     ;
     my $result = join '', @result;
     $check_result = $result eq $expect;
+    $_ = "$file.log";
+    unlink if -f;
     do {
         open F, ">$file.log" or die "$!";
         print F "==================== expecting ==\n";

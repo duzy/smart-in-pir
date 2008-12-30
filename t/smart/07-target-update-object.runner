@@ -1,8 +1,6 @@
 # -*- cperl -*-
 {
-    my @files = (
-        "a.txt", "b.txt",
-    );
+    my @files = ( "a.txt", "b.txt", );
     do { unlink if -f } for @files;
 
     my $runner = $smart . ' -f ' . $file;
@@ -36,7 +34,7 @@
     push @result, @temp;
     push @result, "====================\n";
 
-    system("touch b.txt; sleep 1" ) == 0 or do {
+    system("sleep 2; touch b.txt;" ) == 0 or do {
         push @result, "ERROR: can't touch b.txt\n";
         die "can't touch file b.txt";
     };

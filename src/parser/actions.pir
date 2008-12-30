@@ -256,7 +256,7 @@ iterate_items_end:
 
 
 .sub "!MAKE-RULE"
-    .param string match
+    #.param string match
     .param pmc mo_targets
     .param pmc mo_prerequsites
     .param pmc mo_orderonly
@@ -271,7 +271,7 @@ iterate_items_end:
     new call_stack, 'ResizableIntegerArray'
 
     .local pmc rule
-    rule = 'new:Rule'( match )
+    rule = 'new:Rule'()
     
     #.local pmc targets
     .local pmc prerequisites
@@ -293,22 +293,22 @@ iterate_items_end:
 
     .local string text ## used as a temporary of mo.'text'()
     .local pmc items ## splitted from text
+    .local pmc moa
+    .local int at
 
-    $P1 = mo_targets
-    $I1 = ACTION_T
+    moa = mo_targets
+    at = ACTION_T
     local_branch call_stack, map_match_object_array
     local_branch call_stack, setup_number_one_target
-    $P1 = mo_prerequsites
-    $I1 = ACTION_P
+    moa = mo_prerequsites
+    at = ACTION_P
     local_branch call_stack, map_match_object_array
-    $P1 = mo_orderonly
-    $I1 = ACTION_O
+    moa = mo_orderonly
+    at = ACTION_O
     local_branch call_stack, map_match_object_array
-    $P1 = mo_actions
-    $I1 = ACTION_A
+    moa = mo_actions
+    at = ACTION_A
     local_branch call_stack, map_match_object_array
-
-    #'!UPDATE-RULE'( targets, prerequisites, orderonly, actions )
 
     local_branch call_stack, store_implicit_rule
 
@@ -319,27 +319,27 @@ iterate_items_end:
     ##  OUT: $P0
 map_match_object_array:
     null $P0
-    if null $P1 goto map_match_object_array__done
-    typeof $S0, $P1
+    if null moa goto map_match_object_array__done
+    typeof $S0, moa
     if $S0 == "Undef" goto map_match_object_array__done
     .local pmc it
     #new $P0, 'ResizablePMCArray'
-    new it, 'Iterator', $P1
+    new it, 'Iterator', moa
 iterate_match_object_array_loop:
     unless it goto iterate_match_object_array_loop_end
     $P2 = shift it
     $S0 = $P2.'text'()
-    
-    if $I1 == ACTION_A goto to_action_pack_action
+
+    if at == ACTION_A goto to_action_pack_action
     
     items = '~expanded-items'( $S0 )
     new $P3, 'Iterator', items 
 iterate_match_object_array_loop_iterate_items:
     unless $P3 goto iterate_match_object_array_loop_iterate_items_end
     text = shift $P3
-    if $I1 == ACTION_T goto to_action_pack_target
-    if $I1 == ACTION_P goto to_action_pack_prerequisite
-    if $I1 == ACTION_O goto to_action_pack_orderonly
+    if at == ACTION_T goto to_action_pack_target
+    if at == ACTION_P goto to_action_pack_prerequisite
+    if at == ACTION_O goto to_action_pack_orderonly
     goto iterate_match_object_array_loop_iterate_items
 to_action_pack_target:
     local_branch call_stack, action_pack_target
@@ -381,7 +381,7 @@ action_pack_target:
     $P1 = '!BIND-TARGET'( text, 1 )
     getattribute $P2, $P1, 'rules'
     push $P2, rule
-    
+
     #push targets, $P1 # push the target
     unless null numberOneTarget goto action_pack_target__done
     set numberOneTarget, $P1
@@ -483,16 +483,9 @@ check_and_handle_pattern_target:
     index $I2, text, "%", $I2
     unless $I2 < 0 goto check_and_handle_pattern_target__validate_non_mixed
     
-#    print "pattern: "
-#    say text
-    
     $P1 = 'new:Target'( text )
-    #new $P2, 'Integer'
-    #assign $P2, 1
     $P2 = 'new:Pattern'( text )
-    #setattribute $P1, '%', $P2
     setattribute $P1, 'object', $P2
-    #setattribute $P1, 'rule', rule
     getattribute $P10, $P1, 'rules'
     push $P10, rule
     null $P2
@@ -520,7 +513,7 @@ check_and_handle_pattern_target__done:
     
 error_mixed_implicit_and_normal_rule:
     $S0 = "smart: *** Mixed implicit and normal rules: "
-    $S0 .= match
+    #$S0 .= match
     $S0 .= "\n"
     printerr $S0
     exit EXIT_ERROR_MIXED_RULE
@@ -543,7 +536,6 @@ action_pack_prerequisite__done:
     ##  IN: text(the text value)
 action_pack_orderonly:
     $P1 = '!BIND-TARGET'( text, 0 )
-    #push $P0, $P1
     push orderonly, $P1
     local_return call_stack
 
@@ -551,7 +543,6 @@ action_pack_orderonly:
     ##  IN: text(the text value)
 action_pack_action:
     $P1 = '!CREATE-ACTION'( text )
-    #push $P0, $P1
     push actions, $P1
     local_return call_stack
 
@@ -564,14 +555,9 @@ setup_number_one_target:
     get_hll_global $P0, ['smart';'make'], "$<0>"
     unless null $P0 goto setup_number_one_target_local_return
     getattribute $P0, rule, 'targets'
-#     exists $I0, $P0[0]
-#     unless $I0 goto setup_number_one_target_local_return
-#     $P1 = $P0[0]
-#     $S0 = $P1.'object'()
     if null numberOneTarget goto setup_number_one_target_local_return
-    $P1 = numberOneTarget
     $S0 = numberOneTarget.'object'()
-    set_hll_global ['smart';'make'], "$<0>", $P1
+    set_hll_global ['smart';'make'], "$<0>", numberOneTarget
     $P1 = 'new:Variable'( ".DEFAULT_GOAL", $S0, MAKEFILE_VARIABLE_ORIGIN_automatic )
     set_hll_global ['smart';'make';'variable'], ".DEFAULT_GOAL", $P1
 setup_number_one_target_local_return:

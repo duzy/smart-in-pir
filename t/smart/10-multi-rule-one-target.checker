@@ -1,19 +1,31 @@
 # -*- cperl -*-
 {
     my $s = <<"____END_EXPECT";
+ok, a
+ok, b
+ok, c
 ok, e, command 1
 ok, e, command 2
 ok, d <- e, command 1
 ok, d <- e, command 2
 foobar, invoked by foo
-ok, a
-ok, b
-ok, c
-foo <- d a b c | bar
+todo: think about the the order of invocation of rules
+foo <- a b c d | bar
 ____END_EXPECT
     ;
     pop @result;
     my $r = join '', @result;
     $check_result = $r eq $s;
+    $_ = "$file.log";
+    unlink if -f;
+    do {
+        open F, ">$file.log" or die "$!";
+        print F "==================== expecting ==\n";
+        print F $s;
+        print F "\n";
+        print F "==================== received ===\n";
+        print F $r;
+        close F;
+    } unless $check_result;
     print "";
 }
