@@ -131,9 +131,10 @@ got_bad_pattern:
     $S0 = self.'match'()
     $S1 .= $S0
     $S1 .= "'. Stop.\n"
-    #print $S1
-    #exit -1
-    die $S1
+    #die $S1
+    printerr $S1
+    exit EXIT_ERROR_BAD_PATTERN
+    
 end_iterate_patterns:
     
 end_matching:

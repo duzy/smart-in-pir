@@ -774,11 +774,12 @@ return_result:
     .return ($I0, $I1, $I2)
 .end
 
-.sub "update%" :method # :multi(String)
+.sub "update-target-%"
+    .param pmc target
     .param pmc object # the file object to be updated
     
     .local pmc pattern
-    getattribute pattern, self, "object"
+    getattribute pattern, target, "object"
     if null pattern goto return_nothing
 
     .local string prefix
@@ -798,11 +799,11 @@ return_result:
     set count_newer, 0
     
     .local pmc rule
-    #getattribute rule, self, 'rule'
+    #getattribute rule, target, 'rule'
     #local_branch cs, update_prerequisites
     local_branch cs, update_prerequisites_of_rules
     
-    '!setup-automatic-variables%'( self, object, stem )
+    '!setup-automatic-variables%'( target, object, stem )
     ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
     '!clear-automatic-variables'()
     
@@ -815,7 +816,7 @@ return_nothing:
     ## local: update_prerequisites_of_rules
 update_prerequisites_of_rules:
     .local pmc rules, rule_it
-    getattribute rules, self, 'rules'
+    getattribute rules, target, 'rules'
     new rule_it, 'Iterator', rules
 update_prerequisites_of_rules__iterate:
     unless rule_it goto update_prerequisites_of_rules__iterate_end
@@ -855,7 +856,7 @@ update_prerequisites__iterate_end:
     null $S0
 update_prerequisites_end:
     local_return cs
-.end
+.end # sub "update-target-%"
 
 .sub "update-target" :anon
     .param pmc target
@@ -998,26 +999,42 @@ update_oo_prerequisites__done:
     ## local: check_out_pattern_targets_for_updating
 check_out_pattern_targets_for_updating:
     .local pmc patterns
+    .local pmc anything
     get_hll_global patterns, ['smart';'make'], "@<%>"
-    if null patterns goto check_out_pattern_targets_for_updating__done
+    if null patterns goto check_out_pattern_targets_for_updating__iterate_end
     new $P1, 'Iterator', patterns
 check_out_pattern_targets_for_updating__iterate:
     unless $P1 goto check_out_pattern_targets_for_updating__iterate_end
     shift $P2, $P1
     
-    ## Skip the match-anything pattern
-    if $P2 == "%" goto check_out_pattern_targets_for_updating__iterate
-    
-    ($I1, $I2, $I3, $I4) = $P2.'update%'( object )
+    ($I1, $I2, $I3, $I4) = 'update-target-%'( $P2, object )
     unless $I4 goto check_out_pattern_targets_for_updating__iterate
     count_updated += $I1
     count_newer   += $I2
-    
+    goto check_out_pattern_targets_for_updating__done
+
 check_out_pattern_targets_for_updating__iterate_end:
+    ## Here, we got not matched pattern, try match-anything
+    get_hll_global $P1, ['smart';'make'], "$<%>"
+    if null $P1 goto check_out_pattern_targets_for_updating__failed
+    
+    ($I1, $I2, $I3, $I4) = 'update-target-%'( $P1, object )
+    unless $I4 goto check_out_pattern_targets_for_updating__done
+    count_updated += $I1
+    count_newer   += $I2
+    goto check_out_pattern_targets_for_updating__done
+
+check_out_pattern_targets_for_updating__failed:
+    $S0 = "smart: *** No rule to make target '"
+    $S0 .= object
+    $S0 .= "'. Stop.\n"
+    printerr $S0
+    exit EXIT_ERROR_NO_RULE
+    
+check_out_pattern_targets_for_updating__done:
     null patterns
     null $P1
     null $P2
-check_out_pattern_targets_for_updating__done:
     goto return_result
     
 .end # sub "update-target"

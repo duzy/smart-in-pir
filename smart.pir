@@ -120,7 +120,7 @@ Usage:
     
 END_USAGE
     say $S0
-    exit -1
+    exit EXIT_OK
     goto check_arg_end
 check_arg_2:
     $I0 = index arg, "="
@@ -172,20 +172,22 @@ check_arg_end:
     
 check_arg_0_bad:
     $S0 = "smart: No argument for '-f', it requires one argument.\n"
-    print $S0
-    exit -1
+    printerr $S0
+    exit EXIT_ERROR_BAD_ARGUMENT
+    
 check_arg_0_smartfile_not_existed:
     $S0 = "smart: Smartfile '"
     $S0 .= smartfile
     $S0 .= "' not found.\n"
-    print $S0
-    exit -1
+    printerr $S0
+    exit EXIT_ERROR_NO_FILE
+    
 check_arg_unknown_flag:
     $S0 = "smart: Uknown command line flag '"
     $S0 .= arg
     $S0 .= "'\n"
     print $S0
-    exit -1
+    exit EXIT_ERROR_BAD_ARGUMENT
     
 end_loop_args:
     
@@ -219,8 +221,8 @@ done:
     .return (new_args)
 no_smartfile_for_new_args:
     $S0 = "smart: No targets specified and no Smartfile found. Stop.\n"
-    print $S0
-    exit -1
+    printerr $S0
+    exit EXIT_ERROR_NO_SMARTFILE
 .end # sub "parse-command-line-arguments"
 
 

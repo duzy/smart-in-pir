@@ -184,14 +184,14 @@ update_number_one_target:
     $S0 .= object
     $S0 .= "' is up to date.\n"
     print $S0
-    exit -1
+    exit EXIT_OK
     
 nothing_updated:
 nothing_done:
     $S0 = "smart: Nothing to be done for '"
     $S0 .= object
     $S0 .= "'.\n"
-    print $S0
+    printerr $S0
     .return()
     
 all_done:
@@ -207,8 +207,8 @@ all_done:
     .return()
     
 no_number_one_target:
-    print "smart: ** No targets. Stop.\n"
-    exit -1
+    printerr "smart: ** No targets. Stop.\n"
+    exit EXIT_ERROR_NO_TARGETS
 .end
 
 .sub "!PACK-ARGS"
@@ -476,7 +476,7 @@ check_and_convert_suffix_target__check_suffixes__done:
     ##          OUT: $I0(1/0, 1 if handled)
 check_and_handle_pattern_target:
     set $I0, 0
-    
+
     index $I1, text, "%"
     if $I1 < 0 goto check_and_handle_pattern_target__validate_non_mixed
     $I2 = $I1 + 1
@@ -491,6 +491,8 @@ check_and_handle_pattern_target:
     null $P2
     null $P10
     
+    if text == "%" goto check_and_handle_pattern_target__store_match_anything
+    
 check_and_handle_pattern_target__store_pattern_target:
     get_hll_global $P2, ['smart';'make'], "@<%>"
     unless null $P2 goto check_and_handle_pattern_target__push_pattern_target
@@ -500,7 +502,12 @@ check_and_handle_pattern_target__push_pattern_target:
     push $P2, $P1
     null $P1
     null $P2
-    
+    set implicit, 1 ## flag implicit for the rule
+    set $I0, 1 ## set the result
+    goto check_and_handle_pattern_target__done
+
+check_and_handle_pattern_target__store_match_anything:
+    set_hll_global ['smart';'make'], "$<%>", $P1
     set implicit, 1 ## flag implicit for the rule
     set $I0, 1 ## set the result
     goto check_and_handle_pattern_target__done

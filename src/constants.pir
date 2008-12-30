@@ -9,7 +9,13 @@
 .namespace []
 
 .const int EXIT_OK                              = 0
+.const int EXIT_ERROR_NO_SMARTFILE              = 100
 .const int EXIT_ERROR_MIXED_RULE                = 101
+.const int EXIT_ERROR_NO_RULE                   = 102
+.const int EXIT_ERROR_BAD_PATTERN               = 103
+.const int EXIT_ERROR_BAD_ARGUMENT              = 104
+.const int EXIT_ERROR_NO_FILE                   = 105
+.const int EXIT_ERROR_NO_TARGETS                = 106
 
 .const int MAKEFILE_VARIABLE_ORIGIN_undefined           = 0
 .const int MAKEFILE_VARIABLE_ORIGIN_default             = 1
