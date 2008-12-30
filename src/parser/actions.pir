@@ -273,7 +273,7 @@ iterate_items_end:
     .local pmc rule
     rule = 'new:Rule'( match )
     
-    .local pmc targets
+    #.local pmc targets
     .local pmc prerequisites
     .local pmc orderonly
     .local pmc actions
@@ -281,10 +281,12 @@ iterate_items_end:
     #new prerequisites,  'ResizablePMCArray'
     #new orderonly,      'ResizablePMCArray'
     #new actions,        'ResizablePMCArray'
-    targets = rule.'targets'()
+    #targets = rule.'targets'()
     prerequisites = rule.'prerequisites'()
     orderonly = rule.'orderonly'()
     actions = rule.'actions'()
+
+    .local pmc numberOneTarget
 
     .local int implicit
     set implicit, 0
@@ -377,9 +379,12 @@ action_pack_target:
     
     ## Normal targets are bind directly.
     $P1 = '!BIND-TARGET'( text, 1 )
-    setattribute $P1, 'rule', rule
+    getattribute $P2, $P1, 'rules'
+    push $P2, rule
     
-    push targets, $P1 # push the target
+    #push targets, $P1 # push the target
+    unless null numberOneTarget goto action_pack_target__done
+    set numberOneTarget, $P1
 action_pack_target__done:
     local_return call_stack
     
@@ -556,10 +561,13 @@ setup_number_one_target:
     get_hll_global $P0, ['smart';'make'], "$<0>"
     unless null $P0 goto setup_number_one_target_local_return
     getattribute $P0, rule, 'targets'
-    exists $I0, $P0[0]
-    unless $I0 goto setup_number_one_target_local_return
-    $P1 = $P0[0]
-    $S0 = $P1.'object'()
+#     exists $I0, $P0[0]
+#     unless $I0 goto setup_number_one_target_local_return
+#     $P1 = $P0[0]
+#     $S0 = $P1.'object'()
+    if null numberOneTarget goto setup_number_one_target_local_return
+    $P1 = numberOneTarget
+    $S0 = numberOneTarget.'object'()
     set_hll_global ['smart';'make'], "$<0>", $P1
     $P1 = 'new:Variable'( ".DEFAULT_GOAL", $S0, MAKEFILE_VARIABLE_ORIGIN_automatic )
     set_hll_global ['smart';'make';'variable'], ".DEFAULT_GOAL", $P1
@@ -590,428 +598,428 @@ store_implicit_rule__done:
 .end # sub "!MAKE-RULE"
 
 
-=item <'!UPDATE-RULE'(IN match, IN target, OPT deps, OPT actions)>
-Update the rule by 'match', created one if the rule is not existed.
-=cut
-.sub "!UPDATE-RULE"
-    .param string match
-    .param pmc targets
-    .param pmc prerequisites    :optional
-    .param pmc orderonly        :optional
-    .param pmc actions          :optional
+# =item <'!UPDATE-RULE'(IN match, IN target, OPT deps, OPT actions)>
+# Update the rule by 'match', created one if the rule is not existed.
+# =cut
+# .sub "!UPDATE-RULE"
+#     .param string match
+#     .param pmc targets
+#     .param pmc prerequisites    :optional
+#     .param pmc orderonly        :optional
+#     .param pmc actions          :optional
     
-    .local pmc rule
-    .local pmc target ## used as a temporary
-    .local pmc iter
-    .local pmc call_stack
-    .local pmc out_array
-    .local string target_name
-    .local int implicit
+#     .local pmc rule
+#     .local pmc target ## used as a temporary
+#     .local pmc iter
+#     .local pmc call_stack
+#     .local pmc out_array
+#     .local string target_name
+#     .local int implicit
     
-    call_stack = new 'ResizableIntegerArray'
-    implicit = 0    
+#     call_stack = new 'ResizableIntegerArray'
+#     implicit = 0    
     
-    ## Retreive or create the 'rule' object, identified by 'match'
-    get_hll_global rule, ['smart';'make';'rule'], match
-    unless null rule goto update_prerequsites_and_actions_of_the_rule
-    local_branch call_stack, create_new_rule_object
-    local_branch call_stack, setup_number_one_target
+#     ## Retreive or create the 'rule' object, identified by 'match'
+#     get_hll_global rule, ['smart';'make';'rule'], match
+#     unless null rule goto update_prerequsites_and_actions_of_the_rule
+#     local_branch call_stack, create_new_rule_object
+#     local_branch call_stack, setup_number_one_target
     
-    update_prerequsites_and_actions_of_the_rule:
-    local_branch call_stack, update_prerequsites
-    local_branch call_stack, update_orderonly
-    local_branch call_stack, update_actions
+#     update_prerequsites_and_actions_of_the_rule:
+#     local_branch call_stack, update_prerequsites
+#     local_branch call_stack, update_orderonly
+#     local_branch call_stack, update_actions
     
-    .return(rule) ## returns the rule object
+#     .return(rule) ## returns the rule object
     
-    ######################
-    ## Local rountine: create_new_rule_object
-    ##          OUT: rule, implicit
-create_new_rule_object:
-    implicit = 0
+#     ######################
+#     ## Local rountine: create_new_rule_object
+#     ##          OUT: rule, implicit
+# create_new_rule_object:
+#     implicit = 0
 
-    rule = 'new:Rule'( match )
-    $P0 = rule.'targets'()
+#     rule = 'new:Rule'( match )
+#     $P0 = rule.'targets'()
     
-    out_array = $P0
+#     out_array = $P0
     
-    ## Handle 'targets'. There are three kinds of target, normal target,
-    ## variable target, implicit target(pattern). An normal target will be
-    ## stored, a variable target is a makefile variable which will be expanded
-    ## and converted each expanded item of it into normal targets.
+#     ## Handle 'targets'. There are three kinds of target, normal target,
+#     ## variable target, implicit target(pattern). An normal target will be
+#     ## stored, a variable target is a makefile variable which will be expanded
+#     ## and converted each expanded item of it into normal targets.
     
-    iter = new 'Iterator', targets
-iterate_targets: ## Iterate 'targets'
-    unless iter goto end_iterate_targets
-    target = shift iter
+#     iter = new 'Iterator', targets
+# iterate_targets: ## Iterate 'targets'
+#     unless iter goto end_iterate_targets
+#     target = shift iter
     
-    ## check to see if it's an 'implicit target'.
-    #target_name = target.'object'()
-    target_name = target # auto-convert
+#     ## check to see if it's an 'implicit target'.
+#     #target_name = target.'object'()
+#     target_name = target # auto-convert
 
-    ## convert suffix rule if any, e.g: .c.o, .cpp.o
-    local_branch call_stack, convert_suffix_target_if_any
-    #say target_name #!!!!!!!!
+#     ## convert suffix rule if any, e.g: .c.o, .cpp.o
+#     local_branch call_stack, convert_suffix_target_if_any
+#     #say target_name #!!!!!!!!
     
-    $I0 = index target_name, "%"
-    if $I0 < 0 goto got_normal_target
-    $I1 = $I0 + 1
-    $I1 = index target_name, "%", $I1
-    if $I1 < 0 goto got_implicit_rule_temporary_target
+#     $I0 = index target_name, "%"
+#     if $I0 < 0 goto got_normal_target
+#     $I1 = $I0 + 1
+#     $I1 = index target_name, "%", $I1
+#     if $I1 < 0 goto got_implicit_rule_temporary_target
     
-    ## Choice 1 -- Normal Target
-got_normal_target:
-    ## we got the normal target here, if the 'patterns' is null, an error
-    ## should be emitted, which means the user mixed the implicit and normal
-    ## target in one rule.
-    if implicit goto error_mixed_implicit_and_normal_rule
-    setattribute target, 'rule', rule
-    push out_array, target
-    goto iterate_targets
+#     ## Choice 1 -- Normal Target
+# got_normal_target:
+#     ## we got the normal target here, if the 'patterns' is null, an error
+#     ## should be emitted, which means the user mixed the implicit and normal
+#     ## target in one rule.
+#     if implicit goto error_mixed_implicit_and_normal_rule
+#     setattribute target, 'rule', rule
+#     push out_array, target
+#     goto iterate_targets
     
-    ## Choice 3 -- Implicit target(pattern)
-got_implicit_rule_temporary_target:
-    ## if implicit rule, the target's 'object' attribute must be a pattern,
-    ## which contains one '%' sign, and the pattern string will be push back
-    ## to the 'patterns' array, the new created rule will keep it.
-    #print "implicit-target: " #!!!!!!!!!!!!!!
-    #say target_name #!!!!!!!!!!!!!!!!!!!!!!!!
-    implicit = 1
-    $P0 = new 'Integer'
-    $P0 = 1
-    setattribute target, '%', $P0
-    setattribute target, 'rule', rule
-    push out_array, target ## TODO: skip pushing match-anything pattern target?
-    unless target_name == "%" goto iterate_targets
-    local_branch call_stack, store_match_anything_rule
-    goto iterate_targets
+#     ## Choice 3 -- Implicit target(pattern)
+# got_implicit_rule_temporary_target:
+#     ## if implicit rule, the target's 'object' attribute must be a pattern,
+#     ## which contains one '%' sign, and the pattern string will be push back
+#     ## to the 'patterns' array, the new created rule will keep it.
+#     #print "implicit-target: " #!!!!!!!!!!!!!!
+#     #say target_name #!!!!!!!!!!!!!!!!!!!!!!!!
+#     implicit = 1
+#     $P0 = new 'Integer'
+#     $P0 = 1
+#     setattribute target, '%', $P0
+#     setattribute target, 'rule', rule
+#     push out_array, target ## TODO: skip pushing match-anything pattern target?
+#     unless target_name == "%" goto iterate_targets
+#     local_branch call_stack, store_match_anything_rule
+#     goto iterate_targets
     
-    ## Choice 4 -- Error
-error_mixed_implicit_and_normal_rule:
-    ## get some rule looks like "a.%.b BAD a.%.h: foobar"
-    $S0 = "smart: ** mixed implicit and normal rules: '"
-    $S0 .= match
-    $S0 .= "'\n"
-    print $S0
-    exit -1
-end_iterate_targets:
+#     ## Choice 4 -- Error
+# error_mixed_implicit_and_normal_rule:
+#     ## get some rule looks like "a.%.b BAD a.%.h: foobar"
+#     $S0 = "smart: ** mixed implicit and normal rules: '"
+#     $S0 .= match
+#     $S0 .= "'\n"
+#     print $S0
+#     exit -1
+# end_iterate_targets:
     
-store_rule_object:
-    if implicit goto store_implicit_rule
-    ## only normal rule should be stored as HLL global in "smart;makefile;rule"
-    ## or without storing normal rules should be ok
-    set_hll_global ['smart';'make';'rule'], match, rule
-    local_return call_stack
+# store_rule_object:
+#     if implicit goto store_implicit_rule
+#     ## only normal rule should be stored as HLL global in "smart;makefile;rule"
+#     ## or without storing normal rules should be ok
+#     set_hll_global ['smart';'make';'rule'], match, rule
+#     local_return call_stack
     
-store_implicit_rule:
-    .local pmc implicit_rules
-    ## Store implicit rules in the list 'smart;makefile;@[%]'
-    $P0 = new 'Integer'
-    $P0 = 1 ##implicit
-    setattribute rule, 'implicit', $P0
-    implicit_rules = get_hll_global ['smart';'make'], "@[%]"
-    unless null implicit_rules goto push_implict_rule
-    implicit_rules = new 'ResizablePMCArray'
-    set_hll_global ['smart';'make'], "@[%]", implicit_rules
-    push_implict_rule:
-    ## TODO: think about the ordering of implicit rules, should I use unshift
-    ##       instead of push?
-    push implicit_rules, rule
-    local_return call_stack
+# store_implicit_rule:
+#     .local pmc implicit_rules
+#     ## Store implicit rules in the list 'smart;makefile;@[%]'
+#     $P0 = new 'Integer'
+#     $P0 = 1 ##implicit
+#     setattribute rule, 'implicit', $P0
+#     implicit_rules = get_hll_global ['smart';'make'], "@[%]"
+#     unless null implicit_rules goto push_implict_rule
+#     implicit_rules = new 'ResizablePMCArray'
+#     set_hll_global ['smart';'make'], "@[%]", implicit_rules
+#     push_implict_rule:
+#     ## TODO: think about the ordering of implicit rules, should I use unshift
+#     ##       instead of push?
+#     push implicit_rules, rule
+#     local_return call_stack
     
-    #####################
-    ##  IN: target
-    ##  OUT: $I0        tells the suffix number, 1 or 2, 0 if not suffix target
-    ##       $S0        the first suffix
-    ##       $S1        the second suffix
-convert_suffix_target_if_any:
-    $I0 = 0
-    $I1 = index target_name, "."
-    unless $I1 == 0 goto convert_suffix_target_if_any__done
-    $I1 = index target_name, ".", 1
-    unless $I1 < 0 goto convert_suffix_target_if_any__check_second_suffix
-    $I0 = 1 ## tells number of suffixes
-    $S0 = target_name ## only the first suffix
-    $S1 = "" 
+#     #####################
+#     ##  IN: target
+#     ##  OUT: $I0        tells the suffix number, 1 or 2, 0 if not suffix target
+#     ##       $S0        the first suffix
+#     ##       $S1        the second suffix
+# convert_suffix_target_if_any:
+#     $I0 = 0
+#     $I1 = index target_name, "."
+#     unless $I1 == 0 goto convert_suffix_target_if_any__done
+#     $I1 = index target_name, ".", 1
+#     unless $I1 < 0 goto convert_suffix_target_if_any__check_second_suffix
+#     $I0 = 1 ## tells number of suffixes
+#     $S0 = target_name ## only the first suffix
+#     $S1 = "" 
     
-    $S3 = $S0
-    local_branch call_stack, convert_suffix_target_if_any__check_suffixes
-    unless $I1 goto convert_suffix_target_if_any__done
+#     $S3 = $S0
+#     local_branch call_stack, convert_suffix_target_if_any__check_suffixes
+#     unless $I1 goto convert_suffix_target_if_any__done
     
-    local_branch call_stack, conver_suffix_target_1
-    goto convert_suffix_target_if_any__done
+#     local_branch call_stack, conver_suffix_target_1
+#     goto convert_suffix_target_if_any__done
     
-convert_suffix_target_if_any__check_second_suffix:
-    unless 2 <= $I1 goto convert_suffix_target_if_any__done ## avoid ".."
-    $I2 = $I1 + 1
-    $I2 = index target_name, ".", $I2  ## no third "." should existed
-    unless $I2 < 0 goto convert_suffix_target_if_any__done
-    $I2 = length target_name
-    $I2 = $I2 - $I1
-    $I0 = 2 ## tells number of suffixes
-    $S0 = substr target_name, 0, $I1 ## the first suffix
-    $S1 = substr target_name, $I1, $I2 ## the second suffix
+# convert_suffix_target_if_any__check_second_suffix:
+#     unless 2 <= $I1 goto convert_suffix_target_if_any__done ## avoid ".."
+#     $I2 = $I1 + 1
+#     $I2 = index target_name, ".", $I2  ## no third "." should existed
+#     unless $I2 < 0 goto convert_suffix_target_if_any__done
+#     $I2 = length target_name
+#     $I2 = $I2 - $I1
+#     $I0 = 2 ## tells number of suffixes
+#     $S0 = substr target_name, 0, $I1 ## the first suffix
+#     $S1 = substr target_name, $I1, $I2 ## the second suffix
 
-    $S3 = $S0
-    local_branch call_stack, convert_suffix_target_if_any__check_suffixes
-    unless $I1 goto convert_suffix_target_if_any__done
+#     $S3 = $S0
+#     local_branch call_stack, convert_suffix_target_if_any__check_suffixes
+#     unless $I1 goto convert_suffix_target_if_any__done
     
-    $S3 = $S1
-    local_branch call_stack, convert_suffix_target_if_any__check_suffixes
-    unless $I1 goto convert_suffix_target_if_any__done
+#     $S3 = $S1
+#     local_branch call_stack, convert_suffix_target_if_any__check_suffixes
+#     unless $I1 goto convert_suffix_target_if_any__done
     
-    local_branch call_stack, conver_suffix_target_2
+#     local_branch call_stack, conver_suffix_target_2
     
-convert_suffix_target_if_any__done:
-    local_return call_stack
+# convert_suffix_target_if_any__done:
+#     local_return call_stack
     
-    #############
-    ##  IN: $S3
-    ##  OUT: $I1
-convert_suffix_target_if_any__check_suffixes:
-    .local pmc suffixes
-    get_hll_global suffixes, ['smart';'make';'rule'], ".SUFFIXES"
-    if null suffixes goto convert_suffix_target_if_any__check_suffixes__done
-    $P0 = new 'Iterator', suffixes
-    $I1 = 0
-convert_suffix_target_if_any__iterate_suffixes:
-    unless $P0 goto convert_suffix_target_if_any__iterate_suffixes_done
-    $S4 = shift $P0
-    unless $S4 == $S3 goto convert_suffix_target_if_any__iterate_suffixes
-    inc $I1
-convert_suffix_target_if_any__iterate_suffixes_done:
-    null $P0
-    if $I1 goto convert_suffix_target_if_any__check_suffixes__done
-    $S4 = "smart: Unknown suffix '"
-    $S4 .= $S3
-    $S4 .= "'\n"
-    print $S4
-convert_suffix_target_if_any__check_suffixes__done:
-    local_return call_stack
+#     #############
+#     ##  IN: $S3
+#     ##  OUT: $I1
+# convert_suffix_target_if_any__check_suffixes:
+#     .local pmc suffixes
+#     get_hll_global suffixes, ['smart';'make';'rule'], ".SUFFIXES"
+#     if null suffixes goto convert_suffix_target_if_any__check_suffixes__done
+#     $P0 = new 'Iterator', suffixes
+#     $I1 = 0
+# convert_suffix_target_if_any__iterate_suffixes:
+#     unless $P0 goto convert_suffix_target_if_any__iterate_suffixes_done
+#     $S4 = shift $P0
+#     unless $S4 == $S3 goto convert_suffix_target_if_any__iterate_suffixes
+#     inc $I1
+# convert_suffix_target_if_any__iterate_suffixes_done:
+#     null $P0
+#     if $I1 goto convert_suffix_target_if_any__check_suffixes__done
+#     $S4 = "smart: Unknown suffix '"
+#     $S4 .= $S3
+#     $S4 .= "'\n"
+#     print $S4
+# convert_suffix_target_if_any__check_suffixes__done:
+#     local_return call_stack
 
-    ############
-    ##  IN: $S0
-    ##  OUT: $I1
-conver_suffix_target_1:
-    #print "one-suffix-rule: "   #!!!
-    #say $S0                     #!!!
-    target_name = "%"
-    $P3 = new 'String'
-    $P3 = target_name
-    setattribute target, 'object', $P3
-    $S2 = "%"
-    $S2 .= $S0 ## implicit:  %.$S0
-    unshift prerequisites, $S2
-    local_return call_stack
+#     ############
+#     ##  IN: $S0
+#     ##  OUT: $I1
+# conver_suffix_target_1:
+#     #print "one-suffix-rule: "   #!!!
+#     #say $S0                     #!!!
+#     target_name = "%"
+#     $P3 = new 'String'
+#     $P3 = target_name
+#     setattribute target, 'object', $P3
+#     $S2 = "%"
+#     $S2 .= $S0 ## implicit:  %.$S0
+#     unshift prerequisites, $S2
+#     local_return call_stack
     
-    ############
-    ##  IN: $S0, $S1
-    ##  OUT: $I1
-conver_suffix_target_2:
-    #print "two-suffix-rule: "   #!!!
-    #print $S0                   #!!! 
-    #print ", "                  #!!!
-    #say $S1                     #!!!
-    target_name = "%"
-    target_name .= $S1
-    $P3 = new 'String'
-    $P3 = target_name
-    setattribute target, 'object', $P3
-    $S2 = "%"
-    $S2 .= $S0 ## implicit: %.$S0
-    unshift prerequisites, $S2
-    local_return call_stack
-
-
-    ############
-    ## local routine: store_match_anything_rule
-store_match_anything_rule:
-    ## TODO: should store the match-anything rule?
-store_match_anything_rule__done:
-    local_return call_stack
-    
-    
-    ############
-    ## local routine: update_prerequsites
-update_prerequsites:
-    if null prerequisites goto update_prerequsites_or_orderonly__done
-    out_array = rule.'prerequisites'()
-    iter = new 'Iterator', prerequisites
-    goto update_prerequsites_or_orderonly
-    
-    ############
-    ## local routine: update_prerequsites
-update_orderonly:
-    if null orderonly goto update_prerequsites_or_orderonly__done
-    out_array = rule.'orderonly'()
-    iter = new 'Iterator', orderonly
-    goto update_prerequsites_or_orderonly
-
-update_prerequsites_or_orderonly:
-    ##  IN: out_array, iter
-    ##  OUT: out_array
-    
-#     print "ps: "
-#     print prerequisites
-#     print ", target="
-#     say match
-
-    if implicit goto iterate_implicit_prerequisites
-    
-    ## normal prerequsites
-iterate_prerequisites: #############################
-    unless iter goto end_iterate_prerequisites
-    $P0 = shift iter
-    local_branch call_stack, check_wildcard_prerequsite
-    if $I0 goto iterate_prerequisites
-    push out_array, $P0
-    goto iterate_prerequisites
-end_iterate_prerequisites: #########################
-    goto update_prerequsites_or_orderonly__done
-
-    ## implicit prerequsites
-iterate_implicit_prerequisites: ########################################
-    unless iter goto end_iterate_implicit_prerequisites
-    $P0 = shift iter
-    $S0 = typeof $P0
-    ## check the validatity of the implicit prerequsite
-    unless $S0 == 'String' goto iterate_implicit_prerequisites__not_an_string
-    ## the prerequsite is String
-    $S0 = $P0
-    goto iterate_implicit_prerequisites__check_implicit_name
-iterate_implicit_prerequisites__not_an_string:
-    ## the prerequsite must be Target
-    ##if $S0 == 'Target' goto ERROR?
-    $S0 = $P0.'object'()
-iterate_implicit_prerequisites__check_implicit_name:
-    $I0 = index $S0, "%"
-    if $I0 < 0 goto push_normal_prerequsite
-    inc $I0
-    $I0 = index $S0, "%", $I0 ## only one "%" could be existed in an implicit prerequsite
-    if $I0 < 0 goto push_implicit_prerequisite
-push_normal_prerequsite:
-    #print "normal-prerequsite-in-implicit-rule: " #!!!!!
-    #say $S0 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    push out_array, $P0 ## an normal prerequsite 
-    goto iterate_implicit_prerequisites
-push_implicit_prerequisite: ###########################
-    #print "implicit-prerequsite: " #!!!!!!!!!
-    #say $S0 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    push out_array, $S0 ## an implicit prerequsite
-    ## TODO: should I unset the HLL global target named by $S0??
-    goto iterate_implicit_prerequisites
-end_iterate_implicit_prerequisites: ####################################
-update_prerequsites_or_orderonly__done:
-    local_return call_stack
-    
-    
-    ############
-    ## local routine: update_actions
-    ##          IN: rule, actions
-update_actions:
-    ## store actions in the rule object
-    if null actions goto update_actions_local_return
-    ##rule.'actions'( actions )
-    setattribute rule, 'actions', actions
-update_actions_local_return:
-    local_return call_stack
-    
-    
-    ############
-    ## local routine: setup_number_one_target
-setup_number_one_target:
-    ## the first rule should defines the number-one target
-    if implicit goto setup_number_one_target_local_return
-    get_hll_global $P0, ['smart';'make'], "$<0>"
-    unless null $P0 goto setup_number_one_target_local_return
-    getattribute $P0, rule, 'targets'
-    exists $I0, $P0[0]
-    unless $I0 goto setup_number_one_target_local_return
-    $P1 = $P0[0]
-    $S0 = $P1.'object'()
-    set_hll_global ['smart';'make'], "$<0>", $P1
-    $P1 = 'new:Variable'( ".DEFAULT_GOAL", $S0, MAKEFILE_VARIABLE_ORIGIN_automatic )
-    set_hll_global ['smart';'make';'variable'], ".DEFAULT_GOAL", $P1
-setup_number_one_target_local_return:
-    local_return call_stack
-    
-    
-    ############
-    ## local routine 6
-expand_variable_prerequsite_and_convert_into_stored_normal_targets:
-    $S0 = target.'expand'()
-    $P0 = split " ", $S0
-    iter = new 'Iterator', $P0
-    ## iterate items in the makefile variable and convert each into target
-iterate_variable_expanded_prerequsites: #################
-    unless iter goto end_iterate_variable_expanded_prerequsites
-    target_name = shift iter
-#     print "expanded: "
-#     say target_name
-    if target_name == "" goto iterate_variable_expanded_prerequsites
-    local_branch call_stack, obtain_target_by_target_name
-    push out_array, target
-    goto iterate_variable_expanded_prerequsites
-end_iterate_variable_expanded_prerequsites: #############
-    local_return call_stack
-    
-    
-    ############
-    ## local routine 7
-    ##          IN: target_name
-    ##          OUT: target
-obtain_target_by_target_name:
-    get_hll_global target, ['smart';'make';'target'], target_name
-    unless null target goto obtain_target_by_target_name_local_return
-    ## convert the makefile variable item into a target
-    target = 'new:Target'( target_name )    
-    set_hll_global ['smart';'make';'target'], target_name, target
-obtain_target_by_target_name_local_return:
-    local_return call_stack
+#     ############
+#     ##  IN: $S0, $S1
+#     ##  OUT: $I1
+# conver_suffix_target_2:
+#     #print "two-suffix-rule: "   #!!!
+#     #print $S0                   #!!! 
+#     #print ", "                  #!!!
+#     #say $S1                     #!!!
+#     target_name = "%"
+#     target_name .= $S1
+#     $P3 = new 'String'
+#     $P3 = target_name
+#     setattribute target, 'object', $P3
+#     $S2 = "%"
+#     $S2 .= $S0 ## implicit: %.$S0
+#     unshift prerequisites, $S2
+#     local_return call_stack
 
 
-    ######################
-    ## local routine: check_wildcard_prerequsite
-    ##          IN: $P0 (should be an Target which is the prerequsite to be checked)
-    ##          OUT: $I0 (1/0, 1 indicates that's a wildcard)
-check_wildcard_prerequsite:
-    $S0 = $P0
-    $I0 = 0
-check_wildcard_prerequsite__case1:
-    index $I1, $S0, "*"
-    if $I1 < 0 goto check_wildcard_prerequsite__case2
-    goto check_wildcard_prerequsite__done_yes
-check_wildcard_prerequsite__case2:
-    index $I1, $S0, "?"
-    if $I1 < 0 goto check_wildcard_prerequsite__case3
-    goto check_wildcard_prerequsite__done_yes
-check_wildcard_prerequsite__case3:
-    index $I1, $S0, "["
-    if $I1 < 0 goto check_wildcard_prerequsite__case4
-    index $I2, $S0, "]", $I1
-    if $I2 < 0 goto check_wildcard_prerequsite__case4
-    goto check_wildcard_prerequsite__done_yes
-check_wildcard_prerequsite__case4:
-    ## more other case?
-    goto check_wildcard_prerequsite__done
+#     ############
+#     ## local routine: store_match_anything_rule
+# store_match_anything_rule:
+#     ## TODO: should store the match-anything rule?
+# store_match_anything_rule__done:
+#     local_return call_stack
     
-check_wildcard_prerequsite__done_yes:
-    $P1 = '~wildcard'( $S0 )
-    $P2 = new 'Iterator', $P1
-check_wildcard_prerequsite__done_yes__iterate_items:
-    unless $P2 goto check_wildcard_prerequsite__done_yes__iterate_items__end
-    $S1 = shift $P2
-#     print "wildcard: "
-#     say $S1
-    target_name = $S1
-    local_branch call_stack, obtain_target_by_target_name
-    push out_array, target
-    goto check_wildcard_prerequsite__done_yes__iterate_items
-check_wildcard_prerequsite__done_yes__iterate_items__end:
-    $I0 = 1
-check_wildcard_prerequsite__done:
-    local_return call_stack
-.end # sub "!UPDATE-RULE"
+    
+#     ############
+#     ## local routine: update_prerequsites
+# update_prerequsites:
+#     if null prerequisites goto update_prerequsites_or_orderonly__done
+#     out_array = rule.'prerequisites'()
+#     iter = new 'Iterator', prerequisites
+#     goto update_prerequsites_or_orderonly
+    
+#     ############
+#     ## local routine: update_prerequsites
+# update_orderonly:
+#     if null orderonly goto update_prerequsites_or_orderonly__done
+#     out_array = rule.'orderonly'()
+#     iter = new 'Iterator', orderonly
+#     goto update_prerequsites_or_orderonly
+
+# update_prerequsites_or_orderonly:
+#     ##  IN: out_array, iter
+#     ##  OUT: out_array
+    
+# #     print "ps: "
+# #     print prerequisites
+# #     print ", target="
+# #     say match
+
+#     if implicit goto iterate_implicit_prerequisites
+    
+#     ## normal prerequsites
+# iterate_prerequisites: #############################
+#     unless iter goto end_iterate_prerequisites
+#     $P0 = shift iter
+#     local_branch call_stack, check_wildcard_prerequsite
+#     if $I0 goto iterate_prerequisites
+#     push out_array, $P0
+#     goto iterate_prerequisites
+# end_iterate_prerequisites: #########################
+#     goto update_prerequsites_or_orderonly__done
+
+#     ## implicit prerequsites
+# iterate_implicit_prerequisites: ########################################
+#     unless iter goto end_iterate_implicit_prerequisites
+#     $P0 = shift iter
+#     $S0 = typeof $P0
+#     ## check the validatity of the implicit prerequsite
+#     unless $S0 == 'String' goto iterate_implicit_prerequisites__not_an_string
+#     ## the prerequsite is String
+#     $S0 = $P0
+#     goto iterate_implicit_prerequisites__check_implicit_name
+# iterate_implicit_prerequisites__not_an_string:
+#     ## the prerequsite must be Target
+#     ##if $S0 == 'Target' goto ERROR?
+#     $S0 = $P0.'object'()
+# iterate_implicit_prerequisites__check_implicit_name:
+#     $I0 = index $S0, "%"
+#     if $I0 < 0 goto push_normal_prerequsite
+#     inc $I0
+#     $I0 = index $S0, "%", $I0 ## only one "%" could be existed in an implicit prerequsite
+#     if $I0 < 0 goto push_implicit_prerequisite
+# push_normal_prerequsite:
+#     #print "normal-prerequsite-in-implicit-rule: " #!!!!!
+#     #say $S0 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#     push out_array, $P0 ## an normal prerequsite 
+#     goto iterate_implicit_prerequisites
+# push_implicit_prerequisite: ###########################
+#     #print "implicit-prerequsite: " #!!!!!!!!!
+#     #say $S0 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#     push out_array, $S0 ## an implicit prerequsite
+#     ## TODO: should I unset the HLL global target named by $S0??
+#     goto iterate_implicit_prerequisites
+# end_iterate_implicit_prerequisites: ####################################
+# update_prerequsites_or_orderonly__done:
+#     local_return call_stack
+    
+    
+#     ############
+#     ## local routine: update_actions
+#     ##          IN: rule, actions
+# update_actions:
+#     ## store actions in the rule object
+#     if null actions goto update_actions_local_return
+#     ##rule.'actions'( actions )
+#     setattribute rule, 'actions', actions
+# update_actions_local_return:
+#     local_return call_stack
+    
+    
+#     ############
+#     ## local routine: setup_number_one_target
+# setup_number_one_target:
+#     ## the first rule should defines the number-one target
+#     if implicit goto setup_number_one_target_local_return
+#     get_hll_global $P0, ['smart';'make'], "$<0>"
+#     unless null $P0 goto setup_number_one_target_local_return
+#     getattribute $P0, rule, 'targets'
+#     exists $I0, $P0[0]
+#     unless $I0 goto setup_number_one_target_local_return
+#     $P1 = $P0[0]
+#     $S0 = $P1.'object'()
+#     set_hll_global ['smart';'make'], "$<0>", $P1
+#     $P1 = 'new:Variable'( ".DEFAULT_GOAL", $S0, MAKEFILE_VARIABLE_ORIGIN_automatic )
+#     set_hll_global ['smart';'make';'variable'], ".DEFAULT_GOAL", $P1
+# setup_number_one_target_local_return:
+#     local_return call_stack
+    
+    
+#     ############
+#     ## local routine 6
+# expand_variable_prerequsite_and_convert_into_stored_normal_targets:
+#     $S0 = target.'expand'()
+#     $P0 = split " ", $S0
+#     iter = new 'Iterator', $P0
+#     ## iterate items in the makefile variable and convert each into target
+# iterate_variable_expanded_prerequsites: #################
+#     unless iter goto end_iterate_variable_expanded_prerequsites
+#     target_name = shift iter
+# #     print "expanded: "
+# #     say target_name
+#     if target_name == "" goto iterate_variable_expanded_prerequsites
+#     local_branch call_stack, obtain_target_by_target_name
+#     push out_array, target
+#     goto iterate_variable_expanded_prerequsites
+# end_iterate_variable_expanded_prerequsites: #############
+#     local_return call_stack
+    
+    
+#     ############
+#     ## local routine 7
+#     ##          IN: target_name
+#     ##          OUT: target
+# obtain_target_by_target_name:
+#     get_hll_global target, ['smart';'make';'target'], target_name
+#     unless null target goto obtain_target_by_target_name_local_return
+#     ## convert the makefile variable item into a target
+#     target = 'new:Target'( target_name )    
+#     set_hll_global ['smart';'make';'target'], target_name, target
+# obtain_target_by_target_name_local_return:
+#     local_return call_stack
+
+
+#     ######################
+#     ## local routine: check_wildcard_prerequsite
+#     ##          IN: $P0 (should be an Target which is the prerequsite to be checked)
+#     ##          OUT: $I0 (1/0, 1 indicates that's a wildcard)
+# check_wildcard_prerequsite:
+#     $S0 = $P0
+#     $I0 = 0
+# check_wildcard_prerequsite__case1:
+#     index $I1, $S0, "*"
+#     if $I1 < 0 goto check_wildcard_prerequsite__case2
+#     goto check_wildcard_prerequsite__done_yes
+# check_wildcard_prerequsite__case2:
+#     index $I1, $S0, "?"
+#     if $I1 < 0 goto check_wildcard_prerequsite__case3
+#     goto check_wildcard_prerequsite__done_yes
+# check_wildcard_prerequsite__case3:
+#     index $I1, $S0, "["
+#     if $I1 < 0 goto check_wildcard_prerequsite__case4
+#     index $I2, $S0, "]", $I1
+#     if $I2 < 0 goto check_wildcard_prerequsite__case4
+#     goto check_wildcard_prerequsite__done_yes
+# check_wildcard_prerequsite__case4:
+#     ## more other case?
+#     goto check_wildcard_prerequsite__done
+    
+# check_wildcard_prerequsite__done_yes:
+#     $P1 = '~wildcard'( $S0 )
+#     $P2 = new 'Iterator', $P1
+# check_wildcard_prerequsite__done_yes__iterate_items:
+#     unless $P2 goto check_wildcard_prerequsite__done_yes__iterate_items__end
+#     $S1 = shift $P2
+# #     print "wildcard: "
+# #     say $S1
+#     target_name = $S1
+#     local_branch call_stack, obtain_target_by_target_name
+#     push out_array, target
+#     goto check_wildcard_prerequsite__done_yes__iterate_items
+# check_wildcard_prerequsite__done_yes__iterate_items__end:
+#     $I0 = 1
+# check_wildcard_prerequsite__done:
+#     local_return call_stack
+# .end # sub "!UPDATE-RULE"
 
 
 
@@ -1193,24 +1201,24 @@ convert_items_into_array__done:
 
 .end # sub !UPDATE-SPECIAL-RULE
 
-.sub "!makefile-variable-to-targets"
-    .param pmc var
-    .local pmc items
-    .local pmc result
-    .local pmc it
-    result = new 'ResizablePMCArray'
-    if null var goto iterate_items_end
-    items = var.'expanded_items'()
-    it = new 'Iterator', items
-iterate_items:
-    unless it goto iterate_items_end
-    $S0 = shift it
-    $P0 = '!BIND-TARGET'( $S0, 1 )
-    push result, $P0
-    goto iterate_items
-iterate_items_end:
-    .return(result)
-.end # sub "!makefile-variable-to-targets"
+# .sub "!makefile-variable-to-targets"
+#     .param pmc var
+#     .local pmc items
+#     .local pmc result
+#     .local pmc it
+#     result = new 'ResizablePMCArray'
+#     if null var goto iterate_items_end
+#     items = var.'expanded_items'()
+#     it = new 'Iterator', items
+# iterate_items:
+#     unless it goto iterate_items_end
+#     $S0 = shift it
+#     $P0 = '!BIND-TARGET'( $S0, 1 )
+#     push result, $P0
+#     goto iterate_items
+# iterate_items_end:
+#     .return(result)
+# .end # sub "!makefile-variable-to-targets"
 
 .sub "!BIND-TARGETS-BY-EXPANDING-STRING"
     .param string str
