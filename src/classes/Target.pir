@@ -917,7 +917,7 @@ return_result:
     .return (count_updated, count_newer, $I1)
 
     ######################
-    ## local: update_prerequisites_of_rules
+    ## local: update_prerequisites_of_rules( rules )
 update_prerequisites_of_rules:
     new rule_it, 'Iterator', rules
 update_prerequisites_of_rules__iterate:
@@ -932,7 +932,7 @@ update_prerequisites_of_rules__done:
     local_return cs
 
     ######################
-    ## local: update_prerequisites
+    ## local: update_prerequisites( rule )
 update_prerequisites:
     .local pmc prerequisites
     prerequisites = rule.'prerequisites'()
@@ -957,9 +957,9 @@ update_prerequisites__iterate_end:
 update_prerequisites_end:
     local_return cs
 
-
+    
     ######################
-    ## local: update_oo_prerequisites_of_rules
+    ## local: update_oo_prerequisites_of_rules( rules )
 update_oo_prerequisites_of_rules:
     .local pmc oo_rule
     new rule_it, 'Iterator', rules
@@ -973,7 +973,6 @@ update_oo_prerequisites_of_rules_iterate_end:
     null rule_it
 update_oo_prerequisites_of_rules__done:
     local_return cs
-
 
     ######################
     ## local: update_oo_prerequisites
