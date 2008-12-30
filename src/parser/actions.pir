@@ -147,21 +147,22 @@ iterate_command_line_targets:
     target = 'new:Target'( $S0 )
     set_hll_global ['smart';'make';'target'], $S0, target
     got_command_line_target:
-    $I0 = target.'update'()
-    if 0 < $I0 goto command_line_target_update_ok
+    ($I1, $I2, $I3) = target.'update'()
+    if 0 < $I3 goto command_line_target_update_ok
     $S1 = "smart: Nothing to be done for target '"
     $S1 .= $S0
     $S1 .= "'\n"
-    print $S1
+    printerr $S1
     goto iterate_command_line_targets
+    
     command_line_target_update_ok:
     $S1 = "smart: Target '"
     $S1 .= $S0
     $S1 .= "' updated(totally "
-    $S2 = $I0
+    $S2 = $I1
     $S1 .= $S2
     $S1 .= " objects).\n"
-    print $S1
+    printerr $S1
     goto iterate_command_line_targets
 end_iterate_command_line_targets:
     .return ()

@@ -770,8 +770,8 @@ return_result:
     rule binded to the target.
 =cut
 .sub "update" :method # :multi()
-    ($I0, $I1, $I2) = 'update-target'( self, self )
-    .return ($I0, $I1, $I2)
+    ($I1, $I2, $I3) = 'update-target'( self, self )
+    .return ($I1, $I2, $I3)
 .end
 
 .sub "update-target-%"
