@@ -220,16 +220,9 @@ loop_tag_end:
 .end
 
 
-=item
-    Setup automatic variables for updating the target.
-=cut
-.sub "!setup-automatic-variables" :anon
-    .param pmc target # must be a normal-target
+.sub "!get-prerequisites" :anon
+    .param pmc target
     
-#     .local pmc rule
-#     getattribute rule, target, "rule"
-#     .local pmc prerequisites
-#     prerequisites = rule.'prerequisites'()
     .local pmc prerequisites, orderonly
     new prerequisites, 'ResizablePMCArray'
     new orderonly, 'ResizablePMCArray'
@@ -268,7 +261,17 @@ collect_prerequisites_of_rules__iterate_orderonly_end:
     goto collect_prerequisites_of_rules__iterate
 collect_prerequisites_of_rules__iterate_end:
 collect_prerequisites_of_rules_done:
+    .return(prerequisites, orderonly)
+.end # sub "!get-prerequisites"
 
+=item
+    Setup automatic variables for updating the target.
+=cut
+.sub "!setup-automatic-variables" :anon
+    .param pmc target # must be a normal-target
+    
+    .local pmc prerequisites, orderonly
+    (prerequisites, orderonly) = '!get-prerequisites'( target )
     
     .local pmc var0,    var1,   var2,   var3,   var4,   var5,   var6,   var7
     .local pmc var8,    var9,   var10,  var11,  var12,  var13,  var14,  var15
@@ -429,11 +432,8 @@ loop_orderonly_end:
     .param pmc object
     .param pmc stem
     
-    .local pmc rule
-    getattribute rule, target, "rule"
-    
-    .local pmc prerequisites
-    prerequisites = rule.'prerequisites'()
+    .local pmc prerequisites, orderonly
+    (prerequisites, orderonly) = '!get-prerequisites'( target )
     
     .local pmc pattern
     getattribute pattern, target, "object"
@@ -513,9 +513,6 @@ loop_prerequisites_end:
     null $P1
     null $P2
 
-    .local pmc orderonly
-    orderonly = rule.'orderonly'()
-    
     ## var6 => $|
     new var6, 'ResizableStringArray'
     new $P1, 'Iterator', orderonly

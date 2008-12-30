@@ -492,8 +492,11 @@ check_and_handle_pattern_target:
     $P2 = 'new:Pattern'( text )
     #setattribute $P1, '%', $P2
     setattribute $P1, 'object', $P2
-    setattribute $P1, 'rule', rule
+    #setattribute $P1, 'rule', rule
+    getattribute $P10, $P1, 'rules'
+    push $P10, rule
     null $P2
+    null $P10
     
 check_and_handle_pattern_target__store_pattern_target:
     get_hll_global $P2, ['smart';'make'], "@<%>"
@@ -502,8 +505,8 @@ check_and_handle_pattern_target__store_pattern_target:
     set_hll_global ['smart';'make'], "@<%>", $P2
 check_and_handle_pattern_target__push_pattern_target:
     push $P2, $P1
-    null $P2
     null $P1
+    null $P2
     
     set implicit, 1 ## flag implicit for the rule
     set $I0, 1 ## set the result
