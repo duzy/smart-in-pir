@@ -1,0 +1,5 @@
+# -*- Makefile -*-
+
+.PHONY: report
+
+report: 

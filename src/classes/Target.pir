@@ -781,26 +781,34 @@ return_result:
     .local pmc pattern
     getattribute pattern, target, "object"
     if null pattern goto return_nothing
-
+    $S0 = typeof pattern
+    unless $S0 == "Pattern" goto fatal_not_a_pattern_target
+    
     .local string prefix
     .local string suffix
     .local string stem
     prefix = pattern.'prefix'()
     suffix = pattern.'suffix'()
-    stem = pattern.'match'( object )
+    stem   = pattern.'match'( object )
     if stem == "" goto return_nothing
-
+    
+#     print "pattern: "
+#     print pattern
+#     print ", object="
+#     print object
+#     print ", stem="
+#     print stem
+#     print "\n"
+    
     .local pmc cs
     new cs, 'ResizableIntegerArray'
-
+    
     .local int count_updated
     .local int count_newer
     set count_updated, 0
     set count_newer, 0
     
     .local pmc rule
-    #getattribute rule, target, 'rule'
-    #local_branch cs, update_prerequisites
     local_branch cs, update_prerequisites_of_rules
     
     '!setup-automatic-variables%'( target, object, stem )
@@ -838,12 +846,25 @@ update_prerequisites:
 update_prerequisites__iterate:
     unless $P1 goto update_prerequisites__iterate_end
     shift $P2, $P1
-    
+
     $S0 = pattern.'flatten'( $P2, stem )
-    unless $P2 == $S0 goto update_prerequisites_go
+    print "flatten: "
+    print "target="
+    print object
+    print ", prerequisite="
+    print $P2
+    print ", stem="
+    print stem
+    print ", flatten="
+    print $S0
+    print "\n"
+    
+    if $P2 == $S0 goto update_prerequisites_go
     get_hll_global $P2, ['smart';'make';'target'], $S0
     
 update_prerequisites_go:
+    if null $P2 goto error_no_rule_for_prerequisite
+    
     ($I1, $I2, $I3) = $P2.'update'()
     count_updated += $I1
     count_newer += $I2
@@ -856,6 +877,16 @@ update_prerequisites__iterate_end:
     null $S0
 update_prerequisites_end:
     local_return cs
+
+error_no_rule_for_prerequisite:
+    $S1 = "smart: ** No rule for target '"
+    $S1 .= $S0
+    $S1 .= "'\n"
+    printerr $S1
+    exit EXIT_ERROR_NO_RULE
+
+fatal_not_a_pattern_target:
+    die "smart: Not an pattern target"
 .end # sub "update-target-%"
 
 .sub "update-target" :anon
@@ -999,7 +1030,7 @@ update_oo_prerequisites__done:
     ## local: check_out_pattern_targets_for_updating
 check_out_pattern_targets_for_updating:
     .local pmc patterns
-    .local pmc anything
+    .local pmc pattern_target
     get_hll_global patterns, ['smart';'make'], "@<%>"
     if null patterns goto check_out_pattern_targets_for_updating__iterate_end
     new $P1, 'Iterator', patterns
@@ -1018,8 +1049,11 @@ check_out_pattern_targets_for_updating__iterate_end:
     get_hll_global $P1, ['smart';'make'], "$<%>"
     if null $P1 goto check_out_pattern_targets_for_updating__failed
     
-    ($I1, $I2, $I3, $I4) = 'update-target-%'( $P1, object )
-    unless $I4 goto check_out_pattern_targets_for_updating__done
+    #($I1, $I2, $I3, $I4) = 'update-target-%'( $P1, object )
+    #unless $I4 goto check_out_pattern_targets_for_updating__done
+    pattern_target = $P1
+    local_branch cs, update_through_pattern_target
+    unless $I0 goto check_out_pattern_targets_for_updating__done
     count_updated += $I1
     count_newer   += $I2
     goto check_out_pattern_targets_for_updating__done
@@ -1036,270 +1070,123 @@ check_out_pattern_targets_for_updating__done:
     null $P1
     null $P2
     goto return_result
+
+
+
+    
+
+    #######################
+    ## local: update_through_pattern_target
+update_through_pattern_target:
+    .local pmc pattern
+    getattribute pattern, target, "object"
+    if null pattern goto return_nothing
+    $S0 = typeof pattern
+    unless $S0 == "Pattern" goto fatal_not_a_pattern_target
+    
+    .local string prefix
+    .local string suffix
+    .local string stem
+    prefix = pattern.'prefix'()
+    suffix = pattern.'suffix'()
+    stem   = pattern.'match'( object )
+    if stem == "" goto return_nothing
+    
+#     print "pattern: "
+#     print pattern
+#     print ", object="
+#     print object
+#     print ", stem="
+#     print stem
+#     print "\n"
+    
+    .local pmc cs
+    new cs, 'ResizableIntegerArray'
+    
+    .local int count_updated
+    .local int count_newer
+    set count_updated, 0
+    set count_newer, 0
+    
+    .local pmc rule
+    local_branch cs, update_prerequisites_of_rules
+    
+    '!setup-automatic-variables%'( target, object, stem )
+    ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
+    '!clear-automatic-variables'()
+    
+    .return(count_updated, count_newer, $I1, 1) ##( u)
+    
+return_nothing:
+    .return(-1, -1, -1, 0)
+
+    ######################
+    ## local: update_prerequisites_of_rules
+update_prerequisites_of_rules:
+    .local pmc rules, rule_it
+    getattribute rules, target, 'rules'
+    new rule_it, 'Iterator', rules
+update_prerequisites_of_rules__iterate:
+    unless rule_it goto update_prerequisites_of_rules__iterate_end
+    shift rule, rule_it
+    local_branch cs, update_prerequisites
+    goto update_prerequisites_of_rules__iterate
+update_prerequisites_of_rules__iterate_end:
+    ## TODO: the last rule's action will be executed?
+    null rule_it
+update_prerequisites_of_rules__done:
+    local_return cs
+
+    ######################
+    ## local: update_prerequisites
+update_prerequisites:
+    .local pmc prerequisites
+    prerequisites = rule.'prerequisites'()
+    new $P1, 'Iterator', prerequisites 
+update_prerequisites__iterate:
+    unless $P1 goto update_prerequisites__iterate_end
+    shift $P2, $P1
+
+    $S0 = pattern.'flatten'( $P2, stem )
+    print "flatten: "
+    print "target="
+    print object
+    print ", prerequisite="
+    print $P2
+    print ", stem="
+    print stem
+    print ", flatten="
+    print $S0
+    print "\n"
+    
+    if $P2 == $S0 goto update_prerequisites_go
+    get_hll_global $P2, ['smart';'make';'target'], $S0
+    
+update_prerequisites_go:
+    if null $P2 goto error_no_rule_for_prerequisite
+    
+    ($I1, $I2, $I3) = $P2.'update'()
+    count_updated += $I1
+    count_newer += $I2
+    goto update_prerequisites__iterate
+    
+update_prerequisites__iterate_end:
+    null prerequisites
+    null $P1
+    null $P2
+    null $S0
+update_prerequisites_end:
+    local_return cs
+
+error_no_rule_for_prerequisite:
+    $S1 = "smart: ** No rule for target '"
+    $S1 .= $S0
+    $S1 .= "'\n"
+    printerr $S1
+    exit EXIT_ERROR_NO_RULE
+
+fatal_not_a_pattern_target:
+    die "smart: Not an pattern target"
     
 .end # sub "update-target"
-
-
-# .sub "update-target~" :anon
-#     .param pmc target
-#     .param pmc requestor
-
-#     ##
-#     ##  1) check the target's updated flag, if marked then goto end)
-#     ##  2) for each prerequsite do 3)
-#     ##          3) check the prerequsite to see if:
-#     ##                  ?) if it's phony then goto $)
-#     ##                  ?) if the object existed goto $), if not report
-#     ##                     non-existed error and stop all.
-#     ##                  $) goto 4)
-#     ##          4) invokes update action on the prerequsite,
-#     ##          ...
-#     ##  5) ...
-#     ##  end) ...
-#     ##  
-    
-#     ## If the target itself has been updated, than nothing should be done.
-#     $I0 = target.'updated'()
-#     if $I0 goto return_without_execution
-    
-#     .local pmc cs
-#     cs = new 'ResizableIntegerArray'
-    
-#     .local string object
-#     object = target.'object'()
-    
-#     .local pmc implict_rules, implicit_rule, iter ## used as temporary
-#     .local pmc rule
-#     getattribute rule, target, 'rule'
-#     unless null rule goto we_got_the_rule
-#     local_branch cs, check_out_implicit_rules
-#     #local_branch cs, check_out_pattern_targets
-    
-# we_got_the_rule:
-    
-#     .local int update_count, newer_count, object_changetime, is_phony
-#     update_count = 0
-#     newer_count = 0
-#     object_changetime = target.'changetime'()
-#     is_phony = target.'is_phony'()
-    
-#     ## this will set 'update_count' and 'newer_count' variables
-#     local_branch cs, check_and_update_prerequisites
-#     ## If any prerequsites got updated, the target will be updated.
-#     if 0 < update_count goto execute_update_actions ## if any prerequisites updated
-    
-#     #print "is-phony: "
-#     #say $I0
-#     if is_phony goto execute_update_actions
-    
-#     ## If the object of the target not extsted, the target will be updated.
-#     if object_changetime==0 goto execute_update_actions
-    
-#     ## If no prerequisites is updated but some of them is newer than the taget,
-#     ## the target will be updated.
-#     if 0 < newer_count  goto execute_update_actions
-    
-# return_without_execution:
-#     .return (0, newer_count, 0)
-    
-# execute_update_actions:
-#     $P0 = rule.'actions'()
-#     $I0 = $P0
-#     $I1 = 0
-#     unless $I0 == 0 goto do_actions_execution
-#     if object_changetime   goto return_update_results
-#     if is_phony         goto return_update_results
-#     local_branch cs, try_chaining_rules_for_updating
-#     goto return_update_results
-    
-# do_actions_execution:
-#     '!setup-automatic-variables'( target )
-#     ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
-#     '!clear-automatic-variables'( target )
-    
-#     ## TODO: should check to see if the object existed
-    
-#     unless 0 < $I1 goto skip_increase_update_count
-#     target.'updated'( 1 ) ## TODO: think about this, should I?
-#     inc update_count
-#     skip_increase_update_count:
-    
-# return_update_results:
-#     .return (update_count, newer_count, $I1)
-    
-    
-#     ######################
-#     ## local routine: check_and_update_prerequisites
-#     ##          IN: rule
-# check_and_update_prerequisites:
-#     .local pmc prerequisites, prerequisite, iter
-    
-#     prerequisites = rule.'prerequisites'()
-#     iter = new 'Iterator', prerequisites
-# #     print "number-of-prerequisites: "
-# #     print prerequisites
-# #     print ", target="
-# #     say object
-    
-# iterate_prerequisites:
-#     unless iter goto end_iterate_prerequisites
-#     prerequisite = shift iter
-    
-#     ## Check the type of prerequsite...
-#     typeof $S0, prerequisite
-#     unless $S0 == "String" goto handle_with_normal_prerequisite
-#     $S0 = prerequisite
-#     $I0 = index $S0, "%"
-#     if $I0 < 0 goto invalid_implicit_prerequisite
-#     inc $I0
-#     $I0 = index $S0, "%", $I0
-#     unless $I0 < 0 goto invalid_implicit_prerequisite
-    
-# handle_with_implicit_prerequsite:
-#     $S1 = '.!calculate-object-of-prerequisite'( target, prerequisite )
-#     ## Get stored prerequsite, or create a new one if none existed.
-#     get_hll_global prerequisite, ['smart';'make';'target'], $S1
-#     unless null prerequisite goto handle_with_normal_prerequisite
-#     prerequisite = 'new:Target'( $S1 )
-#     set_hll_global ['smart';'make';'target'], $S1,  prerequisite
-    
-# handle_with_normal_prerequisite: ## normal prerequisite: Target object
-#     ## Here, The 'prerequsite' is a 'Target' object.
-#     $I0 = can prerequisite, 'update'
-#     unless $I0 goto invalid_target_object
-    
-#     $S1 = prerequisite.'object'()
-    
-#     ## checking recursive...
-#     unless object == $S1 goto process_the_prerequsite
-#     local_branch cs, report_droped_recursive_dependency
-#     ##TODO: check recursive dependancy here...
-#     goto iterate_prerequisites
-#     process_the_prerequsite:
-    
-#     ## Checking prerequsite-newer...
-#     $I0 = prerequisite.'changetime'()
-#     unless $I0 goto invoke_update_on_prerequsite
-#     $I0 = object_changetime < $I0
-#     unless $I0 goto invoke_update_on_prerequsite
-#     inc newer_count
-    
-# invoke_update_on_prerequsite:
-#     ## Invoke the prerequsite's update method...
-#     ($I0, $I1) = 'update-target'( prerequisite, requestor )
-    
-#     ## Updates the counter...
-#     unless 0 < $I1 goto no_inc_newer_count_according_prerequsite_update
-#     newer_count += $I1
-#     no_inc_newer_count_according_prerequsite_update:
-#     unless 0 < $I0 goto iterate_prerequisites
-#     update_count += $I0
-#     goto iterate_prerequisites
-    
-# invalid_target_object:
-#     $S0 = "smart: *** Invalid prerequisite of type '"
-#     $S1 = typeof prerequisite
-#     $S0 .= $S1
-#     $S0 .= "', expecting to be 'Target'\n"
-#     die $S0
-# invalid_implicit_prerequisite:
-#     $S1 = "smart: *** Not a pattern prerequisite '"
-#     $S1 .= $S0
-#     $S1 .= "'"
-#     die $S1
-# end_iterate_prerequisites:
-#     local_return cs
-    
-#     ######################
-#     ## local routine: check_out_implicit_rules
-#     ##          OUT: rule
-# check_out_implicit_rules:
-#     unless null rule goto check_out_implicit_rules_local_return
-#     implict_rules = get_hll_global ['smart';'make'], "@[%]"
-#     if null implict_rules goto no_rule_found
-#     iter = new 'Iterator', implict_rules
-# check_out_implicit_rules_iterate:
-#     unless iter goto check_out_implicit_rules_iterate_end
-#     implicit_rule = shift iter
-#     $S0 = implicit_rule.'match'()
-#     #say $S0
-#     ## skip any match-anything rule
-#     if $S0 == "%" goto check_out_implicit_rules_iterate
-#     $S0 = implicit_rule.'match_patterns'( target )
-#     if $S0 == "" goto check_out_implicit_rules_iterate
-#     rule = implicit_rule
-#     $P1 = new 'String'
-#     $P1 = $S0
-#     setattribute target, 'rule', rule
-#     setattribute target, 'stem', $P1
-# check_out_implicit_rules_iterate_end:
-#     if null rule goto no_rule_found
-# check_out_implicit_rules_local_return:
-#     local_return cs
-    
-# no_rule_found:
-#     ## If the object does not exists, it should report "no-rule-error" error.
-#     #$S1 = target.'object'()
-#     #$I0 = stat $S1, .STAT_EXISTS #0 # EXISTS
-#     #unless $I0 goto report_no_rule_error
-#     unless object_changetime goto report_no_rule_error
-#     .return(0, newer_count, 0)
-    
-# report_no_rule_error:
-#     $S0 = "smart: ** No rule to make target '"
-#     $S0 .= $S1
-#     if null requestor goto report_no_rule_error_no_specific_requestor
-#     $S2 = requestor.'object'()
-#     $S0 .= "', needed by '"
-#     $S0 .= $S2
-#     $S0 .= "'. Stop.\n"
-#     goto report_no_rule_error_done
-#     report_no_rule_error_no_specific_requestor:
-#     $S0 .= "'. Stop.\n"
-#     report_no_rule_error_done:
-#     print $S0
-#     exit -1
-
-#     ######################
-#     ## local: check_out_pattern_targets
-# check_out_pattern_targets:
-#     .local pmc patterns
-#     get_hll_global patterns, ['smart';'make'], "@<%>"
-#     if null patterns goto check_out_pattern_targets__done
-#     new $P1, 'Iterator', patterns
-# check_out_pattern_targets__iterate:
-#     unless $P1 goto check_out_pattern_targets__iterate_end
-#     shift $P2, $P1
-#     ## TODO: ...
-#     print "check-pattern: "
-#     say $P2
-#     goto check_out_pattern_targets__iterate
-# check_out_pattern_targets__iterate_end:
-#     null patterns
-#     null $P1
-#     null $P2
-# check_out_pattern_targets__done:
-#     local_return cs
-    
-#     ##############
-#     ## local routine: report_droped_recursive_dependency
-# report_droped_recursive_dependency:
-#     $S2 = "smart Circular "
-#     $S2 .= $S1
-#     $S2 .= "<--"
-#     $S2 .= $S0
-#     $S2 .= " dependency. Droped.\n"
-#     print $S2
-#     local_return cs
-    
-#     ##############
-#     ## local routine: try_chaining_rules_for_updating
-# try_chaining_rules_for_updating:
-#     print "TODO: No actions, should serach intermediate rules\n"
-#     local_return cs
-    
-# invalid_rule_object:
-#     $S0 = "smart: *** Invalid rule object"
-#     die $S0
-# .end # sub "update"
 
