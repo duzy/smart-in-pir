@@ -41,7 +41,6 @@ return_target:
     newclass $P0, 'Target'
     addattribute $P0, 'object'  ## filename of the object or instance of Pattern
     addattribute $P0, 'member'  ## for Archive target, indicates the member name
-    #addattribute $P0, 'rule'    ## the Rule object
     addattribute $P0, 'rules'   ## Rules to update the object
     addattribute $P0, 'stem'    ## used with implicit rule -- pattern
     addattribute $P0, 'updated' ## 1/0, wether the object has been updated
@@ -777,6 +776,7 @@ return_result:
 .sub "update-target-%"
     .param pmc target
     .param pmc object # the file object to be updated
+    .param pmc requestor
     
     .local pmc pattern
     getattribute pattern, target, "object"
@@ -848,41 +848,38 @@ update_prerequisites_of_rules__done:
     ## local: update_prerequisites
 update_prerequisites:
     .local pmc prerequisites
+    .local pmc pre
     prerequisites = rule.'prerequisites'()
     new $P1, 'Iterator', prerequisites 
 update_prerequisites__iterate:
     unless $P1 goto update_prerequisites__iterate_end
-    shift $P2, $P1
+    shift pre, $P1
 
-    $S0 = pattern.'flatten'( $P2, stem )
+    $S0 = pattern.'flatten'( pre, stem )
     
-    if $P2 == $S0 goto update_prerequisites_go
-    get_hll_global $P2, ['smart';'make';'target'], $S0
+    if pre == $S0 goto update_prerequisites_go
+    get_hll_global pre, ['smart';'make';'target'], $S0
     
 update_prerequisites_go:
-    unless null $P2 goto update_prerequisites_invoke
-    $P2 = 'new:Target'( $S0 )
+    unless null pre goto update_prerequisites_invoke
+    ## Make a new target object and store it. 
+    pre = 'new:Target'( $S0 )
+    set_hll_global ['smart';'make';'target'], $S0, pre
 update_prerequisites_invoke:
     
-    ($I1, $I2, $I3) = $P2.'update'()
+    ($I1, $I2, $I3) = 'update-target'( pre, requestor )
     count_updated += $I1
     count_newer += $I2
     goto update_prerequisites__iterate
     
 update_prerequisites__iterate_end:
     null prerequisites
+    null pre
     null $P1
     null $P2
     null $S0
 update_prerequisites_end:
     local_return cs
-
-error_no_rule_for_prerequisite:
-    $S1 = "smart: ** No rule to make target '"
-    $S1 .= $S0
-    $S1 .= "'\n"
-    printerr $S1
-    exit EXIT_ERROR_NO_RULE
 
 fatal_not_a_pattern_target:
     die "smart: Not an pattern target"
@@ -1046,7 +1043,7 @@ check_out_pattern_targets_for_updating__iterate:
     unless pattern_it goto check_out_pattern_targets_for_updating__iterate_end
     shift pattern_target, pattern_it
 
-    ($I1, $I2, $I3, $I4) = 'update-target-%'( pattern_target, target )
+    ($I1, $I2, $I3, $I4) = 'update-target-%'( pattern_target, target, requestor )
     unless $I4 goto check_out_pattern_targets_for_updating__iterate
     #local_branch cs, update_through_pattern_target
     #unless $I0 goto check_out_pattern_targets_for_updating__done
@@ -1060,7 +1057,7 @@ check_out_pattern_targets_for_updating__iterate_end:
     get_hll_global pattern_target, ['smart';'make'], "$<%>"
     if null pattern_target goto check_out_pattern_targets_for_updating__failed
     
-    ($I1, $I2, $I3, $I4) = 'update-target-%'( pattern_target, target )
+    ($I1, $I2, $I3, $I4) = 'update-target-%'( pattern_target, target, requestor )
     unless $I4 goto check_out_pattern_targets_for_updating__done
     #local_branch cs, update_through_pattern_target
     #unless $I0 goto check_out_pattern_targets_for_updating__done

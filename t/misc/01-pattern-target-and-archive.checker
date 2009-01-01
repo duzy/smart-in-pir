@@ -1,0 +1,15 @@
+# -*- cperl -*-
+{
+    my $e = <<'____EXPECT'
+source: foo.cpp, stem=foo
+source: bar.cpp, stem=bar
+check:(libfoo.a(foo.o)):libfoo.a(foo.o)
+check:(foo.o bar.o):foo.o bar.o
+check:(foo.o bar.o bar.o):foo.o bar.o bar.o
+____EXPECT
+    ;
+    pop @result;
+    my $r = join '', @result;
+    $check_result = $r eq $e;
+    print "";
+}
