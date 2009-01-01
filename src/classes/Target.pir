@@ -775,12 +775,12 @@ return_result:
 .end
 
 .sub "update-target-%"
-    .param pmc target
-    .param pmc object # the file object to be updated
+    .param pmc pattern_target
+    .param pmc target # the file target to be updated
     .param pmc requestor
     
     .local pmc pattern
-    getattribute pattern, target, "object"
+    getattribute pattern, pattern_target, "object"
     if null pattern goto return_nothing
     $S0 = typeof pattern
     unless $S0 == "Pattern" goto fatal_not_a_pattern_target
@@ -790,16 +790,8 @@ return_result:
     .local string stem
     prefix = pattern.'prefix'()
     suffix = pattern.'suffix'()
-    stem   = pattern.'match'( object )
+    stem   = pattern.'match'( target )
     if stem == "" goto return_nothing
-    
-#     print "pattern: "
-#     print pattern
-#     print ", object="
-#     print object
-#     print ", stem="
-#     print stem
-#     print "\n"
     
     .local pmc cs
     new cs, 'ResizableIntegerArray'
@@ -814,7 +806,7 @@ return_result:
     .local pmc rule
     local_branch cs, update_prerequisites_of_rules
     
-    '!setup-automatic-variables%'( target, object, stem )
+    '!setup-automatic-variables%'( pattern_target, target, stem )
     ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
     '!clear-automatic-variables'()
 
@@ -832,7 +824,7 @@ return_nothing:
     ## local: update_prerequisites_of_rules
 update_prerequisites_of_rules:
     .local pmc rules, rule_it
-    getattribute rules, target, 'rules'
+    getattribute rules, pattern_target, 'rules'
     new rule_it, 'Iterator', rules
 update_prerequisites_of_rules__iterate:
     unless rule_it goto update_prerequisites_of_rules__iterate_end
@@ -857,20 +849,21 @@ update_prerequisites__iterate:
     shift pre, $P1
 
     $S0 = pattern.'flatten'( pre, stem )
-    
-    if pre == $S0 goto update_prerequisites_go
+
+    ## If 'pre' and $S0 is equal, the 'pre' is not a pattern target
+    if pre == $S0 goto update_prerequisites_invoke
+
     get_hll_global pre, ['smart';'make';'target'], $S0
-    
-update_prerequisites_go:
     unless null pre goto update_prerequisites_invoke
-    ## Make a new target object and store it. 
+    ## Make a new target and store it.
     pre = 'new:Target'( $S0 )
     set_hll_global ['smart';'make';'target'], $S0, pre
+
 update_prerequisites_invoke:
-    
     ($I1, $I2, $I3) = 'update-target'( pre, requestor )
     count_updated += $I1
-    count_newer += $I2
+    count_newer   += $I2
+    count_actions += $I3
     goto update_prerequisites__iterate
     
 update_prerequisites__iterate_end:
@@ -904,9 +897,6 @@ fatal_not_a_pattern_target:
     .local pmc cs
     new cs, 'ResizableIntegerArray'
     
-    # .local string object
-    # object = target #.'object'()
-
     .local pmc rules, rule
     getattribute rules, target, 'rules'
     elements $I0, rules
@@ -1051,6 +1041,7 @@ check_out_pattern_targets_for_updating__iterate:
     count_updated += $I1
     count_newer   += $I2
     count_actions += $I3
+    target.'updated'( 1 )
     goto check_out_pattern_targets_for_updating__done
 
 check_out_pattern_targets_for_updating__iterate_end:
@@ -1065,6 +1056,7 @@ check_out_pattern_targets_for_updating__iterate_end:
     count_updated += $I1
     count_newer   += $I2
     count_actions += $I3
+    target.'updated'( 1 )
     goto check_out_pattern_targets_for_updating__done
 
 check_out_pattern_targets_for_updating__failed:
