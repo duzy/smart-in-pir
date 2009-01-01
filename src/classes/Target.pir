@@ -27,9 +27,11 @@ pattern targets(the match-anything rule is excluded).
     new target, 'Target'
     setattribute target, 'object', object
     
-    .local pmc rules
+    .local pmc rules, members
     new rules, 'ResizablePMCArray'
+    new members, 'ResizablePMCArray'
     setattribute target, 'rules', rules
+    setattribute target, 'members', members
     
 return_target:
     .return(target)
@@ -40,9 +42,8 @@ return_target:
 .sub "__init_class" :anon :init :load
     newclass $P0, 'Target'
     addattribute $P0, 'object'  ## filename of the object or instance of Pattern
-    addattribute $P0, 'member'  ## for Archive target, indicates the member name
+    addattribute $P0, 'members'  ## for Archive target, indicates the member names
     addattribute $P0, 'rules'   ## Rules to update the object
-    addattribute $P0, 'stem'    ## used with implicit rule -- pattern
     addattribute $P0, 'updated' ## 1/0, wether the object has been updated
 .end
 
@@ -65,16 +66,16 @@ got_object:
 =item <member()>
     Returns the member name of the target.
 =cut
-.sub "member" :method
-    getattribute $P0, self, 'member'
-    unless null $P0 goto got_member
+.sub "members" :method
+    getattribute $P0, self, 'members'
+    unless null $P0 goto got_members
     $P0 = new 'String'
     $P0 = '' #'<nothing>'
-    setattribute self, 'member', $P0
-got_member:
+    setattribute self, 'members', $P0
+got_members:
     $S0 = $P0
     .return($S0)
-.end # sub "member"
+.end # sub "members"
 
 =item
 =cut
@@ -283,8 +284,8 @@ collect_prerequisites_of_rules_done:
     
     ## var1 => $%
     new var1, 'String'
-    $S0 = target.'member'()
-    assign var1, $S0
+    #$S0 = target.'member'()
+    #assign var1, $S0
     
     ## var2 => $<
     new var2, 'String'
@@ -448,8 +449,8 @@ loop_orderonly_end:
     
     ## var1 => $%
     new var1, 'String'
-    $S0 = target.'member'()
-    assign var1, $S0
+    #$S0 = target.'member'()
+    #assign var1, $S0
     
     ## var2 => $<
     new var2, 'String'
