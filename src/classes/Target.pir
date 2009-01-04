@@ -882,7 +882,7 @@ fatal_not_a_pattern_target:
 .sub "update-target" :anon
     .param pmc target
     .param pmc requestor
-
+    
     .local int count_newer
     .local int count_updated
     .local int count_actions # executed actions
@@ -901,22 +901,22 @@ fatal_not_a_pattern_target:
     getattribute rules, target, 'rules'
     elements $I0, rules
     if $I0 <= 0 goto check_out_pattern_targets_for_updating
-
+    
     .local int target_changetime
     target_changetime = target.'changetime'()
-
+    
     .local pmc rule_it
     local_branch cs, update_prerequisites_of_rules
     local_branch cs, update_oo_prerequisites_of_rules
     
     if 0 < count_updated goto execute_actions
-
+    
     $I0 = target.'is_phony'()
     if $I0 goto execute_actions
-
+    
     ## If the object of the target not extsted, the target will be updated.
     if target_changetime == 0 goto execute_actions
-
+    
     ## If no prerequisites is updated but some of them is newer than the taget,
     ## the target will be updated.
     if 0 < count_newer goto execute_actions
@@ -930,17 +930,17 @@ execute_actions:
     '!clear-automatic-variables'()
     
     ## TODO: do something if $I0 is not zero!
-
+    
     ## Make the target as updated
     target.'updated'( 1 )
-
+    
     unless $I0 goto return_result
     inc count_updated
     count_actions += $I1
     
 return_result:
     .return (count_updated, count_newer, count_actions)
-
+    
     ######################
     ## local: update_prerequisites_of_rules( rules )
 update_prerequisites_of_rules:

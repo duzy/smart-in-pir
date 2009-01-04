@@ -106,24 +106,23 @@ token make_rule {
 }
 #      $<item>=[ <make_variable_ref> | [<-[ : \ \t \n ]>+] ]
 token make_target {
-#     | <make_variable_ref> {*}
-#     | <-[ : \ \t \n ]>+ {*}
-    [<make_variable_ref>|<-[:\ \t\n$]>]+
-#    {*}
+    [<make_variable_ref>|<-[(:\ \t\n$]>]+
+#    ['(' $<member>=[[<!before ')'>.]*] ')']?
+    ['('[<!before ')'>.]*')']?
 }
 token make_prerequisite {
-#     | <make_variable_ref> {*}
-#     | <-[ ; \ \t \\ \n ]>+ {*}
-    [<make_variable_ref>|<-[;|\ \t\\\n$]>]+
-#    {*}
+    [<make_variable_ref>|<-[(;|\ \t\\\n$]>]+
+#    ['(' $<member>=[<-[)]>*] ')']?
+    ['('<-[)]>*')']?
 }
 #    <?after '|' <.ws_inline> >
 token make_prerequisite_oo {
-    [<make_variable_ref>|<-[;|\ \t\\\n$]>]+
+    [<make_variable_ref>|<-[(;|\ \t\\\n$]>]+
+#    ['(' $<member>=[<-[)]>*] ')']?
+    ['('<-[)]>*')']?
 }
 token make_action {
     [[<!before \\\n><-[\n]>]+ [\\\n]?]*
-#    {*}
 }
 token make_special_rule {
     <.ws_inline>
@@ -224,10 +223,10 @@ rule smart_builtin_function {
 
 ##  terms
 token term {
-    | <value> {*}                                #= value
-    | <make_variable_method_call> {*}        #= make_variable_method_call
-    | <make_variable_ref> {*}		 #= make_variable_ref
-    | <smart_builtin_function> {*}               #= smart_builtin_function
+    | <value> {*}                               #= value
+    | <make_variable_method_call> {*}           #= make_variable_method_call
+    | <make_variable_ref> {*}                   #= make_variable_ref
+    | <smart_builtin_function> {*}              #= smart_builtin_function
 }
 
 rule value {

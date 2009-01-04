@@ -25,13 +25,17 @@ object.
 
 .loadlib 'smart_group'
 
+.include "include/warnings.pasm"
+
 .include "stat.pasm"
 .include "datatypes.pasm" # for libc::readdir
 .include "src/constants.pir"
 
 .sub 'onload' :anon :load :init
     load_bytecode 'PCT.pbc'
-    
+
+    warningson .PARROT_WARNINGS_DEPRECATED_FLAG
+
     $P0 = get_hll_global ['PCT'], 'HLLCompiler'
     $P1 = $P0.'new'()
     $P1.'language'('smart')
@@ -186,7 +190,7 @@ check_arg_unknown_flag:
     $S0 = "smart: Uknown command line flag '"
     $S0 .= arg
     $S0 .= "'\n"
-    print $S0
+    printerr $S0
     exit EXIT_ERROR_BAD_ARGUMENT
     
 end_loop_args:

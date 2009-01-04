@@ -116,7 +116,7 @@ sub runtests {
                 #carp "Invalid test runner";
             }
         }
-        @result = `$command` unless @result;
+        @result = `$command 2>> $file.log` unless @result;
 
         ##TODO: restore ENVs???
 

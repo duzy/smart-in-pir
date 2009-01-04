@@ -286,17 +286,17 @@ iterate_items_end:
     prerequisites = rule.'prerequisites'()
     orderonly = rule.'orderonly'()
     actions = rule.'actions'()
-
+    
     .local pmc numberOneTarget
-
+    
     .local int implicit
     set implicit, 0
-
+    
     .local string text ## used as a temporary of mo.'text'()
     .local pmc items ## splitted from text
     .local pmc moa
     .local int at
-
+    
     moa = mo_targets
     at = ACTION_T
     local_branch call_stack, map_match_object_array
@@ -310,11 +310,11 @@ iterate_items_end:
     moa = mo_actions
     at = ACTION_A
     local_branch call_stack, map_match_object_array
-
+    
     local_branch call_stack, store_implicit_rule
-
+    
     .return(rule)
-
+    
     ######################
     ##  IN: $P1(the array), $I1(the action address)
     ##  OUT: $P0
@@ -323,21 +323,28 @@ map_match_object_array:
     if null moa goto map_match_object_array__done
     typeof $S0, moa
     if $S0 == "Undef" goto map_match_object_array__done
-    .local pmc it
+    .local pmc it, iit
     #new $P0, 'ResizablePMCArray'
     new it, 'Iterator', moa
 iterate_match_object_array_loop:
     unless it goto iterate_match_object_array_loop_end
     $P2 = shift it
     $S0 = $P2.'text'()
-
+    
     if at == ACTION_A goto to_action_pack_action
+
+#     print "a: "
+#     print $S0
+#     print "\n"
     
     items = '~expanded-items'( $S0 )
-    new $P3, 'Iterator', items 
+    new iit, 'Iterator', items 
 iterate_match_object_array_loop_iterate_items:
-    unless $P3 goto iterate_match_object_array_loop_iterate_items_end
-    text = shift $P3
+    unless iit goto iterate_match_object_array_loop_iterate_items_end
+    text = shift iit
+#     print "item: "
+#     print text
+#     print "\n"
     if at == ACTION_T goto to_action_pack_target
     if at == ACTION_P goto to_action_pack_prerequisite
     if at == ACTION_O goto to_action_pack_orderonly
@@ -352,6 +359,7 @@ to_action_pack_orderonly:
     local_branch call_stack, action_pack_orderonly
     goto iterate_match_object_array_loop_iterate_items
 iterate_match_object_array_loop_iterate_items_end:
+    null iit
     goto iterate_match_object_array_loop
     
 to_action_pack_action:
@@ -360,6 +368,7 @@ to_action_pack_action:
     goto iterate_match_object_array_loop
     
 iterate_match_object_array_loop_end:
+    null it
 map_match_object_array__done:
     local_return call_stack
     
@@ -375,14 +384,31 @@ action_pack_target:
     ## then only pattern target could exists in the rule.
     local_branch call_stack, check_and_handle_pattern_target
     if $I0 goto action_pack_target__done ## got and handled pattern
-    
     #if implicit goto error_mixed_implicit_and_normal_rule
-    
+
+    ## Check if archive-members
+    local_branch call_stack, check_and_split_archive_members
+    if $S0 == "" goto action_pack_target__bind_normal
+    new $P1, 'Iterator', $P0
+action_pack_target__iterate_archive:
+    unless $P1 goto action_pack_target__iterate_archive_end
+    shift $S0, $P1
+    $P2 = '!BIND-TARGET'( $S0, 1 )
+    getattribute $P3, $P2, 'rules'
+    push $P3, rule ## bind the rule with the target
+    unless null numberOneTarget goto action_pack_target__iterate_archive
+    set numberOneTarget, $P2
+    goto action_pack_target__iterate_archive
+action_pack_target__iterate_archive_end:
+    goto action_pack_target__done
+
+    ## Finally...
+action_pack_target__bind_normal:
     ## Normal targets are bind directly.
     $P1 = '!BIND-TARGET'( text, 1 )
     getattribute $P2, $P1, 'rules'
     push $P2, rule
-
+    
     #push targets, $P1 # push the target
     unless null numberOneTarget goto action_pack_target__done
     set numberOneTarget, $P1
@@ -483,26 +509,50 @@ check_and_handle_pattern_target:
     $I2 = $I1 + 1
     index $I2, text, "%", $I2
     unless $I2 < 0 goto check_and_handle_pattern_target__validate_non_mixed
-    
+
+    .local pmc pattern_targets
+    get_hll_global pattern_targets, ['smart';'make'], "@<%>"
+    unless null pattern_targets goto check_and_handle_pattern_target_go
+    new pattern_targets, 'ResizablePMCArray'
+    set_hll_global ['smart';'make'], "@<%>", pattern_targets
+check_and_handle_pattern_target_go:
+
+    local_branch call_stack, check_and_split_archive_members
+    if $S0 == "" goto check_and_handle_pattern_target__store_normal
+    new $P1, 'Iterator', $P0
+check_and_handle_pattern_target_iterate_arcives:
+    unless $P1 goto check_and_handle_pattern_target_iterate_arcives_end
+    shift $S0, $P1
+    $P2 = 'new:Target'( $S0 )
+    $P3 = 'new:Pattern'( $S0 )
+    setattribute $P2, 'object', $P3
+    getattribute $P10, $P2, 'rules'
+    push $P10, rule ## bind the rule with the pattern target
+    push pattern_targets, $P2
+    goto check_and_handle_pattern_target_iterate_arcives
+check_and_handle_pattern_target_iterate_arcives_end:
+    set implicit, 1 ## flag implicit for the rule
+    set $I0, 1 ## set the result
+    null $P1
+    null $P2
+    null $P3
+    goto check_and_handle_pattern_target__done
+
+check_and_handle_pattern_target__store_normal:
     $P1 = 'new:Target'( text )
     $P2 = 'new:Pattern'( text )
     setattribute $P1, 'object', $P2
     getattribute $P10, $P1, 'rules'
-    push $P10, rule
+    push $P10, rule ## bind the rule with the pattern target
     null $P2
     null $P10
     
     if text == "%" goto check_and_handle_pattern_target__store_match_anything
     
 check_and_handle_pattern_target__store_pattern_target:
-    get_hll_global $P2, ['smart';'make'], "@<%>"
-    unless null $P2 goto check_and_handle_pattern_target__push_pattern_target
-    new $P2, 'ResizablePMCArray'
-    set_hll_global ['smart';'make'], "@<%>", $P2
-check_and_handle_pattern_target__push_pattern_target:
-    push $P2, $P1
+    push pattern_targets, $P1
     null $P1
-    null $P2
+    null pattern_targets
     set implicit, 1 ## flag implicit for the rule
     set $I0, 1 ## set the result
     goto check_and_handle_pattern_target__done
@@ -525,6 +575,59 @@ error_mixed_implicit_and_normal_rule:
     $S0 .= "\n"
     printerr $S0
     exit EXIT_ERROR_MIXED_RULE
+
+    ######################
+    ## local: check_and_split_archive_members
+    ##          IN: text(the name of target/prerequisite/order-only)
+    ##          OUT: $S0(empty if not an archive)
+    ##               $P0(archive members, null if not an archive)
+check_and_split_archive_members:
+    set $S0, ""
+    null $P0
+    index $I1, text, "("
+    if $I1 < 0 goto check_and_split_archive_members_done
+    index $I2, text, ")", $I1
+    if $I2 < 0 goto check_and_split_archive_members_done
+    substr $S1, text, 0, $I1
+    inc $I1
+    $I2 = $I2 - $I1
+    substr $S2, text, $I1, $I2
+    
+    $S0 = 'strip'( $S1 )
+    #split $P0, $S2, " "
+    $P3 = '~expanded-items'( $S2 )
+    null $P1
+    null $P2
+    new $P0, 'ResizableStringArray'
+    new $P1, 'Iterator', $P3
+check_and_split_archive_members__iterate:
+    unless $P1 goto check_and_split_archive_members__iterate_end
+    shift $P2, $P1
+    #$S1 = 'strip'( $P2 )
+    set $S2, $P2
+    clone $S1, $S0
+    concat $S1, "("
+    concat $S1, $S2
+    concat $S1, ")"
+    push $P0, $S1
+#     print "archive: "
+#     say $S1
+    goto check_and_split_archive_members__iterate
+check_and_split_archive_members__iterate_end:
+    
+    null $S1
+    null $S2
+    null $P1
+    null $P2
+#     print "archive: "
+#     print text
+#     print ": "
+#     print $S1
+#     print ", "
+#     print $S2
+#     print "\n"
+check_and_split_archive_members_done:
+    local_return call_stack
 
     
     ######################

@@ -4,7 +4,7 @@
     do { unlink if -f } for @files;
 
     my $runner = $smart . ' -f ' . $file;
-    my @temp = `$runner`;
+    my @temp = `$runner 2>> $file.log`;
     do {
         -f or do {
             push @result, "FAILED: $_ not created";
@@ -15,7 +15,7 @@
     push @result, @temp;
     push @result, "====================\n";
 
-    @temp = `$runner`;
+    @temp = `$runner 2>> $file.log`;
     pop @temp;
     push @result, @temp;
     push @result, "====================\n";
@@ -24,12 +24,12 @@
         push @result, "ERROR: can't rm @files\n";
         die "can't rm files @files";
     };
-    @temp = `$runner`;
+    @temp = `$runner 2>> $file.log`;
     pop @temp;
     push @result, @temp;
     push @result, "====================\n";
 
-    @temp = `$runner`;
+    @temp = `$runner 2>> $file.log`;
     pop @temp;
     push @result, @temp;
     push @result, "====================\n";
@@ -38,12 +38,12 @@
         push @result, "ERROR: can't touch b.txt\n";
         die "can't touch file b.txt";
     };
-    @temp = `$runner`;
+    @temp = `$runner 2>> $file.log`;
     pop @temp;
     push @result, @temp;
     push @result, "====================\n";
 
-    @temp = `$runner`;
+    @temp = `$runner 2>> $file.log`;
     pop @temp;
     push @result, @temp;
     push @result, "====================\n";

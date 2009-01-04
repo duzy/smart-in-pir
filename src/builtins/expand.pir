@@ -35,14 +35,17 @@ Expand the input string and then split it into a ResizableStringArray.
     n   = 0
 iterate_chars:
     unless pos < len goto iterate_chars_end
-    $S0 = substr str, pos, 1
-    $I0 = index spaces, $S0
+    substr $S0, str, pos, 1
+    index $I0, spaces, $S0
     if $I0 < 0 goto iterate_chars_next
     $I1 = pos - n
     $S0 = substr str, n, $I1
     $S0 = 'strip'( $S0 )
     if $S0 == "" goto iterate_chars__find_next_nonspace
     push array, $S0 # push item
+#     print "item: "
+#     print $S0
+#     print "\n"
 
 iterate_chars__find_next_nonspace:
     inc pos
@@ -54,6 +57,15 @@ iterate_chars__find_next_nonspace:
     goto iterate_chars
 
 iterate_chars_next:
+    unless $S0 == "(" goto iterate_chars_step_forward
+    index $I0, str, ")", pos
+    if $I0 < 0 goto iterate_chars_step_forward
+#     print pos
+#     print " ~ "
+#     print $I0
+#     print "\n"
+    pos = $I0
+iterate_chars_step_forward:
     inc pos # step forward
     goto iterate_chars
 iterate_chars_end:
@@ -64,6 +76,9 @@ iterate_chars_end:
     $S0 = 'strip'( $S0 )
     if $S0 == "" goto return_result
     push array, $S0 # push the last item
+#     print "item: "
+#     print $S0
+#     print "\n"
 
 return_result:
     .return (array)
