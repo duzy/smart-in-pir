@@ -635,6 +635,19 @@ check_and_split_archive_members_done:
 action_pack_prerequisite:
     if implicit goto action_pack_prerequisite__push_implicit
 
+    local_branch call_stack, check_and_split_archive_members
+    if $S0 == "" goto action_pack_prerequisite__handle_single
+    .local pmc ait
+    new ait, 'Iterator', $P0
+action_pack_prerequisite__iterate_archives:
+    unless ait goto action_pack_prerequisite__iterate_archives_end
+    shift text, ait
+    local_branch call_stack, action_pack_prerequisite__handle_single
+    goto action_pack_prerequisite__iterate_archives
+action_pack_prerequisite__iterate_archives_end:
+    goto action_pack_prerequisite__done
+
+action_pack_prerequisite__handle_single:
     ## Firstly, check to see if wildcard, and handle it if yes
     local_branch call_stack, check_wildcard_prerequsite
     if $I0 goto action_pack_prerequisite__done
@@ -658,8 +671,23 @@ action_pack_prerequisite__done:
     ######################
     ##  IN: text(the text value)
 action_pack_orderonly:
+    local_branch call_stack, check_and_split_archive_members
+    if $S0 == "" goto action_pack_orderonly__handle_single
+    .local pmc ait
+    new ait, 'Iterator', $P0
+action_pack_orderonly__iterate_archives:
+    unless ait goto action_pack_orderonly__iterate_archives_end
+    shift text, ait
+    local_branch call_stack, action_pack_orderonly__handle_single
+    goto action_pack_orderonly__iterate_archives
+action_pack_orderonly__iterate_archives_end:
+    goto action_pack_orderonly__done
+    
+action_pack_orderonly__handle_single:
     $P1 = '!BIND-TARGET'( text, 0 )
     push orderonly, $P1
+    
+action_pack_orderonly__done:
     local_return call_stack
 
     
