@@ -2,7 +2,15 @@
 {
     my $e = <<'____EXPECT'
 source: foo.cpp, stem=foo
+object: foo.o <- foo.cpp, stem=foo
+member: foo.o of libfoo.a, libfoo.a(foo.o) <- foo.o
+check:(libfoo.a):libfoo.a
 source: bar.cpp, stem=bar
+object: bar.o <- bar.cpp, stem=bar
+member: bar.o of libfoo.a, libfoo.a(bar.o) <- bar.o
+check:(libfoo.a):libfoo.a
+member: libbar.a(baz.o)
+libfoo.a, baz.o
 check:(libfoo.a(foo.o)):libfoo.a(foo.o)
 check:(foo.o bar.o):foo.o bar.o
 check:(foo.o bar.o bar.o):foo.o bar.o bar.o
