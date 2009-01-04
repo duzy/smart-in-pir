@@ -19,19 +19,39 @@ pattern targets(the match-anything rule is excluded).
 
 .namespace []
 .sub "new:Target"
-    .param pmc object
+    .param pmc aobject
+    
+    if null aobject goto return_target
+
+    .local string object
+    .local pmc member
+    .local pmc rules
     .local pmc target
-    
-    if null object goto return_target
-    
-    new target, 'Target'
-    setattribute target, 'object', object
-    
-    .local pmc rules, members
+
+    new member, 'String'
     new rules, 'ResizablePMCArray'
-    new members, 'ResizablePMCArray'
+    
+    set object, aobject
+    set member, ""
+
+    index $I1, object, "("
+    if $I1 < 0 goto init_target
+    index $I2, object, ")", $I1
+    if $I2 < 0 goto init_target
+
+    substr $S1, object, 0, $I1
+    inc $I1
+    $I2 = $I2 - $I1
+    substr $S2, object, $I1, $I2
+
+    set aobject, $S1
+    set member, $S2
+    
+init_target:
+    new target, 'Target'
+    setattribute target, 'object', aobject
     setattribute target, 'rules', rules
-    setattribute target, 'members', members
+    setattribute target, 'member', member
     
 return_target:
     .return(target)
@@ -42,39 +62,43 @@ return_target:
 .sub "__init_class" :anon :init :load
     newclass $P0, 'Target'
     addattribute $P0, 'object'  ## filename of the object or instance of Pattern
-    addattribute $P0, 'members'  ## for Archive target, indicates the member names
+    addattribute $P0, 'member'  ## for Archive target, indicates the member name
     addattribute $P0, 'rules'   ## Rules to update the object
     addattribute $P0, 'updated' ## 1/0, wether the object has been updated
 .end
 
+=item <goal()>
+=cut
+.sub "goal" :method :vtable('get_string')
+    getattribute $P0, self, 'object'
+    getattribute $P2, self, 'member'
+    if $P2 == "" goto return_result
+    set $S1, $P2
+    $S0 = $P0
+    concat $S0, "("
+    concat $S0, $S1
+    concat $S0, ")"
+    new $P0, 'String'
+    assign $P0, $S0
+return_result:
+    .return($P0)
+.end # sub "goal"
 
 =item <object()>
     Returns the object file updated by the target.
 =cut
-.sub "object" :method :vtable('get_string')
+.sub "object" :method
     getattribute $P0, self, 'object'
-    unless null $P0 goto got_object
-    $P0 = new 'String'
-    $P0 = '<nothing>'
-    setattribute self, 'object', $P0
-got_object:     
-    $S0 = $P0
-    .return($S0)
+    .return($P0)
 .end # sub "object"
 
 
 =item <member()>
     Returns the member name of the target.
 =cut
-.sub "members" :method
-    getattribute $P0, self, 'members'
-    unless null $P0 goto got_members
-    $P0 = new 'String'
-    $P0 = '' #'<nothing>'
-    setattribute self, 'members', $P0
-got_members:
-    $S0 = $P0
-    .return($S0)
+.sub "member" :method
+    getattribute $P0, self, 'member'
+    .return($P0)
 .end # sub "members"
 
 =item
@@ -284,8 +308,8 @@ collect_prerequisites_of_rules_done:
     
     ## var1 => $%
     new var1, 'String'
-    #$S0 = target.'member'()
-    #assign var1, $S0
+    $S0 = target.'member'()
+    assign var1, $S0
     
     ## var2 => $<
     new var2, 'String'
@@ -311,7 +335,10 @@ loop_prerequisites:
     shift $P0, $P1       ## $P0, $P1 used
 
     ## The name of prerequisite
+    $S1 = $P0.'member'() ## $S1 used
+    unless $S1 == "" goto loop_prerequisites_check_S1
     $S1 = $P0.'object'() ## $S1 used
+loop_prerequisites_check_S1:
     if $S1 == "" goto loop_prerequisites
     
     ## var3 => $?, prerequsites newer than the target($@)

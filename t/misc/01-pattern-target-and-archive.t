@@ -8,6 +8,8 @@ test-the-target-member-name: libfoo.a(foo.o) libfoo.a(bar.o) libfoo.a(bar.o) \
 	@echo "check:(libfoo.a(foo.o)):$<"
 	@echo "check:(foo.o bar.o):$^"
 	@echo "check:(foo.o bar.o bar.o):$+"
+	@echo "check:(foo.o bar.o foo.o):$?"
+	@echo "check:(bar.o):$|"
 
 libbaz.a(	foo.o		bar.o ):
 	@echo "check:(libbaz.a):$@"
