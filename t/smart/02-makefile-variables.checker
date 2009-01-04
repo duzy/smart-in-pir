@@ -1,6 +1,8 @@
 # -*- cperl -*-
 {
-    pop @result;
+    #pop @result;
+    my @r;
+    do { push @r, $_ if (!m/^smart:.+$/) } for @result;
     my $expect = <<"____END_EXPECT";
 1..10
 check:CC(gcc -I.):gcc -I.
@@ -15,7 +17,7 @@ check:A	B("variable with in-tab is ok"):"variable with in-tab is ok"
 check:A(\$(A B)):\$(A B)
 ____END_EXPECT
     ;
-    my $result = join '', @result;
+    my $result = join '', @r; #@result;
     $check_result = $result eq $expect;
     print "";
 }

@@ -11,12 +11,12 @@
             die "file $_ does generated";
         }
     } for @files;
-    pop @temp;
+    #pop @temp;
     push @result, @temp;
     push @result, "====================\n";
 
     @temp = `$runner 2>> $file.log`;
-    pop @temp;
+    #pop @temp;
     push @result, @temp;
     push @result, "====================\n";
 
@@ -25,12 +25,12 @@
         die "can't rm files @files";
     };
     @temp = `$runner 2>> $file.log`;
-    pop @temp;
+    #pop @temp;
     push @result, @temp;
     push @result, "====================\n";
 
     @temp = `$runner 2>> $file.log`;
-    pop @temp;
+    #pop @temp;
     push @result, @temp;
     push @result, "====================\n";
 
@@ -39,12 +39,12 @@
         die "can't touch file b.txt";
     };
     @temp = `$runner 2>> $file.log`;
-    pop @temp;
+    #pop @temp;
     push @result, @temp;
     push @result, "====================\n";
 
     @temp = `$runner 2>> $file.log`;
-    pop @temp;
+    #pop @temp;
     push @result, @temp;
     push @result, "====================\n";
     push @result, "\n";

@@ -1,6 +1,8 @@
 # -*- cperl -*-
 {
-    pop @result;
+    #pop @result;
+    my @r;
+    do { push @r, $_ if (!m/^smart:.+$/) } for @result;
     my $expect = <<'____END_EXPECT';
 start
 stem
@@ -35,7 +37,7 @@ stem
 ====================
 ____END_EXPECT
     ;
-    my $result = join '', @result;
+    my $result = join '', @r; #@result;
     $check_result = $result eq $expect;
     $_ = "$file.log";
     unlink if -f;
