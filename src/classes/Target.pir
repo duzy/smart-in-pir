@@ -817,6 +817,18 @@ return_result:
     .return($I0)
 .end # .sub "changetime"
 
+.sub "exists" :method
+    .local string str
+    str = self.'object'()
+    stat $I0, str, .STAT_EXISTS
+    unless $I0 goto return_result
+    str = self.'member'()
+    if str == "" goto return_result
+    stat $I0, str, .STAT_EXISTS
+return_result:
+    .return($I0)
+.end # sub "exists"
+
 ######################################################################
 
 =item <update(OPT requestor)>
@@ -963,7 +975,11 @@ fatal_not_a_pattern_target:
     .local pmc rules, rule
     getattribute rules, target, 'rules'
     elements $I0, rules
-    if $I0 <= 0 goto check_out_pattern_targets_for_updating
+    unless $I0 <= 0 goto do_normal_update
+    $I0 = target.'exists'()
+    if $I0 goto return_without_execution
+    goto check_out_pattern_targets_for_updating
+do_normal_update:
     
     .local int target_changetime
     target_changetime = target.'changetime'()
@@ -1110,7 +1126,8 @@ check_out_pattern_targets_for_updating__iterate:
 check_out_pattern_targets_for_updating__iterate_end:
     ## Here, we got not matched pattern, try match-anything
     get_hll_global pattern_target, ['smart';'make'], "$<%>"
-    if null pattern_target goto check_out_pattern_targets_for_updating__failed
+    #if null pattern_target goto check_out_pattern_targets_for_updating__failed
+    if null pattern_target goto report_error_if_file_not_existed
     
     ($I1, $I2, $I3, $I4) = 'update-target-%'( pattern_target, target, requestor )
     unless $I4 goto check_out_pattern_targets_for_updating__done
@@ -1122,6 +1139,8 @@ check_out_pattern_targets_for_updating__iterate_end:
     target.'updated'( 1 )
     goto check_out_pattern_targets_for_updating__done
 
+report_error_if_file_not_existed:
+    #exists $I0, 
 check_out_pattern_targets_for_updating__failed:
     $S0 = target
     $S1 = "smart: *** No rule to make target '"
