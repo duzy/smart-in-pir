@@ -50,16 +50,17 @@ test-dollar-sign:	uoo
 ##	*  it imposes an order of execution of build commands
 ##	*  it imposes a dependancy relationship
 ##		if any prerequsite is newer, than the target is updated
-test-order-only:			uoo
-	@echo "todo: order-only prerequsites"
+test-order-only:			uoo|baz
+	@echo "check:(baz):$|"
 
+baz:
 
 test-wildcard:	uoo src/[^g]*.pir test-wildcard-more
 	@echo "$@ ------------------------------"
 	@echo "wildcard: $^"
 	@echo "$@ ---- done --------------------"
 
-wild = build/*.pir
+wild = gen/*.pir
 test-wildcard-more: $(wild)
 	@echo "wildcard-more: $^"
 	@echo "$@ ---- done --------------------"

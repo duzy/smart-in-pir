@@ -8,7 +8,7 @@ test-echo-on(uoo)
 test-echo ---- done --------------------
 dollar-sign: \$
 test-dollar-sign ---- done --------------------
-todo: order-only prerequsites
+check:(bazd):baz
 wildcard-more: build/gen_actions.pir build/gen_builtins.pir build/gen_grammar.pir
 test-wildcard-more ---- done --------------------
 test-wildcard ------------------------------

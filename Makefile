@@ -5,11 +5,13 @@
 ## -*- mode: Makefile -*-
 ## $Id$
 
+#include Makefile.def
+
 ## arguments we want to run parrot with
 PARROT_ARGS =
 
 ## configuration settings
-BUILD_DIR     = /more/temp/parrot
+BUILD_DIR     = /home/duzy/open/parrot
 LOAD_EXT      = .so
 O             = .o
 
@@ -88,9 +90,11 @@ $(SMART_GROUP): $(PARROT) $(PMC_SOURCES)
 	cd $(PMC_DIR) && $(BUILD_DYNPMC) linklibs $(PMCS)
 	cd $(PMC_DIR) && $(BUILD_DYNPMC) copy --destination=$(PARROT_DYNEXT) $(PMCS)
 
+ifdef UPDATE_MAKEFILE
 # regenerate the Makefile
 Makefile: config/makefiles/root.in
 	cd $(BUILD_DIR) && $(RECONFIGURE) --step=gen::languages --languages=smart
+endif
 
 # This is a listing of all targets, that are meant to be called by users
 help:

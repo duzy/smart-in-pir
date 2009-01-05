@@ -11,11 +11,12 @@ check:computed-name(more_deeper_name):more_deeper_name
 check:computed-name(expecting[computed variable names]):expecting[computed variable names]
 check:computed-name(var1):var1
 check:computed-name(computed variable names):computed variable names
-smart: Done, 1 targets updated.
 __END_EXPECTED__
     ;
 
-    my $result = join '', @result;
+    my @r;
+    do { push @r, $_ if !m/^smart:.+$/ } for @result;
+    my $result = join '', @r;
     $check_result = $result eq $expected;
     print "";
 }

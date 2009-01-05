@@ -3,7 +3,9 @@
     my $user = $ENV{USER};
     my $var_a = $ENV{A_env_var}; #"foobar";
     my $var_b = $ENV{B_env_var}; #"foobar";
-    my $result = join '', @result;
+    my @r;
+    do { push @r, $_ if !m/^smart:.+$/ } for @result;
+    my $result = join '', @r;
     my $expected = <<__END_EXPECTED__;
 1..7
 check:origin-PATH(environment):environment
@@ -13,7 +15,6 @@ ok: $var_a
 check:origin-A_env_var(environment):environment
 check:origin-B_env_var(file):file
 check:B_env_var(xxxxxx):xxxxxx
-smart: Done, 1 targets updated.
 __END_EXPECTED__
     ;
 
