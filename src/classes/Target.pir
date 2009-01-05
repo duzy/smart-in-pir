@@ -33,17 +33,23 @@ pattern targets(the match-anything rule is excluded).
     
     set object, aobject
     set member, ""
-
+    
     index $I1, object, "("
     if $I1 < 0 goto init_target
     index $I2, object, ")", $I1
     if $I2 < 0 goto init_target
-
+    
     substr $S1, object, 0, $I1
     inc $I1
     $I2 = $I2 - $I1
     substr $S2, object, $I1, $I2
-
+    
+#     get_global $P0, ['Target'], "split-archive-member"
+#     #($S1, $S2) = 'split-archive-member'(object)
+#     ($S1, $S2) = $P0( object )
+#     if $S1 == "" goto init_target
+#     if $S2 == "" goto init_target
+    
     set aobject, $S1
     set member, $S2
     
@@ -57,7 +63,6 @@ return_target:
     .return(target)
 .end # sub "new:Target"
 
-
 .namespace ['Target']
 .sub "__init_class" :anon :init :load
     newclass $P0, 'Target'
@@ -67,9 +72,29 @@ return_target:
     addattribute $P0, 'updated' ## 1/0, wether the object has been updated
 .end
 
-=item <goal()>
+.sub "split-archive-member" :anon
+    .param string str
+    
+    set $S1, str
+    set $S2, ""
+    
+    index $I1, str, "("
+    if $I1 < 0 goto return_result
+    index $I2, str, ")", $I1
+    if $I2 < 0 goto return_result
+    
+    substr $S1, str, 0, $I1
+    inc $I1
+    $I2 = $I2 - $I1
+    substr $S2, str, $I1, $I2
+    
+return_result:
+    .return ($S1, $S2)
+.end # sub "split-archive-member"
+
+=item <name()>
 =cut
-.sub "goal" :method :vtable('get_string')
+.sub "name" :method :vtable('get_string')
     getattribute $P0, self, 'object'
     getattribute $P2, self, 'member'
     if $P2 == "" goto return_result
@@ -82,7 +107,7 @@ return_target:
     assign $P0, $S0
 return_result:
     .return($P0)
-.end # sub "goal"
+.end # sub "name"
 
 =item <object()>
     Returns the object file updated by the target.
@@ -325,14 +350,15 @@ var2_done:
     ## var3 => $?
     ## var4 => $^
     ## var5 => $+
+    .local pmc itr
     new var3, 'ResizableStringArray'
     new var4, 'ResizableStringArray'
     new var5, 'ResizableStringArray'
-    new $P1, 'Iterator', prerequisites
+    new itr, 'Iterator', prerequisites
     set $S0, var0 ## the target name ($@)
 loop_prerequisites:
-    unless $P1 goto loop_prerequisites_end
-    shift $P0, $P1       ## $P0, $P1 used
+    unless itr goto loop_prerequisites_end
+    shift $P0, itr
 
     ## The name of prerequisite
     $S1 = $P0.'member'() ## $S1 used
@@ -372,16 +398,20 @@ var5_end:
     
     goto loop_prerequisites
 loop_prerequisites_end:
-    null $P1
+    null itr
     null $P2
 
     ## var6 => $|
     new var6, 'ResizableStringArray'
-    new $P1, 'Iterator', orderonly
+    new itr, 'Iterator', orderonly
 loop_orderonly:
-    unless $P1 goto loop_orderonly_end
-    shift $P2, $P1
-    push var6, $P2
+    unless itr goto loop_orderonly_end
+    shift $P2, itr
+    $S0 = $P2.'member'()
+    unless $S0 == "" goto loop_orderonly_push
+    $S0 = $P2.'object'()
+loop_orderonly_push:
+    push var6, $S0
     goto loop_orderonly
 loop_orderonly_end:
 
@@ -403,6 +433,7 @@ loop_orderonly_end:
 
     ## var6 => $|
     $S0 = join " ", var6
+    null var6
     new var6, 'String'
     assign var6, $S0
     
@@ -464,20 +495,20 @@ loop_orderonly_end:
     
     .local pmc pattern
     getattribute pattern, target, "object"
-
+    
     .local pmc var0,    var1,   var2,   var3,   var4,   var5,   var6,   var7
     .local pmc var8,    var9,   var10,  var11,  var12,  var13,  var14,  var15
     .local pmc var16,   var17,  var18,  var19,  var20,  var21,  var22,  var23
+
+    $S0 = pattern.'flatten'( object, stem )
     
     ## var0 => $@
-    new var0, 'String'
-    $S0 = pattern.'flatten'( object, stem )
-    assign var0, $S0
-    
     ## var1 => $%
+    new var0, 'String'
     new var1, 'String'
-    #$S0 = target.'member'()
-    #assign var1, $S0
+    ($S1, $S2) = 'split-archive-member'( $S0 )
+    assign var0, $S1
+    assign var1, $S2
     
     ## var2 => $<
     new var2, 'String'
@@ -496,11 +527,12 @@ var2_done:
     new var3, 'ResizableStringArray'
     new var4, 'ResizableStringArray'
     new var5, 'ResizableStringArray'
-    new $P1, 'Iterator', prerequisites
+    .local pmc itr
+    new itr, 'Iterator', prerequisites
     set $S0, var0 ## the target name ($@)
 loop_prerequisites:
-    unless $P1 goto loop_prerequisites_end
-    shift $P0, $P1       ## $P0, $P1 used
+    unless itr goto loop_prerequisites_end
+    shift $P0, itr       ## $P0, itr used
 
     ## The name of prerequisite
     $S1 = pattern.'flatten'( $P0, stem ) ## $S1 used
@@ -537,16 +569,20 @@ var5_end:
     
     goto loop_prerequisites
 loop_prerequisites_end:
-    null $P1
+    null itr
     null $P2
 
     ## var6 => $|
     new var6, 'ResizableStringArray'
-    new $P1, 'Iterator', orderonly
+    new itr, 'Iterator', orderonly
 loop_orderonly:
-    unless $P1 goto loop_orderonly_end
-    shift $P2, $P1
-    push var6, $P2
+    unless itr goto loop_orderonly_end
+    shift $P2, itr
+    $S0 = $P2.'member'()
+    unless $S0 == "" goto loop_orderonly_push
+    $S0 = $P2.'object'()
+loop_orderonly_push:
+    push var6, $S0
     goto loop_orderonly
 loop_orderonly_end:
 
