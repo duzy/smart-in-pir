@@ -41,6 +41,8 @@ ____END_EXPECT
     $check_result = $result eq $expect;
     $_ = "$file.log";
     unlink if -f;
+    #print $result;
+    #print $expect;
     do {
         open F, ">$file.log" or die "$!";
         print F "==================== expecting ==\n";

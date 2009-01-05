@@ -203,6 +203,7 @@ sub check_result {
     my @result	= @_;
 
     return "(no output)" if 0 == $#result;
+    return "(no output)" if ! $result[0];
 
     my $report            = $self->{report};
     my ( $line1, $line2 ) = ( $result[0] =~ m{^(\d+)\s*\.\.\s*(\d+)} );

@@ -9,8 +9,9 @@ ok, update a <- foo
 ok, update bar <- a c | b
 ____END_EXPECT
     ;
-    pop @result;
-    my $r = join '', @result;
+    my @r;
+    do { push @r, $_ if !m/^smart:.+$/ } for @result;
+    my $r = join '', @r;
     $check_result = $r eq $s;
     $_ = "$file.log";
     unlink if -f;

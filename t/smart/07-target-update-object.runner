@@ -47,7 +47,6 @@
     #pop @temp;
     push @result, @temp;
     push @result, "====================\n";
-    push @result, "\n";
 
     {
         open F, "<a.txt" or do {

@@ -1,6 +1,5 @@
 # -*- cperl -*-
 {
-    pop @result;
     my $expect = <<____END_EXPECT;
 1..12
 ok, trick1
@@ -17,8 +16,22 @@ ok, bar => baz; first: baz
 ok, foobar => foo bar; first: foo
 ____END_EXPECT
     ;
-    my $result = join '', @result;
+    #pop @result;
+    my @r;
+    do { push @r, $_ if !m/^smart:.+$/ } for @result;
+    my $result = join '', @r;
     $check_result = $result eq $expect;
+    $_ = "$file.log";
+    unlink if -f;
+    do {
+        open F, ">$file.log" or die "$!";
+        print F "==================== expecting ==\n";
+        print F $expect;
+        print F "\n";
+        print F "==================== received ===\n";
+        print F $result;
+        close F;
+    } unless $check_result;
     print "";
 }
 
