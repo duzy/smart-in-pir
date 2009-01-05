@@ -223,21 +223,46 @@ sub check_result {
                 ++$report->{total};
                 push @{ $report->{todo} }, $1;
             }
-            elsif ( m{^check:.*?\((.*)\):(.*)$} ) {
+            elsif ( m{^(check|list):.*?\((.*)\):(.*)$} ) {
                 ++$report->{total};
                 ++$report->{check};
-                if ( $1 eq $2 ) {
+                my ( $a, $b );
+                if ( $1 eq "list" ) {
+                    $a = join " ", sort split " ", $2;
+                    $b = join " ", sort split " ", $3;
+                }
+                else {
+                    $a = $2;
+                    $b = $3;
+                }
+                if ( $a eq $b ) {
                     ++$report->{passed};
                     ++$report->{passed_check};
                 }
                 else {
                     chop;
-                    push @{ $report->{failed_check} }, "($1):$2";
+                    push @{ $report->{failed_check} }, "($2):$3";
                     #push @{ $report->{failed_check} }, $_; #"($1):$2";
                     $ret = "failed:\n" unless $ret;
                     $ret .= "\t$_\n";
                 }
             }
+#             elsif ( m{^list:.*?\((.*)\):(.*)$} ) {
+#                 ++$report->{total};
+#                 ++$report->{check};
+#                 my $a = join " ", sort split " ", $1;
+#                 my $b = join " ", sort split " ", $2;
+#                 if ( $a eq $b ) {
+#                     ++$report->{passed};
+#                     ++$report->{passed_check};
+#                 }
+#                 else {
+#                     chop;
+#                     push @{ $report->{failed_check} }, "($1):$2";
+#                     $ret = "failed:\n" unless $ret;
+#                     $ret .= "\t$_\n";
+#                 }
+#             }
 	}
     }; #if $#result < $line1 or $#result < $line2;
     $ret = "ok" unless $ret;

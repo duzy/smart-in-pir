@@ -1,6 +1,5 @@
 # -*- cperl -*-
 {
-    pop @result; ## pop the last line "smart: Done, # targets updated"
     my $expect = <<__END_EXPECT;
 --------------------------------------------------
 test-echo-off(uoo)
@@ -24,17 +23,20 @@ prerequsites ---- done --------------------
 goal <- prerequsites(all: prerequsites)
 __END_EXPECT
     ;
+    #pop @result; ## pop the last line "smart: Done, # targets updated"
+    my @r;
+    do { push @r, $_ if !m/^smart:.+$/ } for @result;
     #my $result = join '', @result;
     #$check_result = $result eq $expect;
     my @expect = split "\n", $expect;
-    my $na = join '', grep { !m/^(wildcard-more|wildcard).*?:/ } @result;
+    my $na = join '', grep { !m/^(wildcard-more|wildcard).*?:/ } @r;
     my $nb = join "\n", grep { !m/^(wildcard-more|wildcard).*?:/ } @expect;
     $nb .= "\n";
     $check_result = $na eq $nb;
     #print $na, "\n";
     #print $nb, "\n";
     goto out unless $check_result;
-    my @a = grep { m/^(wildcard-more|wildcard).*?:/ } @result;
+    my @a = grep { m/^(wildcard-more|wildcard).*?:/ } @r;
     my @b = grep { m/^(wildcard-more|wildcard).*?:/ } @expect;
     for my $a (@a) {
         my ( $pre, $aitems ) = $a =~ m/^(.+?):(.+?)$/; #$

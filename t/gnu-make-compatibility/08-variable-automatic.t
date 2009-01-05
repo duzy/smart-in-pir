@@ -62,7 +62,7 @@ clear-txt:
 test-the-preserved-prerequisites: pre1 pre2 pre1 pre3 pre2
 	@echo "check:(test-the-preserved-prerequisites):$@"
 	@echo "list:(pre1 pre2 pre3):$^"
-	@echo "olist:(pre1 pre2 pre1 pre3 pre2):$+"
+	@echo "check:(pre1 pre2 pre1 pre3 pre2):$+"
 
 test-the-order-only-prerequisites:
 	@echo "check:(test-the-order-only-prerequisites):$@"
