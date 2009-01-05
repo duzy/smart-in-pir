@@ -288,7 +288,6 @@ iterate_items_end:
     actions = rule.'actions'()
     
     .local pmc numberOneTarget
-    
     .local int implicit
     set implicit, 0
     
@@ -300,7 +299,11 @@ iterate_items_end:
     moa = mo_targets
     at = ACTION_T
     local_branch call_stack, map_match_object_array
-    local_branch call_stack, setup_number_one_target
+    #local_branch call_stack, setup_number_one_target
+    if implicit goto process_prerequisites
+    '!SETUP-DEFAULT-GOAL'( numberOneTarget )
+process_prerequisites:
+    
     moa = mo_prerequsites
     at = ACTION_P
     local_branch call_stack, map_match_object_array
@@ -311,7 +314,7 @@ iterate_items_end:
     at = ACTION_A
     local_branch call_stack, map_match_object_array
     
-    local_branch call_stack, store_implicit_rule
+    #local_branch call_stack, store_implicit_rule
     
     .return(rule)
     
@@ -699,42 +702,42 @@ action_pack_action:
     local_return call_stack
 
     
-    ######################
-    ## local: setup_number_one_target
-setup_number_one_target:
-    ## the first rule should defines the number-one target
-    if implicit goto setup_number_one_target_local_return
-    get_hll_global $P0, ['smart';'make'], "$<0>"
-    unless null $P0 goto setup_number_one_target_local_return
-    getattribute $P0, rule, 'targets'
-    if null numberOneTarget goto setup_number_one_target_local_return
-    $S0 = numberOneTarget.'object'()
-    set_hll_global ['smart';'make'], "$<0>", numberOneTarget
-    $P1 = 'new:Variable'( ".DEFAULT_GOAL", $S0, MAKEFILE_VARIABLE_ORIGIN_automatic )
-    set_hll_global ['smart';'make';'variable'], ".DEFAULT_GOAL", $P1
-setup_number_one_target_local_return:
-    local_return call_stack
+#     ######################
+#     ## local: setup_number_one_target
+# setup_number_one_target:
+#     ## the first rule should defines the number-one target
+#     if implicit goto setup_number_one_target_local_return
+#     get_hll_global $P0, ['smart';'make'], "$<0>"
+#     unless null $P0 goto setup_number_one_target_local_return
+#     getattribute $P0, rule, 'targets'
+#     if null numberOneTarget goto setup_number_one_target_local_return
+#     $S0 = numberOneTarget.'object'()
+#     set_hll_global ['smart';'make'], "$<0>", numberOneTarget
+#     $P1 = 'new:Variable'( ".DEFAULT_GOAL", $S0, MAKEFILE_VARIABLE_ORIGIN_automatic )
+#     set_hll_global ['smart';'make';'variable'], ".DEFAULT_GOAL", $P1
+# setup_number_one_target_local_return:
+#     local_return call_stack
 
-    ######################
-    ## local: store_implicit_rule
-store_implicit_rule:
-    unless implicit goto store_implicit_rule__done
-    ## Store implicit rules in the list 'smart;makefile;@[%]'
-    new $P0, 'Integer'
-    $P0 = 1 ##implicit
-    setattribute rule, 'implicit', $P0
-    null $P0
-    get_hll_global $P0, ['smart';'make'], "@[%]"
-    unless null $P0 goto store_implicit_rule__push
-    new $P0, 'ResizablePMCArray'
-    set_hll_global ['smart';'make'], "@[%]", $P0
-store_implicit_rule__push:
-    ## TODO: think about the ordering of implicit rules, should I use unshift
-    ##       instead of push?
-    push $P0, rule
-    null $P0
-store_implicit_rule__done:
-    local_return call_stack
+#     ######################
+#     ## local: store_implicit_rule
+# store_implicit_rule:
+#     unless implicit goto store_implicit_rule__done
+#     ## Store implicit rules in the list 'smart;makefile;@[%]'
+#     new $P0, 'Integer'
+#     $P0 = 1 ##implicit
+#     setattribute rule, 'implicit', $P0
+#     null $P0
+#     get_hll_global $P0, ['smart';'make'], "@[%]"
+#     unless null $P0 goto store_implicit_rule__push
+#     new $P0, 'ResizablePMCArray'
+#     set_hll_global ['smart';'make'], "@[%]", $P0
+# store_implicit_rule__push:
+#     ## TODO: think about the ordering of implicit rules, should I use unshift
+#     ##       instead of push?
+#     push $P0, rule
+#     null $P0
+# store_implicit_rule__done:
+#     local_return call_stack
 
 
     ######################
@@ -1476,3 +1479,22 @@ command_echo_is_on:
 .end
 
 
+.sub "!SETUP-DEFAULT-GOAL" :anon
+    .param pmc numberOneTarget
+    
+    ## the first rule should defines the number-one target
+    get_hll_global $P0, ['smart';'make'], "$<0>"
+    
+    unless null $P0 goto return_result
+    
+    if null numberOneTarget goto return_result
+    $S0 = numberOneTarget #.'object'()
+    
+    set_hll_global ['smart';'make'], "$<0>", numberOneTarget
+    
+    $P1 = 'new:Variable'( ".DEFAULT_GOAL", $S0, MAKEFILE_VARIABLE_ORIGIN_automatic )
+    set_hll_global ['smart';'make';'variable'], ".DEFAULT_GOAL", $P1
+    
+return_result:
+    .return()
+.end

@@ -255,9 +255,9 @@ no_smartfile_for_new_args:
     $P1 = smart.'command_line'( arguments )
 .end
 
-.include "build/gen_builtins.pir"
-.include "build/gen_grammar.pir"
-.include "build/gen_actions.pir"
+.include "gen/gen_builtins.pir"
+.include "gen/gen_grammar.pir"
+.include "gen/gen_actions.pir"
 .include "src/parser/grammar.pir"
 .include "src/parser/actions.pir"
 .include "src/classes/all.pir"

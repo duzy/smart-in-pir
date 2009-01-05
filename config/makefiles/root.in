@@ -38,9 +38,9 @@ all: smart.pbc
 SMART_GROUP = $(PMC_DIR)/smart_group$(LOAD_EXT)
 
 SOURCES = smart.pir \
-  build/gen_grammar.pir \
-  build/gen_actions.pir \
-  build/gen_builtins.pir \
+  gen/gen_grammar.pir \
+  gen/gen_actions.pir \
+  gen/gen_builtins.pir \
   src/parser/actions.pir\
   src/parser/grammar.pir\
   src/classes/all.pir\
@@ -66,20 +66,20 @@ smart: smart.pbc
 smart.pbc: $(PARROT) $(SOURCES)
 	$(PARROT) $(PARROT_ARGS) -o smart.pbc smart.pir
 
-build/gen_grammar.pir: $(PERL6GRAMMAR) src/parser/grammar.pg
-	@[ -d build ] || mkdir -p build
+gen/gen_grammar.pir: $(PERL6GRAMMAR) src/parser/grammar.pg
+	@[ -d gen ] || mkdir -p gen
 	$(PARROT) $(PARROT_ARGS) $(PERL6GRAMMAR) \
-	    --output=build/gen_grammar.pir \
+	    --output=gen/gen_grammar.pir \
 	    src/parser/grammar.pg \
 
-build/gen_actions.pir: $(NQP) $(PCT) src/parser/actions.pm
-	@[ -d build ] || mkdir -p build
-	$(PARROT) $(PARROT_ARGS) $(NQP) --output=build/gen_actions.pir \
+gen/gen_actions.pir: $(NQP) $(PCT) src/parser/actions.pm
+	@[ -d gen ] || mkdir -p gen
+	$(PARROT) $(PARROT_ARGS) $(NQP) --output=gen/gen_actions.pir \
 	    --target=pir src/parser/actions.pm
 
-build/gen_builtins.pir: $(BUILTINS_PIR)
-	@[ -d build ] || mkdir -p build
-	$(CAT) $(BUILTINS_PIR) >build/gen_builtins.pir
+gen/gen_builtins.pir: $(BUILTINS_PIR)
+	@[ -d gen ] || mkdir -p gen
+	$(CAT) $(BUILTINS_PIR) >gen/gen_builtins.pir
 
 $(SMART_GROUP): $(PARROT) $(PMC_SOURCES)
 	cd $(PMC_DIR) && $(BUILD_DYNPMC) generate $(PMCS)
@@ -119,9 +119,9 @@ testclean:
 
 CLEANUPS = \
   smart.pbc \
-  build/gen_grammar.pir \
-  build/gen_actions.pir \
-  build/gen_builtins.pir \
+  gen/gen_grammar.pir \
+  gen/gen_actions.pir \
+  gen/gen_builtins.pir \
   $(PMC_DIR)/*.h \
   $(PMC_DIR)/*.c \
   $(PMC_DIR)/*.dump \
