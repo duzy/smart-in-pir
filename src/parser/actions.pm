@@ -125,14 +125,28 @@ method make_rule($/) {
         my @targets             := $<make_target>;
         my @prerequisites       := $<make_prerequisite>;
         my @orderonly           := $<make_prerequisite_oo>;
-        my @actions             := $<make_action>;
-        my @targets;
-        PIR q< find_lex $P1, "@targets" >;
-        PIR q< find_lex $P2, "@prerequisites" >;
-        PIR q< find_lex $P3, "@orderonly" >;
-        PIR q< find_lex $P4, "@actions" >;
-        PIR q< '!MAKE-RULE'( $P1, $P2, $P3, $P4 ) >;
-        make PAST::Op.new( :pirop('noop') );
+        if $<smart_action> {
+            my $past := $( $<smart_action> );
+            my $rule_name := $past.name();
+            my $rule_comm := PAST::Compiler.compile( $past );
+            PIR q< find_lex $P1, "@targets" >;
+            PIR q< find_lex $P2, "@prerequisites" >;
+            PIR q< find_lex $P3, "@orderonly" >;
+            PIR q< find_lex $P4, "$rule_name" >;
+            PIR q< find_lex $P5, "$rule_comm" >;
+            PIR q< '!MAKE-RULE'( $P1, $P2, $P3, $P4, $P5 ) >;
+            #make $past;
+            make PAST::Op.new( :pirop('noop') );
+        }
+        else {
+            my @actions             := $<make_action>;
+            PIR q< find_lex $P1, "@targets" >;
+            PIR q< find_lex $P2, "@prerequisites" >;
+            PIR q< find_lex $P3, "@orderonly" >;
+            PIR q< find_lex $P4, "@actions" >;
+            PIR q< '!MAKE-RULE'( $P1, $P2, $P3, $P4 ) >;
+            make PAST::Op.new( :pirop('noop') );
+        }
     }
 }
 # method make_target($/) {
@@ -209,7 +223,16 @@ method make_rule($/) {
 # }
 
 method smart_action($/) {
-    make PAST::Op.new( :inline( "say 'TODO: smart_action'" ) );
+    #make PAST::Op.new( :inline( "say 'TODO: smart_action'" ) );
+    our $RULE_NUMBER;
+    $RULE_NUMBER := $RULE_NUMBER + 1;
+    my $past := PAST::Block.new( :blocktype('declaration'), :node($/) );
+    $past.name( "__smart_rule_" ~ $RULE_NUMBER );
+    $past.namespace( "smart::rule" );
+    for $<smart_statement> {
+        $past.push( $($_) );
+    }
+    make $past;
 }
 
 method make_special_rule($/) {

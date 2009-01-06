@@ -262,6 +262,7 @@ iterate_items_end:
     .param pmc mo_prerequsites
     .param pmc mo_orderonly
     .param pmc mo_actions
+    .param pmc smart_command :optional
 
     .const int ACTION_T    = 0
     .const int ACTION_P    = 1
@@ -307,15 +308,27 @@ process_prerequisites:
     moa = mo_prerequsites
     at = ACTION_P
     local_branch call_stack, map_match_object_array
+    
     moa = mo_orderonly
     at = ACTION_O
     local_branch call_stack, map_match_object_array
+
+    if null smart_command goto map_actions
+    #typeof $S0, moa
+    #unless $S0 == "String" goto return_result
+    #text = mo_actions
+    #local_branch call_stack, action_pack_action
+    ####
+    #$P1 = 'new:Action'( text, smart_command )
+    $P1 = 'new:Action'( smart_command, 1 )
+    push actions, $P1
+    goto return_result
+map_actions:
     moa = mo_actions
     at = ACTION_A
     local_branch call_stack, map_match_object_array
-    
-    #local_branch call_stack, store_implicit_rule
-    
+
+return_result:
     .return(rule)
     
     ######################
@@ -325,7 +338,8 @@ map_match_object_array:
     null $P0
     if null moa goto map_match_object_array__done
     typeof $S0, moa
-    if $S0 == "Undef" goto map_match_object_array__done
+    #if $S0 == "Undef" goto map_match_object_array__done
+    unless $S0 == 'ResizablePMCArray' goto map_match_object_array__done
     .local pmc it, iit
     #new $P0, 'ResizablePMCArray'
     new it, 'Iterator', moa
@@ -697,7 +711,8 @@ action_pack_orderonly__done:
     ######################
     ##  IN: text(the text value)
 action_pack_action:
-    $P1 = '!CREATE-ACTION'( text )
+    #$P1 = '!CREATE-ACTION'( text )
+    $P1 = 'new:Action'( text, 0 )
     push actions, $P1
     local_return call_stack
 
@@ -1453,30 +1468,15 @@ create_new_makefile_target:
 .end # sub "!BIND-TARGET"
 
 
-=item
-=cut
-.sub "!CREATE-ACTION"
-    .param string command
-    .local int echo_on
-    .local int ignore_error
+# =item
+# =cut
+# .sub "!CREATE-ACTION"
+#     .param string command
     
-    substr $S1, command, 0, 1
-    
-    echo_on = $S1 != "@"
-    ignore_error = $S1 != "-"
-    
-    $I0 = and echo_on, ignore_error
-    if $I0 goto command_echo_is_on
-    $I0 = length command
-    $I0 -= 1
-    substr $S1, command, 1, $I0
-    command = $S1
-command_echo_is_on:
-    
-    .local pmc action
-    action = 'new:Action'( command, echo_on, ignore_error )
-    .return(action)
-.end
+#     .local pmc action
+#     action = 'new:Action'( command ) #, echo_on, ignore_error )
+#     .return(action)
+# .end
 
 
 .sub "!SETUP-DEFAULT-GOAL" :anon

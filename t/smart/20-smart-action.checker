@@ -1,0 +1,17 @@
+# -*- cperl -*-
+{
+    my $s = <<'____EXPECT_END';
+bar:
+fod:
+baz:
+foo:bar fod|baz
+<- bar
+Hello, there!
+____EXPECT_END
+    ;
+    my @r;
+    do { push @r, $_ if !m/^smart:.+$/ } for @result;
+    my $r = join '', @r;
+    $check_result = $r eq $s;
+    print "";
+}
