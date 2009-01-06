@@ -90,7 +90,7 @@ token make_rule {
             $<prereq_pattern>=[<-[ \\ \n ]>+]
             [\\\n <.ws_inline>]?
           ]
-         |[ $<targets>=[ [ <make_target> <.ws_inline> ]+ ]
+         |[ [ <make_target> <.ws_inline> ]+
             ':' <.ws_inline> [\\\n <.ws_inline>]?
             [<make_prerequisite><.ws_inline>[\\\n<.ws_inline>]?]*
             [ '|' <.ws_inline>
@@ -112,18 +112,15 @@ token make_rule {
 #      $<item>=[ <make_variable_ref> | [<-[ : \ \t \n ]>+] ]
 token make_target {
     [<make_variable_ref>|<-[(:\ \t\n$]>]+
-#    ['(' $<member>=[[<!before ')'>.]*] ')']?
     ['('[<!before ')'>.]*')']?
 }
 token make_prerequisite {
     [<make_variable_ref>|<-[(;|\ \t\\\n$]>]+
-#    ['(' $<member>=[<-[)]>*] ')']?
     ['('<-[)]>*')']?
 }
 #    <?after '|' <.ws_inline> >
 token make_prerequisite_oo {
     [<make_variable_ref>|<-[(;|\ \t\\\n$]>]+
-#    ['(' $<member>=[<-[)]>*] ')']?
     ['('<-[)]>*')']?
 }
 token make_action {

@@ -1,7 +1,6 @@
 # -*- cperl -*-
 {
     my $expect = <<____END_EXPECT;
-1..12
 ok, trick1
 ok, trick2
 ok, trick3
