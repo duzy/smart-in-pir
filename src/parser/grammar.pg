@@ -23,13 +23,17 @@ token comment_block { '#{' <-[ } ]>* '}' }
 token ws_inline { <!ww> [ <comment_block> | <[ \ \t ]>* | [ '#' \N* ] ] }
 
 rule statement {
-    | <empty_smart_statement> {*}               #= empty_smart_statement
-    | <smart_builtin_statement> {*}		#= smart_builtin_statement
-    | <smart_builtin_function> {*}              #= smart_builtin_function
+    | <smart_statement> {*}                     #= smart_statement
     | <make_variable_declaration> {*}           #= make_variable_declaration
     | <make_rule> {*}                           #= make_rule
     | <make_conditional_statement> {*}          #= make_conditional_statement
     | <make_include_statement> {*}              #= make_include_statement
+}
+
+rule smart_statement {
+    | <empty_smart_statement> {*}               #= empty_smart_statement
+    | <smart_builtin_statement> {*}		#= smart_builtin_statement
+    | <smart_builtin_function> {*}              #= smart_builtin_function
 }
 
 token empty_smart_statement { <.ws> ';' {*} }
@@ -94,12 +98,13 @@ token make_rule {
           ]
        ]
        [
-         |[ ';' <.ws_inline> <make_action>
-            [ \n \t <make_action> ]*
+         |[ ';' <.ws_inline>
+            [<smart_action> | [<make_action> [ \n \t <make_action> ]*]]
           ]
-         |[
-            [ \n <[ \ ]>* [ [ '#' \N* ] | <.comment_block> ] ]*
-            [ \n \t <make_action> ]*
+         |[ <smart_action>
+            |[ [ \n <[ \ ]>* [ [ '#' \N* ] | <.comment_block> ] ]*
+               [ \n \t <make_action> ]*
+             ]
           ]
        ]
      ] {*}
@@ -123,6 +128,12 @@ token make_prerequisite_oo {
 }
 token make_action {
     [[<!before \\\n><-[\n]>]+ [\\\n]?]*
+}
+rule smart_action {
+    '{'
+    <smart_statement>*
+    '}'
+    {*}
 }
 token make_special_rule {
     <.ws_inline>

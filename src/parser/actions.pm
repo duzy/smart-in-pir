@@ -49,6 +49,10 @@ method statement($/, $key) {
     make $( $/{$key} );
 }
 
+method smart_statement( $/, $key ) {
+    make $( $/{$key} );
+}
+
 method empty_smart_statement($/) { make PAST::Op.new( :pirop('noop') ); }
 
 method make_variable_declaration($/) {
@@ -203,6 +207,10 @@ method make_rule($/) {
 #     $past.push( PAST::Val.new( :value(~$/), :returns('String') ) );
 #     make $past;
 # }
+
+method smart_action($/) {
+    make PAST::Op.new( :inline( "say 'TODO: smart_action'" ) );
+}
 
 method make_special_rule($/) {
     my $past := PAST::Op.new( :pasttype('call'),

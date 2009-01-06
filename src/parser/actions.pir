@@ -1497,4 +1497,4 @@ command_echo_is_on:
     
 return_result:
     .return()
-.end
+.end # sub "!SETUP-DEFAULT-GOAL"
