@@ -280,14 +280,15 @@ iterate_prerequisites:
     
     ## Checking if prerequsite newer than the target
     $I0 = prereq.'changetime'()
-    if target_changetime < $I0 goto increce_newer_counter
-    if 0 == $I0 goto increce_newer_counter
+    if target_changetime < $I0  goto increce_newer_counter
+    if 0 == $I0                 goto increce_newer_counter
     goto invoke_update
     
 increce_newer_counter:
     inc count_newer
     
 invoke_update:
+    #say prereq
     ($I1, $I2, $I3) = prereq.'update'()
     if is_oo goto iterate_prerequisites
     unless 0 < $I3 goto iterate_prerequisites

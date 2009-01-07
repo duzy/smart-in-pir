@@ -27,10 +27,12 @@ order-only-nonexisted
 ====================
     __END_EXPECT__
     ;
-    my $result = join '', @result;
+    my @r;
+    do { push @r, $_ if !m/^smart:.+$/ } for @result;
+    my $result = join '', @r;
     $check_result = $result eq $expect;
     {
-        if ( open L, ">>test.log" ) {
+        if ( open L, ">$file.log" ) {
             print L "\n";
             print L "failed:$file"
                 . "\nexpecting:\n" . "\n$expect"

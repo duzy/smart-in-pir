@@ -976,7 +976,7 @@ fatal_not_a_pattern_target:
     
     .local pmc cs
     new cs, 'ResizableIntegerArray'
-
+    
     .local int is_phony
     is_phony = target.'is_phony'()
     
@@ -987,7 +987,7 @@ fatal_not_a_pattern_target:
     unless $I0 <= 0 goto do_normal_update
     $I0 = target.'exists'()
     if $I0 goto return_without_execution
-    if is_phony goto return_without_execution ## phony target
+    if is_phony goto return_without_execution ## escape phony target
     ($I1, $I2, $I3) = 'update-target-through-pattern-targets'( target, 1 )
     add count_updated, $I1
     add count_newer,   $I2

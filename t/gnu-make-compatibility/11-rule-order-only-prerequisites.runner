@@ -5,30 +5,29 @@
         'order-only-nonexisted', 'foo', 'bar'
     );
     do { ( unlink or die "unlink: $_. $!" ) if -f } for ( @temp_files );
+    unlink "$file.log" if -f "$file.log";
 
-    my $runner_command = $smart . ' -f ' . $file;
+    my $runner_command = $smart . ' -f ' . $file . " 2>>$file.log";
     #my $runner_command = 'make' . ' -f ' . $file;
     my @temp_result;
 
     @temp_result = `$runner_command`;
-    pop @temp_result; # pop the message line of smart
     push @result, @temp_result;
     push @result, "====================\n";
 
     @temp_result = `$runner_command`;
-    pop @temp_result; # pop the message line of smart
     push @result, @temp_result;
     push @result, "====================\n";
 
     @temp_result = `$runner_command`;
-    pop @temp_result; # pop the message line of smart
     push @result, @temp_result;
     push @result, "====================\n";
 
-    system("touch normal-1 order-only-2") == 0
-        or die "can't touch order-only-2: $!";
+    system("sleep 1; touch normal-1 order-only-2") == 0 or do {
+        push @result, "can't touch files";
+        die "can't touch files: $!";
+    };
     @temp_result = `$runner_command`;
-    pop @temp_result; # pop the message line of smart
     push @result, @temp_result;
     push @result, "====================\n";
 
