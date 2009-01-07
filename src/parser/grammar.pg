@@ -83,18 +83,19 @@ token make_variable_declaration {
 token make_rule {
     |[ <make_special_rule> ] {*}
     |[ [
-         |[ $<static_targets>=[ [ <make_target> <.ws_inline> ]+ ]
-            ':' <.ws_inline>
-            $<target_pattern>=[<-[ : \n ]>+]
-            ':' <.ws_inline>
-            $<prereq_pattern>=[<-[ \\ \n ]>+]
-            [\\\n <.ws_inline>]?
+         |[ [ <make_target> <.ws_inline> ]+
+            ':' <.ws_inline> [\\\n<.ws_inline>]?
+            [ <make_prerequisite><.ws_inline>[\\\n<.ws_inline>]? ]*
+            [ '|' <.ws_inline> [\\\n<.ws_inline>]?
+              [ <make_prerequisite_oo><.ws_inline>[\\\n<.ws_inline>]? ]*
+            ]?
           ]
          |[ [ <make_target> <.ws_inline> ]+
-            ':' <.ws_inline> [\\\n <.ws_inline>]?
-            [<make_prerequisite><.ws_inline>[\\\n<.ws_inline>]?]*
-            [ '|' <.ws_inline>
-              [<make_prerequisite_oo><.ws_inline>[\\\n<.ws_inline>]?]* ]?
+            ':' <.ws_inline> [\\\n<.ws_inline>]?
+            $<static_target_pattern>=[<-[:;\n]>+]
+            ':' <.ws_inline> [\\\n<.ws_inline>]?
+            $<static_prereq_pattern>=[<-[\\\n|]>+]
+            [\\\n <.ws_inline>]?
           ]
        ]
        [
@@ -115,12 +116,12 @@ token make_target {
     ['('[<!before ')'>.]*')']?
 }
 token make_prerequisite {
-    [<make_variable_ref>|<-[(;|\ \t\\\n$]>]+
+    [<make_variable_ref>|<-[(:;|\ \t\\\n$]>]+
     ['('<-[)]>*')']?
 }
 #    <?after '|' <.ws_inline> >
 token make_prerequisite_oo {
-    [<make_variable_ref>|<-[(;|\ \t\\\n$]>]+
+    [<make_variable_ref>|<-[(:;|\ \t\\\n$]>]+
     ['('<-[)]>*')']?
 }
 token make_action {
@@ -134,20 +135,20 @@ rule smart_action {
 }
 token make_special_rule {
     <.ws_inline>
-    [
-    | $<name>=[ '.PHONY' ]
-    | $<name>=[ '.SUFFIXES' ]
-    | $<name>=[ '.DEFAULTS' ]
-    | $<name>=[ '.PRECIOUS' ]
-    | $<name>=[ '.INTERMEDIATE' ]
-    | $<name>=[ '.SECONDARY' ]
-    | $<name>=[ '.SECONDEXPANSION' ]
-    | $<name>=[ '.DELETE_ON_ERROR' ]
-    | $<name>=[ '.IGNORE' ]
-    | $<name>=[ '.LOW_RESOLUTION_TIME' ]
-    | $<name>=[ '.SILENT' ]
-    | $<name>=[ '.EXPORT_ALL_VARIABLES' ]
-    | $<name>=[ '.NOTPARALLEL' ]
+    $<name>=[
+    | '.PHONY'
+    | '.SUFFIXES'
+    | '.DEFAULTS'
+    | '.PRECIOUS'
+    | '.INTERMEDIATE'
+    | '.SECONDARY'
+    | '.SECONDEXPANSION'
+    | '.DELETE_ON_ERROR'
+    | '.IGNORE'
+    | '.LOW_RESOLUTION_TIME'
+    | '.SILENT'
+    | '.EXPORT_ALL_VARIABLES'
+    | '.NOTPARALLEL'
     ]
     <.ws_inline>
     ':' [ <.ws_inline> $<item>=[ <-[ \n \t \ ]>+ ] ]* <.ws_inline>

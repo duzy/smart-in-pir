@@ -118,8 +118,10 @@ method make_rule($/) {
     if ( $<make_special_rule> ) {
         make $( $<make_special_rule> );
     }
-    elsif $<static_targets> {
-        make PAST::Op.new( :inline('print "TODO: (actions.pm)static pattern rule\n"') );
+    elsif $<static_target_pattern> {
+        make PAST::Op.new( :inline('print "TODO: (actions.pm)static pattern rule: "'~"\nsay %0"),
+          ~$/ #PAST::Val.new( :value(~$/), :returns('String') )
+      );
     }
     else {
         my @targets             := $<make_target>;
