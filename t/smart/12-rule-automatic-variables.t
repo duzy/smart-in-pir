@@ -1,7 +1,8 @@
 # -*- mode: makefile -*-
-
+#
+# runner: 12-rule-automatic-variables
 # checker: 12-rule-automatic-variables
-
+#
 # #{
 #     $@    $%    $<    $?    $^    $+    $|    $*
 

@@ -1037,58 +1037,6 @@ execute_actions:
     
 return_result:
     .return (count_updated, count_newer, count_actions)
-    
-#     ##############################################################
-#     ## If there is no rules binded with the 'target', we need to check out
-#     ## pattern targets and find a matched pattern, invoke updatation on it.
-#     ##############################################################
-#     ## local: check_out_pattern_targets_for_updating
-# check_out_pattern_targets_for_updating:
-#     .local pmc patterns, pattern_it
-#     .local pmc pattern_target
-#     get_hll_global patterns, ['smart';'make'], "@<%>"
-#     if null patterns goto check_out_pattern_targets_for_updating__iterate_end
-#     new pattern_it, 'Iterator', patterns
-# check_out_pattern_targets_for_updating__iterate:
-#     unless pattern_it goto check_out_pattern_targets_for_updating__iterate_end
-#     shift pattern_target, pattern_it
-
-#     ($I1, $I2, $I3, $I4) = 'update-target-%'( pattern_target, target )
-#     unless $I4 goto check_out_pattern_targets_for_updating__iterate
-#     add count_updated, $I1
-#     add count_newer,   $I2
-#     add count_actions, $I3
-#     target.'updated'( 1 )
-#     goto check_out_pattern_targets_for_updating__done
-
-# check_out_pattern_targets_for_updating__iterate_end:
-#     ## Here, we got not matched pattern, try match-anything
-#     get_hll_global pattern_target, ['smart';'make'], "$<%>"
-#     #if null pattern_target goto check_out_pattern_targets_for_updating__failed
-#     if null pattern_target goto report_error_if_file_not_existed
-    
-#     ($I1, $I2, $I3, $I4) = 'update-target-%'( pattern_target, target )
-#     unless $I4 goto check_out_pattern_targets_for_updating__done
-#     add count_updated, $I1
-#     add count_newer,   $I2
-#     add count_actions, $I3
-#     target.'updated'( 1 )
-#     goto check_out_pattern_targets_for_updating__done
-
-# report_error_if_file_not_existed:
-#     #exists $I0, 
-# check_out_pattern_targets_for_updating__failed:
-#     $S0 = target
-#     $S1 = "smart: *** No rule to make target '"
-#     $S1 .= $S0
-#     $S1 .= "'. Stop.\n"
-#     printerr $S1
-#     exit EXIT_ERROR_NO_RULE
-    
-# check_out_pattern_targets_for_updating__done:
-#     null patterns
-#     null pattern_target
-#     goto return_result
 .end # sub "update-target"
 
 .sub "update-all-prerequisites" :anon

@@ -13,9 +13,76 @@ ok, d, trick2
 ok, baz => a c d; first: a
 ok, bar => baz; first: baz
 ok, foobar => foo bar; first: foo
+==========
+ok, trick1
+ok, trick2
+ok, trick3
+ok, [trick1 trick2 trick3], [trick1 trick2 trick3], []
+ok, you 'trick' me, trick...
+ok, foo => echo; first: echo
+ok, a, trick2
+ok, c, trick2
+ok, d, trick2
+ok, baz => a c d; first: a
+ok, bar => baz; first: baz
+ok, foobar => foo bar; first: foo
+==========
+ok, trick1
+ok, trick3
+ok, [trick1 trick2 trick3], [trick1 trick2 trick3], []
+ok, you 'trick' me, trick...
+ok, foo => echo; first: echo
+ok, a, trick2
+ok, c, trick2
+ok, d, trick2
+ok, baz => a c d; first: a
+ok, bar => baz; first: baz
+ok, foobar => foo bar; first: foo
+==========
+ok, trick1
+ok, trick3
+ok, [trick1 trick2 trick3], [trick1 trick2 trick3], []
+ok, you 'trick' me, trick...
+ok, foo => echo; first: echo
+ok, c, trick2
+ok, d, trick2
+ok, baz => a c d; first: a
+ok, bar => baz; first: baz
+ok, foobar => foo bar; first: foo
+==========
+ok, trick1
+ok, trick3
+ok, [trick1 trick2 trick3], [trick1 trick2 trick3], []
+ok, you 'trick' me, trick...
+ok, foo => echo; first: echo
+ok, c, trick2
+ok, baz => a c d; first: a
+ok, bar => baz; first: baz
+ok, foobar => foo bar; first: foo
+==========
+ok, trick1
+ok, trick3
+ok, [trick1 trick2 trick3], [trick1 trick2 trick3], []
+ok, you 'trick' me, trick...
+ok, foo => echo; first: echo
+ok, a, trick2
+ok, c, trick2
+ok, d, trick2
+ok, baz => a c d; first: a
+ok, bar => baz; first: baz
+ok, foobar => foo bar; first: foo
+==========
+ok, trick1
+ok, trick3
+ok, [trick1 trick2 trick3], [trick1 trick2 trick3], []
+ok, you 'trick' me, trick...
+ok, foo => echo; first: echo
+ok, baz => a c d; first: a
+ok, bar => baz; first: baz
+ok, foobar => foo bar; first: foo
+===========
 ____END_EXPECT
     ;
-    #pop @result;
     my @r;
     do { push @r, $_ if !m/^smart:.+$/ } for @result;
     my $result = join '', @r;

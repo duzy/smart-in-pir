@@ -1,0 +1,79 @@
+# -*- cperl -*-
+{
+    my @files = (
+        'foobar',
+        'foo',
+        'bar',
+        'a',
+        'b',
+        'c',
+        'd',
+        'baz',
+        'echo',
+        'trick',
+        'trick1',
+        'trick2',
+        'trick3',
+    );
+    do { unlink if -f } for @files;
+    unlink "$file.log";
+
+    my $cmd = $smart . ' -f ' . $file;
+    #my $cmd = 'make -f ' . $file;
+    my @temp = `$cmd 2>> $file.log`;
+    push @result, @temp;
+    push @result, "==========\n";
+
+    # baz: c
+    system("echo c > c") == 0 or do {
+        push @result, "ERROR: can't execute 'echo c > c'";
+        die "can't execute 'echo c > c': $!";
+    };
+    @temp = `$cmd 2>> $file.log`;
+    push @result, @temp;
+    push @result, "==========\n";
+
+    # c: trick2
+    system("sleep 1; echo trick2 > trick2") == 0 or do {
+        push @result, "ERROR: can't execute 'echo trick2 > c'";
+        die "can't execute 'echo trick2 > c': $!";
+    };
+    @temp = `$cmd 2>>$file.log`;
+    push @result, @temp;
+    push @result, "==========\n";
+
+    system("sleep 1; echo a > a") == 0 or do {
+        push @result, "ERROR: can't execute 'echo a > a'";
+        die "can't execute 'echo a > a': $!";
+    };
+    @temp = `$cmd 2>>$file.log`;
+    push @result, @temp;
+    push @result, "==========\n";
+
+    system("sleep 1; echo d > d") == 0 or do {
+        push @result, "ERROR: can't execute 'echo a > a'";
+        die "can't execute 'echo a > a': $!";
+    };
+    @temp = `$cmd 2>>$file.log`;
+    push @result, @temp;
+    push @result, "==========\n";
+
+    system("sleep 1; touch trick2") == 0 or do {
+        push @result, "ERROR: can't execute 'touch trick2'";
+        die "can't execute 'touch trick2': $!";
+    };
+    @temp = `$cmd 2>>$file.log`;
+    push @result, @temp;
+    push @result, "==========\n";
+
+    system("sleep 1; touch a c d") == 0 or do {
+        push @result, "ERROR: can't execute 'touch a c d'";
+        die "can't execute 'touch a c d': $!";
+    };
+    @temp = `$cmd 2>>$file.log`;
+    push @result, @temp;
+    push @result, "===========\n";
+
+    do { unlink if -f } for @files;
+    print "";
+}

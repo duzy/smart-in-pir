@@ -271,10 +271,16 @@ iterate_prerequisites:
     unless iter goto iterate_prerequisites_end
     shift prereq, iter
     if is_oo goto invoke_update
-    ## Checking prerequsite-newer...
+    
+    ## Checking if prerequsite newer than the target
     $I0 = prereq.'changetime'()
-    unless target_changetime < $I0 goto invoke_update
+    if target_changetime < $I0 goto increce_newer_counter
+    if 0 == $I0 goto increce_newer_counter
+    goto invoke_update
+    
+increce_newer_counter:
     inc count_newer
+    
 invoke_update:
     ($I1, $I2, $I3) = prereq.'update'()
     if is_oo goto iterate_prerequisites
@@ -284,6 +290,7 @@ invoke_update:
     count_actions += $I3
     goto iterate_prerequisites
 iterate_prerequisites_end:
+    
     null prerequisites
     null iter
     ret
