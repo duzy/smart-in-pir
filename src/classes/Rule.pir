@@ -237,9 +237,57 @@ invalid_arg:
 .end
 
 
-.sub "update-prerequsites" :method
-    .param pmc requestor
+.sub "update-prerequisites" :method
+    .param pmc target
+    
     .local int count_updated
+    .local int count_actions
     .local int count_newer
-    .return (count_updated, count_newer)
-.end # sub "update-prerequsites"
+    .local int target_changetime
+    
+    set count_updated, 0
+    set count_actions, 0
+    set count_newer,   0
+    
+    target_changetime = target.'changetime'()
+    
+    .local pmc prerequisites
+    .local pmc iter, prereq
+    .local int is_oo
+    
+    set is_oo, 0
+    prerequisites = self.'prerequisites'()
+    bsr do_update_on_prerequisites
+    
+    set is_oo, 1
+    prerequisites = self.'orderonly'()
+    bsr do_update_on_prerequisites
+    
+    goto return_result
+
+do_update_on_prerequisites:
+    new iter, 'Iterator', prerequisites
+iterate_prerequisites:
+    unless iter goto iterate_prerequisites_end
+    shift prereq, iter
+    if is_oo goto invoke_update
+    ## Checking prerequsite-newer...
+    $I0 = prereq.'changetime'()
+    unless target_changetime < $I0 goto invoke_update
+    inc count_newer
+invoke_update:
+    ($I1, $I2, $I3) = prereq.'update'()
+    if is_oo goto iterate_prerequisites
+    unless 0 < $I3 goto iterate_prerequisites
+    count_updated += $I1
+    count_newer   += $I2
+    count_actions += $I3
+    goto iterate_prerequisites
+iterate_prerequisites_end:
+    null prerequisites
+    null iter
+    ret
+
+return_result:
+    .return (count_updated, count_newer, count_actions)
+.end # sub "update-prerequisites"

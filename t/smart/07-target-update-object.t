@@ -15,4 +15,4 @@ b.txt:
 	echo "foobar: $@" > $@
 	@echo "ok"
 
-say match("aaa%bbb", "aaastembbb");
+say match("aaa%bbb", "aaaendbbb");

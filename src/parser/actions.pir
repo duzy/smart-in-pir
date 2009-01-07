@@ -359,14 +359,14 @@ iterate_match_object_array_loop:
 iterate_match_object_array_loop_iterate_items:
     unless iit goto iterate_match_object_array_loop_iterate_items_end
     text = shift iit
-#     print "item: "
-#     print text
-#     print "\n"
     if at == ACTION_T goto to_action_pack_target
     if at == ACTION_P goto to_action_pack_prerequisite
     if at == ACTION_O goto to_action_pack_orderonly
     goto iterate_match_object_array_loop_iterate_items
 to_action_pack_target:
+#     print "target: "
+#     print text
+#     print "\n"
     local_branch call_stack, action_pack_target
     goto iterate_match_object_array_loop_iterate_items
 to_action_pack_prerequisite:
@@ -421,6 +421,8 @@ action_pack_target__iterate_archive_end:
 
     ## Finally...
 action_pack_target__bind_normal:
+#     print "target: "
+#     say text
     ## Normal targets are bind directly.
     $P1 = '!BIND-TARGET'( text, 1 )
     getattribute $P2, $P1, 'rules'
@@ -650,6 +652,8 @@ check_and_split_archive_members_done:
     ######################
     ##  IN: text(the text value)
 action_pack_prerequisite:
+#     print "prereq: "
+#     say text
     if implicit goto action_pack_prerequisite__push_implicit
 
     local_branch call_stack, check_and_split_archive_members
