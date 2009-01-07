@@ -131,24 +131,30 @@ has_orderonly:
 =cut
 .sub "execute_actions" :method
     .local pmc actions, iter
-    .local int state, action_count
-    state = -1
-    action_count = 0
+    .local int state, total_actions
+    
+    set state, -1
+    set total_actions, 0
+    
     actions = self.'actions'()
-    iter = new 'Iterator', actions
-    action_count = actions
+    set total_actions, actions
+    if total_actions == 0 goto return_result
+    
+    new iter, 'Iterator', actions
 iterate_actions:
     unless iter goto end_iterate_actions
-    $P0 = shift iter
-    $I1 = can $P0, 'execute'
+    shift $P0, iter
+    can $I1, $P0, 'execute'
     unless $I1 goto invalid_action_object
     state = $P0.'execute'()
     goto iterate_actions
-invalid_action_object:
-    die "smart: *** Got invalid action object."
 end_iterate_actions:
+
+return_result:
+    .return(state, total_actions)
     
-    .return(state, action_count)
+invalid_action_object:
+    die "smart: *** Got invalid action object. Stop."
 .end
 
 

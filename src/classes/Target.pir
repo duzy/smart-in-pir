@@ -969,11 +969,11 @@ fatal_not_a_pattern_target:
     set count_newer,    0
     set count_updated,  0
     set count_actions,  0
-
+    
     ## If the target itself has been updated, than nothing should be done.
     $I0 = target.'updated'()
     if $I0 goto return_result
-
+    
     .local pmc cs
     new cs, 'ResizableIntegerArray'
     
@@ -985,7 +985,7 @@ fatal_not_a_pattern_target:
     $I0 = target.'exists'()
     if $I0 goto return_without_execution
     #goto check_out_pattern_targets_for_updating
-    ($I1, $I2, $I3) = 'update-target-through-pattern-targets'( target )
+    ($I1, $I2, $I3) = 'update-target-through-pattern-targets'( target, 1 )
     add count_updated, $I1
     add count_newer,   $I2
     add count_actions, $I3
@@ -1002,7 +1002,7 @@ do_normal_update:
     add count_newer,   $I2
     add count_actions, $I3
 do_update_target:
-
+    
     ## TODO: Only executes the last rule?
     rule = rules[-1]
     
@@ -1025,15 +1025,21 @@ execute_actions:
     '!setup-automatic-variables'( target )
     ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
     '!clear-automatic-variables'()
-    
-    ## TODO: do something if $I0 is not zero!
-    
-    ## Make the target as updated
-    target.'updated'( 1 )
-    
-    unless $I0 goto return_result
+
+    ## If no actions for the target, we should try to find a pattern
+    ## as GNU make does.
+    unless $I1 == 0 goto check_execution_status
+    ($I1, $I2, $I3) = 'update-target-through-pattern-targets'( target, 0 )
+    add count_updated, $I1
+    add count_newer,   $I2
+    add count_actions, $I3
+    goto return_result
+
+check_execution_status:
+    if $I0 != 0 goto return_result
     inc count_updated
-    count_actions += $I1
+    add count_actions, $I1
+    target.'updated'( 1 ) ## Make the target as updated
     
 return_result:
     .return (count_updated, count_newer, count_actions)
@@ -1075,13 +1081,16 @@ update_prerequisites_of_rules__done:
 
 .sub "update-target-through-pattern-targets" :anon
     .param pmc target
+    .param int stop_if_no_match
     
     .local int count_newer
     .local int count_updated
     .local int count_actions # executed actions
+    .local int matched # if any pattern matched?
     set count_newer,    0
     set count_updated,  0
     set count_actions,  0
+    set matched,        0
 
     ##############################################################
     ## If there is no rules binded with the 'target', we need to check out
@@ -1097,8 +1106,8 @@ check_out_pattern_targets_for_updating__iterate:
     unless pattern_it goto check_out_pattern_targets_for_updating__iterate_end
     shift pattern_target, pattern_it
 
-    ($I1, $I2, $I3, $I4) = 'update-target-%'( pattern_target, target )
-    unless $I4 goto check_out_pattern_targets_for_updating__iterate
+    ($I1, $I2, $I3, matched) = 'update-target-%'( pattern_target, target )
+    unless matched goto check_out_pattern_targets_for_updating__iterate
     add count_updated, $I1
     add count_newer,   $I2
     add count_actions, $I3
@@ -1108,11 +1117,10 @@ check_out_pattern_targets_for_updating__iterate:
 check_out_pattern_targets_for_updating__iterate_end:
     ## Here, we got not matched pattern, try match-anything
     get_hll_global pattern_target, ['smart';'make'], "$<%>"
-    #if null pattern_target goto check_out_pattern_targets_for_updating__failed
     if null pattern_target goto report_error_if_file_not_existed
     
-    ($I1, $I2, $I3, $I4) = 'update-target-%'( pattern_target, target )
-    unless $I4 goto check_out_pattern_targets_for_updating__done
+    ($I1, $I2, $I3, matched) = 'update-target-%'( pattern_target, target )
+    unless matched goto check_out_pattern_targets_for_updating__done
     add count_updated, $I1
     add count_newer,   $I2
     add count_actions, $I3
@@ -1122,6 +1130,8 @@ check_out_pattern_targets_for_updating__iterate_end:
 report_error_if_file_not_existed:
     #exists $I0, 
 check_out_pattern_targets_for_updating__failed:
+    unless stop_if_no_match goto check_out_pattern_targets_for_updating__done
+    
     $S0 = target
     $S1 = "smart: *** No rule to make target '"
     $S1 .= $S0
@@ -1133,6 +1143,6 @@ check_out_pattern_targets_for_updating__done:
     null patterns
     null pattern_target
 
-    .return (count_updated, count_newer, count_actions)
+    .return (count_updated, count_newer, count_actions, matched)
 .end # sub "update-target-through-pattern-targets"
 
