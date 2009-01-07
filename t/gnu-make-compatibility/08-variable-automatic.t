@@ -34,11 +34,12 @@ libfoo.a(%.o): %.o
 # %.a:
 # 	@echo "lib: $@"
 
-test-the-first-prerequisite: build/gen_a*.pir build/gen_*.pir
+test-the-first-prerequisite: gen/gen_a*.pir gen/gen_*.pir
 	@echo "check:(test-the-first-prerequisite):$@"
-	@echo "check:(build/gen_actions.pir):$<"
-	@echo "list:(build/gen_actions.pir build/gen_builtins.pir build/gen_grammar.pir):$^"
-	@echo "list:(build/gen_actions.pir build/gen_actions.pir build/gen_builtins.pir build/gen_grammar.pir):$+"
+	@echo "check:(gen/gen_actions.pir):$<"
+	@echo "list:(gen/gen_actions.pir gen/gen_builtins.pir gen/gen_grammar.pir):$^"
+	@echo "list:(gen/gen_actions.pir gen/gen_actions.pir gen/gen_builtins.pir gen/gen_grammar.pir):$+"
+	@echo "todo: BUG: emit segment falt while doing wildcard on a non-existed dir"
 
 test-the-prerequisites: pre1 pre2 pre3
 	@echo "check:(test-the-prerequisites):$@"

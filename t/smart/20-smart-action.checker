@@ -13,5 +13,16 @@ ____EXPECT_END
     do { push @r, $_ if !m/^smart:.+$/ } for @result;
     my $r = join '', @r;
     $check_result = $r eq $s;
+    $_ = "$file.log";
+    unlink if -f;
+    do {
+        open F, ">$file.log" or die "$!";
+        print F "==================== expecting ==\n";
+        print F $s;
+        print F "\n";
+        print F "==================== received ===\n";
+        print F $r;
+        close F;
+    } unless $check_result;
     print "";
 }
