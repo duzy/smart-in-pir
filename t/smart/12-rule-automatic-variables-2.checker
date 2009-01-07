@@ -22,7 +22,6 @@ trick2.txt
 .
 trick3.txt
 ok, [trick1.txt trick2.txt trick3.txt], [trick1.txt trick2.txt trick3.txt], [foo bar cat]
-anything: clean
 ____END_EXPECT
     ;
     my @r;

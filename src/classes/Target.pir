@@ -976,6 +976,9 @@ fatal_not_a_pattern_target:
     
     .local pmc cs
     new cs, 'ResizableIntegerArray'
+
+    .local int is_phony
+    is_phony = target.'is_phony'()
     
     .local pmc rules, rule
     getattribute rules, target, 'rules'
@@ -984,7 +987,7 @@ fatal_not_a_pattern_target:
     unless $I0 <= 0 goto do_normal_update
     $I0 = target.'exists'()
     if $I0 goto return_without_execution
-    #goto check_out_pattern_targets_for_updating
+    if is_phony goto return_without_execution ## phony target
     ($I1, $I2, $I3) = 'update-target-through-pattern-targets'( target, 1 )
     add count_updated, $I1
     add count_newer,   $I2
@@ -1007,9 +1010,8 @@ do_update_target:
     rule = rules[-1]
     
     if 0 < count_updated goto execute_actions
-    
-    $I0 = target.'is_phony'()
-    if $I0 goto execute_actions
+
+    if is_phony goto execute_actions
     
     ## If the object of the target not extsted, the target will be updated.
     if target_changetime == 0 goto execute_actions
@@ -1029,6 +1031,7 @@ execute_actions:
     ## If no actions for the target, we should try to find a pattern
     ## as GNU make does.
     unless $I1 == 0 goto check_execution_status
+    if is_phony goto return_result  ## TODO: should mark 'updated' flag?
     ($I1, $I2, $I3) = 'update-target-through-pattern-targets'( target, 0 )
     add count_updated, $I1
     add count_newer,   $I2
