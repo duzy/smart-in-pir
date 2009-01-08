@@ -119,6 +119,14 @@ method make_rule($/) {
         make $( $<make_special_rule> );
     }
     elsif $<static_target_pattern> {
+        for $<expandable> {
+            my $exp := PAST::Compiler.compile( $($_) );
+            my $str := $exp();
+            PIR q< find_lex $P0, "$str" >;
+            PIR q< print "exp: " >;
+            PIR q< print $P0 >;
+            PIR q< print "\n" >;
+        }
         make PAST::Op.new( :inline('print "TODO: (actions.pm)static pattern rule: "'~"\nsay %0"),
           ~$/ #PAST::Val.new( :value(~$/), :returns('String') )
       );
@@ -150,6 +158,65 @@ method make_rule($/) {
             make PAST::Op.new( :pirop('noop') );
         }
     }
+}
+method expandable($/) {
+#     PIR q< say "expandable" >;
+    my $name;
+    for $<expandable_name> {
+        my $e := PAST::Compiler.compile( $($_) );
+        my $s := $e();
+        $name := ~$name~$s;
+    }
+    my $v := '$('~$name~')';
+    my $past := PAST::Block.new(
+        :blocktype('declaration'),
+        PAST::Op.new( :pasttype('call'), :name('expand'), :node($/),
+          :returns('String'),
+          PAST::Val.new( :value( ~$v ) )
+        )
+    );
+#     PIR q< find_lex $P0, '$v' >;
+#     PIR q< print "var: " >;
+#     PIR q< say $P0 >;
+    make $past;
+}
+method expandable_name($/) {
+#     my $t := ~$/;
+#     PIR q< find_lex $P0, '$t' >;
+#     PIR q< say $P0 >;
+    my $name;
+    if $<pre> {
+        $name := ~$name~$<pre>;
+        my $pre := ~$<pre>;
+#         PIR q< find_lex $P0, '$pre' >;
+#         PIR q< print "pref: " >;
+#         PIR q< say $P0 >;
+    }
+    if $<expandable> {
+        my $e := PAST::Compiler.compile( $( $<expandable> ) );
+        my $s := $e();
+        $name := ~$name~$s;
+#         PIR q< say "exp" >;
+#         PIR q< find_lex $P0, '$s' >;
+#         PIR q< print "inner: " >;
+#         PIR q< say $P0 >;
+    }
+    if $<suf> {
+        $name := ~$name~$<suf>;
+        my $suf := ~$<suf>;
+#         PIR q< find_lex $P0, '$suf' >;
+#         PIR q< print "suff: " >;
+#         PIR q< say $P0 >;
+    }
+    if !$name { $name := ~$/; }
+    my $past := PAST::Block.new(
+        :blocktype('declaration'),
+        PAST::Val.new( :value( ~$name ) )
+    );
+#     PIR q< find_lex $P0, '$name' >;
+#     PIR q< print "name: " >;
+#     PIR q< say $P0 >;
+    make $past;
 }
 # method make_target($/) {
 #     if $<make_variable_ref> {

@@ -14,12 +14,13 @@
     .local pmc readdir
     .local pmc closedir
     null libc
+    ##loadlib libc, 'c'
     dlfunc opendir, libc, 'opendir', 'pt'
     dlfunc readdir, libc, 'readdir', 'pp'
     dlfunc closedir, libc, 'closedir', 'ip'
-    store_global 'libc::opendir', opendir
-    store_global 'libc::readdir', readdir
-    store_global 'libc::closedir', closedir
+    set_global 'libc::opendir', opendir
+    set_global 'libc::readdir', readdir
+    set_global 'libc::closedir', closedir
 .end
 
 =head1 <subst(from,to,text)>
