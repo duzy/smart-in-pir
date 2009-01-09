@@ -259,6 +259,7 @@ iterate_items_end:
     .param string targets
     .param string target_pattern
     .param string prereq_pattern
+    .param string orderonly
 
     print "TODO: "
     print targets

@@ -100,9 +100,9 @@ token expanded_text {
 
 token expanded_targets {
     [
-      |[ $<pre>=[[<!before [':']><-[\\\n$\ \t:;]>]+]
+      |[ $<pre>=[[<!before [':']><-[\\\n$\ \t:;|]>]+]
          <expandable>?
-         $<suf>=[[<!before [':']><-[\\\n$\ \t:;]>]*]
+         $<suf>=[[<!before [':']><-[\\\n$\ \t:;|]>]*]
        ]
       | <expandable>
     ]
@@ -115,15 +115,11 @@ token make_rule {
        [<expanded_targets><.ws_inline>[\\\n<.ws_inline>]*]+
        ':' <.ws_inline> [\\\n<.ws_inline>]*
        [
-         |[
-            <static_target_pattern>
-            $<seccon>=[':'] <.ws_inline> [\\\n<.ws_inline>]*
-            <static_prereq_pattern> [\\\n<.ws_inline>]*
-          ]
-         |[
-            <expanded_prerequisites>
-            [ '|' <.ws_inline> [\\\n<.ws_inline>]* <expanded_orderonly> ]?
-          ]
+         ## If static pattern rule, <expanded_prerequisites> will represents
+         ## static pattern target, in this case, the coninual match will be ':'
+         <expanded_prerequisites>
+         [ ':' <.ws_inline> [\\\n<.ws_inline>]* <static_prereq_pattern> ]?
+         [ '|' <.ws_inline> [\\\n<.ws_inline>]* <expanded_orderonly> ]?
        ]
        [
          |[ ';' <.ws_inline>
@@ -137,10 +133,10 @@ token make_rule {
        ]
      ] {*}
 }
-token static_target_pattern {
-    [<expanded_targets><.ws_inline>[\\\n<.ws_inline>]*]+
-    {*}
-}
+# token static_target_pattern {
+#     [<expanded_targets><.ws_inline>[\\\n<.ws_inline>]*]+
+#     {*}
+# }
 token static_prereq_pattern {
     [<expanded_targets><.ws_inline>[\\\n<.ws_inline>]*]+
     {*}

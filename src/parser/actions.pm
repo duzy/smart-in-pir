@@ -111,6 +111,19 @@ method make_variable_ref($/) {
                    );
 }
 
+sub expanded_items($arr) {
+    my $str := "";
+    if $arr {
+        for $arr {
+            my $eoo := PAST::Compiler.compile( $($_) );
+            my $s := $eoo();
+            if $str { $str := ~$str~' '~$s; }
+            else { $str := $s; }
+        }
+    }
+    return $str;
+}
+
 =item
   targets : prerequsites
 =cut
@@ -119,41 +132,26 @@ method make_rule($/) {
         make $( $<make_special_rule> );
     }
     else {
-        my $targets;
-        for $<expanded_targets> {
-            my $exp := PAST::Compiler.compile( $($_) );
-            my $str := $exp();
-            #$targets := $targets ? ~$targets~' '~$str : $str;
-            if $targets { $targets := ~$targets~' '~$str; }
-            else { $targets := $str; }
-        }
+        my $targets := expanded_items( $<expanded_targets> );
 #         PIR q< find_lex $P0, "$targets" >;
 #         PIR q< print "targets: " >;
 #         PIR q< print $P0 >;
 #         PIR q< print "\n" >;
-        if $<seccon> {
-            my $etar := PAST::Compiler.compile( $($<static_target_pattern>) );
-            my $epre := PAST::Compiler.compile( $($<static_prereq_pattern>) );
-            my $star := $etar();
-            my $spre := $epre();
+        my $epre := PAST::Compiler.compile( $($<expanded_prerequisites>) );
+        my $prerequisites := $epre();
+        my $orderonly := expanded_items( $<expanded_orderonly> );
+        if $<static_prereq_pattern> {
+            ## If static pattern rule, <expanded_prerequisites> is the
+            ## target-pattern of the static pattern rule.
+            my $star := $prerequisites;
+            my $spre := expanded_items( $<static_prereq_pattern> );
             PIR q< find_lex $P1, '$targets' >;
             PIR q< find_lex $P2, '$star' >;
             PIR q< find_lex $P3, '$spre' >;
-            PIR q< '!MAKE-STATIC-PATTERN-RULE'( $P1, $P2, $P3 ) >;
-            make PAST::Op.new( :pirop('noop') );
+            PIR q< find_lex $P4, '$orderonly' >;
+            PIR q< '!MAKE-STATIC-PATTERN-RULE'( $P1, $P2, $P3, $P4 ) >;
         }
         else {
-            #my @prerequisites       := $<make_prerequisite>;
-            my $epre := PAST::Compiler.compile( $($<expanded_prerequisites>) );
-            my $prerequisites := $epre();
-            my $orderonly;
-            if $<expanded_orderonly> {
-                my $eoo  := PAST::Compiler.compile( $($<expanded_orderonly>) );
-                $orderonly := $eoo();
-            }
-            else {
-                $orderonly := "";
-            }
             if $<smart_action> {
                 my $past := $( $<smart_action> );
                 my $rule_name := $past.name();
@@ -164,7 +162,6 @@ method make_rule($/) {
                 PIR q< find_lex $P4, "$rule_name" >;
                 PIR q< find_lex $P5, "$rule_comm" >;
                 PIR q< '!MAKE-RULE'( $P1, $P2, $P3, $P4, $P5 ) >;
-                make PAST::Op.new( :pirop('noop') );
             }
             else {
                 my @actions             := $<make_action>;
@@ -173,9 +170,9 @@ method make_rule($/) {
                 PIR q< find_lex $P3, "$orderonly" >;
                 PIR q< find_lex $P4, "@actions" >;
                 PIR q< '!MAKE-RULE'( $P1, $P2, $P3, $P4 ) >;
-                make PAST::Op.new( :pirop('noop') );
             }
         }
+        make PAST::Op.new( :pirop('noop') );
     }
 }
 method expandable($/) {

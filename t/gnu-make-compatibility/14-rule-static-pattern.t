@@ -23,7 +23,7 @@ all: foo.o bar.o baz.o
 	@echo "objects: $(OBJECTS)"
 
 #$(OBJECTS):%.o:%.c
-ba.o $(pre$(O)E$(C)suf) fo.o:%.o:%.c
+ba.o $(pre$(O)E$(C)suf) fo.o:%.o:%.c | a.c
 	@echo "compile $< -> $@"
 
 %.c:
