@@ -255,6 +255,21 @@ iterate_items_end:
     .return (result)
 .end
 
+.sub "!MAKE-STATIC-PATTERN-RULE"
+    .param string targets
+    .param string target_pattern
+    .param string prereq_pattern
+
+    print "TODO: "
+    print targets
+    print ":"
+    print target_pattern
+    print ":"
+    print prereq_pattern
+    print "\n"
+    
+    .return()
+.end # sub "!MAKE-STATIC-PATTERN-RULE"
 
 .sub "!MAKE-RULE"
     #.param string match
@@ -263,7 +278,7 @@ iterate_items_end:
     .param pmc mo_orderonly
     .param pmc mo_actions
     .param pmc smart_command :optional
-
+    
     .const int ACTION_T    = 0
     .const int ACTION_P    = 1
     .const int ACTION_O    = 2
@@ -335,18 +350,23 @@ return_result:
     ##  IN: $P1(the array), $I1(the action address)
     ##  OUT: $P0
 map_match_object_array:
+    .local pmc it, iit
     null $P0
     if null moa goto map_match_object_array__done
     typeof $S0, moa
     #if $S0 == "Undef" goto map_match_object_array__done
+    if $S0 == "String" goto map_match_object_array__iterate_string_items
     unless $S0 == 'ResizablePMCArray' goto map_match_object_array__done
-    .local pmc it, iit
-    #new $P0, 'ResizablePMCArray'
     new it, 'Iterator', moa
+    goto iterate_match_object_array_loop
+map_match_object_array__iterate_string_items:
+    set $S0, moa
+    split $P1, " ", $S0
+    new it, 'Iterator', $P1
 iterate_match_object_array_loop:
     unless it goto iterate_match_object_array_loop_end
-    $P2 = shift it
-    $S0 = $P2.'text'()
+    shift $P2, it
+    $S0 = $P2 #$P2.'text'()
     
     if at == ACTION_A goto to_action_pack_action
 
@@ -418,11 +438,9 @@ action_pack_target__iterate_archive:
     goto action_pack_target__iterate_archive
 action_pack_target__iterate_archive_end:
     goto action_pack_target__done
-
+    
     ## Finally...
 action_pack_target__bind_normal:
-#     print "target: "
-#     say text
     ## Normal targets are bind directly.
     $P1 = '!BIND-TARGET'( text, 1 )
     getattribute $P2, $P1, 'rules'

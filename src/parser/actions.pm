@@ -118,106 +118,157 @@ method make_rule($/) {
     if ( $<make_special_rule> ) {
         make $( $<make_special_rule> );
     }
-    elsif $<static_target_pattern> {
-        for $<expandable> {
+    else {
+        my $targets;
+        for $<expanded_targets> {
             my $exp := PAST::Compiler.compile( $($_) );
             my $str := $exp();
-            PIR q< find_lex $P0, "$str" >;
-            PIR q< print "exp: " >;
-            PIR q< print $P0 >;
-            PIR q< print "\n" >;
+            #$targets := $targets ? ~$targets~' '~$str : $str;
+            if $targets { $targets := ~$targets~' '~$str; }
+            else { $targets := $str; }
         }
-        make PAST::Op.new( :inline('print "TODO: (actions.pm)static pattern rule: "'~"\nsay %0"),
-          ~$/ #PAST::Val.new( :value(~$/), :returns('String') )
-      );
-    }
-    else {
-        my @targets             := $<make_target>;
-        my @prerequisites       := $<make_prerequisite>;
-        my @orderonly           := $<make_prerequisite_oo>;
-        if $<smart_action> {
-            my $past := $( $<smart_action> );
-            my $rule_name := $past.name();
-            my $rule_comm := PAST::Compiler.compile( $past );
-            PIR q< find_lex $P1, "@targets" >;
-            PIR q< find_lex $P2, "@prerequisites" >;
-            PIR q< find_lex $P3, "@orderonly" >;
-            PIR q< find_lex $P4, "$rule_name" >;
-            PIR q< find_lex $P5, "$rule_comm" >;
-            PIR q< '!MAKE-RULE'( $P1, $P2, $P3, $P4, $P5 ) >;
-            #make $past;
+#         PIR q< find_lex $P0, "$targets" >;
+#         PIR q< print "targets: " >;
+#         PIR q< print $P0 >;
+#         PIR q< print "\n" >;
+        if $<seccon> {
+            my $etar := PAST::Compiler.compile( $($<static_target_pattern>) );
+            my $epre := PAST::Compiler.compile( $($<static_prereq_pattern>) );
+            my $star := $etar();
+            my $spre := $epre();
+            PIR q< find_lex $P1, '$targets' >;
+            PIR q< find_lex $P2, '$star' >;
+            PIR q< find_lex $P3, '$spre' >;
+            PIR q< '!MAKE-STATIC-PATTERN-RULE'( $P1, $P2, $P3 ) >;
             make PAST::Op.new( :pirop('noop') );
         }
         else {
-            my @actions             := $<make_action>;
-            PIR q< find_lex $P1, "@targets" >;
-            PIR q< find_lex $P2, "@prerequisites" >;
-            PIR q< find_lex $P3, "@orderonly" >;
-            PIR q< find_lex $P4, "@actions" >;
-            PIR q< '!MAKE-RULE'( $P1, $P2, $P3, $P4 ) >;
-            make PAST::Op.new( :pirop('noop') );
+            #my @prerequisites       := $<make_prerequisite>;
+            my $epre := PAST::Compiler.compile( $($<expanded_prerequisites>) );
+            my $prerequisites := $epre();
+            my $orderonly;
+            if $<expanded_orderonly> {
+                my $eoo  := PAST::Compiler.compile( $($<expanded_orderonly>) );
+                $orderonly := $eoo();
+            }
+            else {
+                $orderonly := "";
+            }
+            if $<smart_action> {
+                my $past := $( $<smart_action> );
+                my $rule_name := $past.name();
+                my $rule_comm := PAST::Compiler.compile( $past );
+                PIR q< find_lex $P1, "$targets" >;
+                PIR q< find_lex $P2, "$prerequisites" >;
+                PIR q< find_lex $P3, "$orderonly" >;
+                PIR q< find_lex $P4, "$rule_name" >;
+                PIR q< find_lex $P5, "$rule_comm" >;
+                PIR q< '!MAKE-RULE'( $P1, $P2, $P3, $P4, $P5 ) >;
+                make PAST::Op.new( :pirop('noop') );
+            }
+            else {
+                my @actions             := $<make_action>;
+                PIR q< find_lex $P1, "$targets" >;
+                PIR q< find_lex $P2, "$prerequisites" >;
+                PIR q< find_lex $P3, "$orderonly" >;
+                PIR q< find_lex $P4, "@actions" >;
+                PIR q< '!MAKE-RULE'( $P1, $P2, $P3, $P4 ) >;
+                make PAST::Op.new( :pirop('noop') );
+            }
         }
     }
 }
 method expandable($/) {
-#     PIR q< say "expandable" >;
     my $name;
-    for $<expandable_name> {
+    for $<expanded_text> {
         my $e := PAST::Compiler.compile( $($_) );
         my $s := $e();
         $name := ~$name~$s;
     }
-    my $v := '$('~$name~')';
+    #my $v := '$('~$name~')';
+    my $v := ~$<lp>~$name~$<rp>;
     my $past := PAST::Block.new(
-        :blocktype('declaration'),
+        :blocktype('declaration'), :name('__expand_name'),
         PAST::Op.new( :pasttype('call'), :name('expand'), :node($/),
           :returns('String'),
           PAST::Val.new( :value( ~$v ) )
         )
     );
-#     PIR q< find_lex $P0, '$v' >;
-#     PIR q< print "var: " >;
-#     PIR q< say $P0 >;
     make $past;
 }
-method expandable_name($/) {
-#     my $t := ~$/;
-#     PIR q< find_lex $P0, '$t' >;
-#     PIR q< say $P0 >;
+method expanded_text($/) {
     my $name;
     if $<pre> {
         $name := ~$name~$<pre>;
         my $pre := ~$<pre>;
-#         PIR q< find_lex $P0, '$pre' >;
-#         PIR q< print "pref: " >;
-#         PIR q< say $P0 >;
     }
     if $<expandable> {
         my $e := PAST::Compiler.compile( $( $<expandable> ) );
         my $s := $e();
         $name := ~$name~$s;
-#         PIR q< say "exp" >;
-#         PIR q< find_lex $P0, '$s' >;
-#         PIR q< print "inner: " >;
-#         PIR q< say $P0 >;
     }
     if $<suf> {
         $name := ~$name~$<suf>;
         my $suf := ~$<suf>;
-#         PIR q< find_lex $P0, '$suf' >;
-#         PIR q< print "suff: " >;
-#         PIR q< say $P0 >;
     }
     if !$name { $name := ~$/; }
     my $past := PAST::Block.new(
-        :blocktype('declaration'),
+        :blocktype('declaration'), :name('__expanded_text'),
         PAST::Val.new( :value( ~$name ) )
     );
-#     PIR q< find_lex $P0, '$name' >;
-#     PIR q< print "name: " >;
-#     PIR q< say $P0 >;
     make $past;
 }
+
+method expanded_targets($/) {
+    my $text;
+    if $<pre> {
+        $text := ~$text~$<pre>;
+    }
+    if $<expandable> {
+        my $e := PAST::Compiler.compile( $($<expandable>) );
+        my $s := $e();
+        $text := ~$text~$s;
+    }
+    if $<suf> {
+        $text := ~$text~$<suf>;
+    }
+    make PAST::Block.new( :blocktype('declaration'),
+      :name('__expanded_targets'),
+      PAST::Val.new( :value( ~$text ) ) );
+}
+
+sub make_targets_block($/, $name) {
+    my $str;
+    for $/<expanded_targets> {
+        my $e := PAST::Compiler.compile( $($_) );
+        my $s := $e();
+        if $str { $str := ~$str~' '~$s; }
+        else { $str := ~$s; }
+    }
+    return PAST::Block.new( :blocktype('declaration'), :name($name), :node($/),
+      PAST::Val.new( :value( ~$str ) ) );
+}
+
+method static_target_pattern($/) {
+    my $past := make_targets_block( $/, '__static_target_pattern' );
+    make $past;
+}
+
+method static_prereq_pattern($/) {
+    my $past := make_targets_block( $/, '__static_prereq_pattern' );
+    make $past;
+}
+
+method expanded_prerequisites($/) {
+    my $past := make_targets_block( $/, '__expanded_prerequisites' );
+    make $past;
+}
+
+method expanded_orderonly($/) {
+    my $past := make_targets_block( $/, '__expanded_orderonly' );
+    make $past;
+}
+
 # method make_target($/) {
 #     if $<make_variable_ref> {
 #         my $past := PAST::Op.new( :name('!BIND-TARGETS-BY-EXPANDING-STRING'),

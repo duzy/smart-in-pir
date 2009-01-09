@@ -82,37 +82,47 @@ token make_variable_declaration {
 
 token expandable {
     [
-      |[ '$' <-[(]> ]
-      |[ '$(' <expandable_name>+ ')' ]
+      |[ $<lp>=['$'] <-[({]> ]
+      |[ $<lp>=['$('] <expanded_text>+ $<rp>=[')'] ]
+      |[ $<lp>=['${'] <expanded_text>+ $<rp>=['}'] ]
     ]
     {*}
 }
-token expandable_name {
+token expanded_text {
     [
-      |[<expandable> $<suf>=[[<!before [')'|'$']>.]+]]
-      |[$<pre>=[[<!before [')'|'$']>.]+] <expandable>]
+      |[<expandable> $<suf>=[[<!before [')'|'$']><-[\n]>]+]]
+      |[$<pre>=[[<!before [')'|'$']><-[\n]>]+] <expandable>]
       |<expandable>
-      |$<all>=<-[$)]>+
+      |$<all>=<-[$)\n]>+
+    ]
+    {*}
+}
+
+token expanded_targets {
+    [
+      |[ $<pre>=[[<!before [':']><-[\\\n$\ \t:;]>]+]
+         <expandable>?
+         $<suf>=[[<!before [':']><-[\\\n$\ \t:;]>]*]
+       ]
+      | <expandable>
     ]
     {*}
 }
 
 token make_rule {
     |[ <make_special_rule> ] {*}
-    |[ [
-         |[ [ [<expandable>|<make_target>] <.ws_inline> ]+
-            ':' <.ws_inline> [\\\n<.ws_inline>]?
-            $<static_target_pattern>=[[<expandable>|<-[:;\n]>]+]
-            ':' <.ws_inline> [\\\n<.ws_inline>]?
-            $<static_prereq_pattern>=[<-[\\\n|]>+]
-            [\\\n <.ws_inline>]?
+    |[ <.ws_inline>
+       [<expanded_targets><.ws_inline>[\\\n<.ws_inline>]*]+
+       ':' <.ws_inline> [\\\n<.ws_inline>]*
+       [
+         |[
+            <static_target_pattern>
+            $<seccon>=[':'] <.ws_inline> [\\\n<.ws_inline>]*
+            <static_prereq_pattern> [\\\n<.ws_inline>]*
           ]
-         |[ [ <make_target> <.ws_inline> ]+
-            ':' <.ws_inline> [\\\n<.ws_inline>]?
-            [ <make_prerequisite><.ws_inline>[\\\n<.ws_inline>]? ]*
-            [ '|' <.ws_inline> [\\\n<.ws_inline>]?
-              [ <make_prerequisite_oo><.ws_inline>[\\\n<.ws_inline>]? ]*
-            ]?
+         |[
+            <expanded_prerequisites>
+            [ '|' <.ws_inline> [\\\n<.ws_inline>]* <expanded_orderonly> ]?
           ]
        ]
        [
@@ -127,16 +137,26 @@ token make_rule {
        ]
      ] {*}
 }
-#      $<item>=[ <make_variable_ref> | [<-[ : \ \t \n ]>+] ]
-token make_target {
-    [<make_variable_ref>|<-[(:\ \t\n$]>]+
-    ['('[<!before ')'>.]*')']?
+token static_target_pattern {
+    [<expanded_targets><.ws_inline>[\\\n<.ws_inline>]*]+
+    {*}
+}
+token static_prereq_pattern {
+    [<expanded_targets><.ws_inline>[\\\n<.ws_inline>]*]+
+    {*}
+}
+token expanded_prerequisites {
+    [<expanded_targets><.ws_inline>[\\\n<.ws_inline>]*]*
+    {*}
+}
+token expanded_orderonly {
+    [<expanded_targets><.ws_inline>[\\\n<.ws_inline>]*]*
+    {*}
 }
 token make_prerequisite {
     [<make_variable_ref>|<-[(:;|\ \t\\\n$]>]+
     ['('<-[)]>*')']?
 }
-#    <?after '|' <.ws_inline> >
 token make_prerequisite_oo {
     [<make_variable_ref>|<-[(:;|\ \t\\\n$]>]+
     ['('<-[)]>*')']?
