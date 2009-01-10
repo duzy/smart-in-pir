@@ -19,12 +19,15 @@ t = T$(S)
 T = $(t)
 C = C$(T)
 
-all: foo.o bar.o baz.o
+all: a d.h foo.o bar.o baz.o
 	@echo "objects: $(OBJECTS)"
 
+a:
+	@echo $@
+
 #$(OBJECTS):%.o:%.c
-ba.o $(pre$(O)E$(C)suf) fo.o:%.o:%.c | a.c
-	@echo "compile $< -> $@"
+d.h ba.o $(pre$(O)E$(C)suf) fo.o:%.o:%.c | a.c
+	@echo "compile $< -> $@, stem: $*"
 
 %.c:
 	@echo "source: $@"

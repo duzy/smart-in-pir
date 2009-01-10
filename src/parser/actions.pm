@@ -132,30 +132,43 @@ method make_rule($/) {
         make $( $<make_special_rule> );
     }
     else {
-        my $targets := expanded_items( $<expanded_targets> );
-#         PIR q< find_lex $P0, "$targets" >;
-#         PIR q< print "targets: " >;
-#         PIR q< print $P0 >;
-#         PIR q< print "\n" >;
-        my $epre := PAST::Compiler.compile( $($<expanded_prerequisites>) );
+        my $targets   := expanded_items( $<expanded_targets> );
+        my $epre      := PAST::Compiler.compile( $($<expanded_prerequisites>) );
         my $prerequisites := $epre();
         my $orderonly := expanded_items( $<expanded_orderonly> );
         if $<static_prereq_pattern> {
             ## If static pattern rule, <expanded_prerequisites> is the
             ## target-pattern of the static pattern rule.
-            my $star := $prerequisites;
-            my $spre := expanded_items( $<static_prereq_pattern> );
-            PIR q< find_lex $P1, '$targets' >;
-            PIR q< find_lex $P2, '$star' >;
-            PIR q< find_lex $P3, '$spre' >;
-            PIR q< find_lex $P4, '$orderonly' >;
-            PIR q< '!MAKE-STATIC-PATTERN-RULE'( $P1, $P2, $P3, $P4 ) >;
+            my $target_pattern := $prerequisites;
+            my $prereq_pattern := expanded_items( $<static_prereq_pattern> );
+            if $<smart_action> {
+                my $past       := $( $<smart_action> );
+                my $rule_name  := $past.name();
+                my $rule_comm  := PAST::Compiler.compile( $past );
+                PIR q< find_lex $P1, '$targets' >;
+                PIR q< find_lex $P2, '$target_pattern' >;
+                PIR q< find_lex $P3, '$prereq_pattern' >;
+                PIR q< find_lex $P4, '$orderonly' >;
+                PIR q< find_lex $P5, "$rule_name" >;
+                PIR q< find_lex $P6, "$rule_comm" >;
+                PIR q< '!MAKE-RULE'($P2,$P3,$P4,$P5,$P6,$P1) >;
+            }
+            else {
+                my @actions    := $<make_action>;
+                PIR q< find_lex $P1, '$targets' >;
+                PIR q< find_lex $P2, '$target_pattern' >;
+                PIR q< find_lex $P3, '$prereq_pattern' >;
+                PIR q< find_lex $P4, '$orderonly' >;
+                PIR q< find_lex $P5, '@actions' >;
+                PIR q< null $P0 >;
+                PIR q< '!MAKE-RULE'($P2, $P3, $P4, $P5, $P0, $P1) >;
+            }
         }
         else {
             if $<smart_action> {
-                my $past := $( $<smart_action> );
-                my $rule_name := $past.name();
-                my $rule_comm := PAST::Compiler.compile( $past );
+                my $past       := $( $<smart_action> );
+                my $rule_name  := $past.name();
+                my $rule_comm  := PAST::Compiler.compile( $past );
                 PIR q< find_lex $P1, "$targets" >;
                 PIR q< find_lex $P2, "$prerequisites" >;
                 PIR q< find_lex $P3, "$orderonly" >;
@@ -164,7 +177,7 @@ method make_rule($/) {
                 PIR q< '!MAKE-RULE'( $P1, $P2, $P3, $P4, $P5 ) >;
             }
             else {
-                my @actions             := $<make_action>;
+                my @actions   := $<make_action>;
                 PIR q< find_lex $P1, "$targets" >;
                 PIR q< find_lex $P2, "$prerequisites" >;
                 PIR q< find_lex $P3, "$orderonly" >;
@@ -246,10 +259,10 @@ sub make_targets_block($/, $name) {
       PAST::Val.new( :value( ~$str ) ) );
 }
 
-method static_target_pattern($/) {
-    my $past := make_targets_block( $/, '__static_target_pattern' );
-    make $past;
-}
+# method static_target_pattern($/) {
+#     my $past := make_targets_block( $/, '__static_target_pattern' );
+#     make $past;
+# }
 
 method static_prereq_pattern($/) {
     my $past := make_targets_block( $/, '__static_prereq_pattern' );
