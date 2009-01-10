@@ -400,6 +400,144 @@ check_and_split_archive_members_done:
     .return( $S0, $P0 )
 .end # sub "!CHECK-AND-SPLIT-ARCHIVE-MEMBERS"
 
+.sub "!WILDCARD-PREREQUISITE"
+    .param pmc prerequisites ## *OUT*
+    .param string text
+    
+check_wildcard_prerequsite:
+    $I0 = 0
+check_wildcard_prerequsite__case1:
+    index $I1, text, "*"
+    if $I1 < 0 goto check_wildcard_prerequsite__case2
+    goto check_wildcard_prerequsite__done_yes
+check_wildcard_prerequsite__case2:
+    index $I1, text, "?"
+    if $I1 < 0 goto check_wildcard_prerequsite__case3
+    goto check_wildcard_prerequsite__done_yes
+check_wildcard_prerequsite__case3:
+    index $I1, text, "["
+    if $I1 < 0 goto check_wildcard_prerequsite__case4
+    index $I2, text, "]", $I1
+    if $I2 < 0 goto check_wildcard_prerequsite__case4
+    goto check_wildcard_prerequsite__done_yes
+check_wildcard_prerequsite__case4:
+    ## more other case?
+    goto check_wildcard_prerequsite__done
+    
+check_wildcard_prerequsite__done_yes:
+    $P1 = '~wildcard'( text )
+    new $P2, 'Iterator', $P1
+check_wildcard_prerequsite__done_yes__iterate_items:
+    unless $P2 goto check_wildcard_prerequsite__done_yes__iterate_items__end
+    shift $S1, $P2
+#     print "wildcard: "
+#     say $S1
+    $P1 = '!BIND-TARGET'( $S1, 0 )
+    push prerequisites, $P1
+    goto check_wildcard_prerequsite__done_yes__iterate_items
+check_wildcard_prerequsite__done_yes__iterate_items__end:
+    null $P1
+    $I0 = 1
+check_wildcard_prerequsite__done:
+    #local_return call_stack
+    .return($I0)
+.end # sub "!WILDCARD-PREREQUISITE"
+
+.sub "!CONVERT-SUFFIX-TARGET"
+    .param pmc prerequisites ## *OUT*
+    .param string text ## *IN* *OUT/modifying*
+    
+    ######################
+    ## local: check_and_convert_suffix_target
+    ##          IN: text(the target name)
+    ##          OUT: text(modified into pattern if suffix detected)
+check_and_convert_suffix_target:
+    set $I0, 0
+    substr $S0, text, 0, 1
+    unless $S0 == "." goto check_and_convert_suffix_target__done
+    index $I1, text, ".", 1
+    unless $I1 < 0 goto check_and_convert_suffix_target__check_two_suffixes
+    set $I0, 1 ## tells number of suffixes
+    
+    $S3 = text
+    #local_branch call_stack, check_and_convert_suffix_target__check_suffixes
+    bsr check_and_convert_suffix_target__check_suffixes
+    unless $I1 goto check_and_convert_suffix_target__done
+    
+    print "one-suffix-rule: "   #!!!
+    say text                    #!!!
+    $S2 = "%"
+    $S2 .= text ## implicit:  %.text
+    unshift prerequisites, $S2
+    text = "%"
+    
+    goto check_and_convert_suffix_target__done
+    
+check_and_convert_suffix_target__check_two_suffixes:
+    unless 2 <= $I1 goto check_and_convert_suffix_target__done ## avoid ".."
+    $I2 = $I1 + 1
+    $I2 = index text, ".", $I2  ## no third "." should existed
+    unless $I2 < 0 goto check_and_convert_suffix_target__done
+    $I2 = length text
+    $I2 = $I2 - $I1
+    $I0 = 2 ## tells number of suffixes
+    $S0 = substr text, 0, $I1 ## the first suffix
+    $S1 = substr text, $I1, $I2 ## the second suffix
+    
+    $S3 = $S0
+    #local_branch call_stack, check_and_convert_suffix_target__check_suffixes
+    bsr check_and_convert_suffix_target__check_suffixes
+    unless $I1 goto check_and_convert_suffix_target__done
+    
+    $S3 = $S1
+    #local_branch call_stack, check_and_convert_suffix_target__check_suffixes
+    bsr check_and_convert_suffix_target__check_suffixes
+    unless $I1 goto check_and_convert_suffix_target__done
+    
+    print "two-suffix-rule: "   #!!!
+    print $S0                   #!!! 
+    print ", "                  #!!!
+    say $S1                     #!!!
+    text = "%"
+    text .= $S1
+    $S2 = "%"
+    $S2 .= $S0 ## implicit: %.$S0
+    unshift prerequisites, $S2
+    
+check_and_convert_suffix_target__done:
+    #local_return call_stack
+    .return(text)
+    
+    
+    ######################
+    ## local: check_and_convert_suffix_target__check_suffixes
+    ##          IN: $S3
+    ##          OUT: $I1
+check_and_convert_suffix_target__check_suffixes:
+    .local pmc suffixes
+    get_hll_global suffixes, ['smart';'make';'rule'], ".SUFFIXES"
+    if null suffixes goto check_and_convert_suffix_target__check_suffixes__done
+    $P0 = new 'Iterator', suffixes
+    $I1 = 0
+check_and_convert_suffix_target__iterate_suffixes:
+    unless $P0 goto check_and_convert_suffix_target__iterate_suffixes_done
+    $S4 = shift $P0
+    unless $S4 == $S3 goto check_and_convert_suffix_target__iterate_suffixes
+    inc $I1
+check_and_convert_suffix_target__iterate_suffixes_done:
+    null $P0
+    if $I1 goto check_and_convert_suffix_target__check_suffixes__done
+    $S4 = "smart: Unknown suffix '"
+    $S4 .= $S3
+    $S4 .= "'\n"
+    print $S4
+check_and_convert_suffix_target__check_suffixes__done:
+    #local_return call_stack
+    #.return(text)
+    ret
+   
+.end # sub '!CONVERT-SUFFIX-TARGET'
+
 .sub "!MAKE-RULE"
     .param pmc mo_targets
     .param pmc mo_prerequsites
@@ -496,7 +634,7 @@ iterate_match_object_array_loop:
     $S0 = $P2 #$P2.'text'()
     
     if at == ACTION_A goto to_action_pack_action
-
+    
 #     print "a: "
 #     print $S0
 #     print "\n"
@@ -541,7 +679,8 @@ map_match_object_array__done:
 action_pack_target:
     ## Check and convert suffix rules into pattern rule if any,
     ## if the convertion did, text will be changed into pattern string
-    local_branch call_stack, check_and_convert_suffix_target
+    #local_branch call_stack, check_and_convert_suffix_target
+    text = '!CONVERT-SUFFIX-TARGET'( prerequisites, text )
     
     ## If any target is a pattern, than the rule is a implicit rule.
     ## The suffix target is converted into a pattern. If the rule is implicit,
@@ -579,90 +718,7 @@ action_pack_target__bind_normal:
     set numberOneTarget, $P1
 action_pack_target__done:
     local_return call_stack
-    
-    ######################
-    ## local: check_and_convert_suffix_target
-    ##          IN: text(the target name)
-    ##          OUT: text(modified into pattern if suffix detected)
-check_and_convert_suffix_target:
-    set $I0, 0
-    substr $S0, text, 0, 1
-    unless $S0 == "." goto check_and_convert_suffix_target__done
-    index $I1, text, ".", 1
-    unless $I1 < 0 goto check_and_convert_suffix_target__check_two_suffixes
-    set $I0, 1 ## tells number of suffixes
-    
-    $S3 = text
-    local_branch call_stack, check_and_convert_suffix_target__check_suffixes
-    unless $I1 goto check_and_convert_suffix_target__done
-    
-    print "one-suffix-rule: "   #!!!
-    say text                    #!!!
-    $S2 = "%"
-    $S2 .= text ## implicit:  %.text
-    unshift prerequisites, $S2
-    text = "%"
 
-    goto check_and_convert_suffix_target__done
-    
-check_and_convert_suffix_target__check_two_suffixes:
-    unless 2 <= $I1 goto check_and_convert_suffix_target__done ## avoid ".."
-    $I2 = $I1 + 1
-    $I2 = index text, ".", $I2  ## no third "." should existed
-    unless $I2 < 0 goto check_and_convert_suffix_target__done
-    $I2 = length text
-    $I2 = $I2 - $I1
-    $I0 = 2 ## tells number of suffixes
-    $S0 = substr text, 0, $I1 ## the first suffix
-    $S1 = substr text, $I1, $I2 ## the second suffix
-
-    $S3 = $S0
-    local_branch call_stack, check_and_convert_suffix_target__check_suffixes
-    unless $I1 goto check_and_convert_suffix_target__done
-    
-    $S3 = $S1
-    local_branch call_stack, check_and_convert_suffix_target__check_suffixes
-    unless $I1 goto check_and_convert_suffix_target__done
-    
-    print "two-suffix-rule: "   #!!!
-    print $S0                   #!!! 
-    print ", "                  #!!!
-    say $S1                     #!!!
-    text = "%"
-    text .= $S1
-    $S2 = "%"
-    $S2 .= $S0 ## implicit: %.$S0
-    unshift prerequisites, $S2
-    
-check_and_convert_suffix_target__done:
-    local_return call_stack
-
-    
-    ######################
-    ## local: check_and_convert_suffix_target__check_suffixes
-    ##          IN: $S3
-    ##          OUT: $I1
-check_and_convert_suffix_target__check_suffixes:
-    .local pmc suffixes
-    get_hll_global suffixes, ['smart';'make';'rule'], ".SUFFIXES"
-    if null suffixes goto check_and_convert_suffix_target__check_suffixes__done
-    $P0 = new 'Iterator', suffixes
-    $I1 = 0
-check_and_convert_suffix_target__iterate_suffixes:
-    unless $P0 goto check_and_convert_suffix_target__iterate_suffixes_done
-    $S4 = shift $P0
-    unless $S4 == $S3 goto check_and_convert_suffix_target__iterate_suffixes
-    inc $I1
-check_and_convert_suffix_target__iterate_suffixes_done:
-    null $P0
-    if $I1 goto check_and_convert_suffix_target__check_suffixes__done
-    $S4 = "smart: Unknown suffix '"
-    $S4 .= $S3
-    $S4 .= "'\n"
-    print $S4
-check_and_convert_suffix_target__check_suffixes__done:
-    local_return call_stack
-    
     ######################
     ## local: check_and_handle_pattern_target
     ##          IN: text(the target name)
@@ -686,7 +742,8 @@ error_mixed_implicit_and_normal_rule:
     $S0 .= "\n"
     printerr $S0
     exit EXIT_ERROR_MIXED_RULE
-
+    
+    
     ######################
     ##  IN: text(the text value)
 action_pack_prerequisite:
@@ -709,7 +766,8 @@ action_pack_prerequisite__iterate_archives_end:
 
 action_pack_prerequisite__handle_single:
     ## Firstly, check to see if wildcard, and handle it if yes
-    local_branch call_stack, check_wildcard_prerequsite
+    #local_branch call_stack, check_wildcard_prerequsite
+    $I0 = '!WILDCARD-PREREQUISITE'( prerequisites, text )
     if $I0 goto action_pack_prerequisite__done
 
 action_pack_prerequisite__push:
@@ -755,51 +813,8 @@ action_pack_orderonly__done:
     ######################
     ##  IN: text(the text value)
 action_pack_action:
-    #$P1 = '!CREATE-ACTION'( text )
     $P1 = 'new:Action'( text, 0 )
     push actions, $P1
-    local_return call_stack
-
-    
-    ######################
-    ## local: check_wildcard_prerequsite
-    ##          IN: text
-    ##          OUT: $I0 (1/0, 1 indicates that's a wildcard)
-check_wildcard_prerequsite:
-    $I0 = 0
-check_wildcard_prerequsite__case1:
-    index $I1, text, "*"
-    if $I1 < 0 goto check_wildcard_prerequsite__case2
-    goto check_wildcard_prerequsite__done_yes
-check_wildcard_prerequsite__case2:
-    index $I1, text, "?"
-    if $I1 < 0 goto check_wildcard_prerequsite__case3
-    goto check_wildcard_prerequsite__done_yes
-check_wildcard_prerequsite__case3:
-    index $I1, text, "["
-    if $I1 < 0 goto check_wildcard_prerequsite__case4
-    index $I2, text, "]", $I1
-    if $I2 < 0 goto check_wildcard_prerequsite__case4
-    goto check_wildcard_prerequsite__done_yes
-check_wildcard_prerequsite__case4:
-    ## more other case?
-    goto check_wildcard_prerequsite__done
-    
-check_wildcard_prerequsite__done_yes:
-    $P1 = '~wildcard'( text )
-    new $P2, 'Iterator', $P1
-check_wildcard_prerequsite__done_yes__iterate_items:
-    unless $P2 goto check_wildcard_prerequsite__done_yes__iterate_items__end
-    shift $S1, $P2
-#     print "wildcard: "
-#     say $S1
-    $P1 = '!BIND-TARGET'( $S1, 0 )
-    push prerequisites, $P1
-    goto check_wildcard_prerequsite__done_yes__iterate_items
-check_wildcard_prerequsite__done_yes__iterate_items__end:
-    null $P1
-    $I0 = 1
-check_wildcard_prerequsite__done:
     local_return call_stack
     
 .end # sub "!MAKE-RULE"

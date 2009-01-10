@@ -22,12 +22,15 @@ C = C$(T)
 all: a d.h foo.o bar.o baz.o
 	@echo "objects: $(OBJECTS)"
 
-a:
-	@echo $@
+a: gen/*.pir
+	@echo "$^ -> $@"
 
 #$(OBJECTS):%.o:%.c
-d.h ba.o $(pre$(O)E$(C)suf) fo.o:%.o:%.c | a.c
+ba.o $(pre$(O)E$(C)suf) fo.o:%.o:%.c | a.c
 	@echo "compile $< -> $@, stem: $*"
+
+.c.h:
+	@echo "header $@ <- $<"
 
 %.c:
 	@echo "source: $@"
