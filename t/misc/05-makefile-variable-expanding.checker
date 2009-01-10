@@ -1,6 +1,6 @@
 # -*- cperl -*-
 {
-    my $expect = <<'____END_EXPECT';
+    my $s = <<'____END_EXPECT';
 1..7
 check:expand(item1	item2):item1	item2
 check:expand(item1	item2 item3):item1	item2 item3
@@ -10,11 +10,23 @@ ok $(E).expand = {[prefix-{item1	item2 item3 item4}-mid-{item1	item2}-suffix]} a
 check:value($($(N)) item5):$($(N)) item5
 check:expand(item1	item2 item3 item4 item5):item1	item2 item3 item4 item5
 check:(aabb):aabb
-smart: ** unterminated variable reference '${unterminated'. Stop.
 aaa${unterminated
 ____END_EXPECT
     ;
-    my $result = join '', @result;
-    $check_result = $result eq $expect;
+    my @r;
+    do { push @r, $_ if !m/^smart:.+$/ } for @result;
+    my $r = join '', @r;
+    $check_result = $r eq $s;
+    $_ = "$file.log";
+    unlink if -f;
+    do {
+        open F, ">$file.log" or die "$!";
+        print F
+            "==================== expect ==\n",
+            $s, "\n",
+            "==================== result ==\n",
+            $r ;
+        close F;
+    } unless $check_result;
     print "";
 }

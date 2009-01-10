@@ -1,14 +1,16 @@
 # -*- cperl -*-
 {
     my $s = <<"____END_EXPECT";
+rm -f {foo,bar,foobar}.txt
 update foo.txt
 update bar.txt
 update foobar.txt
 bar.txt
 foobar.txt
 foo.txt
-foobar
-1 foobar.txt
+foo
+bar
+2 foobar.txt
 rm -f {foo,bar,foobar}.txt
 echo all done
 all done
@@ -18,6 +20,8 @@ ____END_EXPECT
     do { push @r, $_ if !m/^smart:.+$/ } for @result;
     my $r = join '', @r;
     $check_result = $r eq $s;
+    $_ = "$file.log";
+    unlink if -f;
     do {
         open F, ">$file.log" or die "$!";
         print F
