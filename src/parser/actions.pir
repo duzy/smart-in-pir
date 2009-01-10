@@ -410,7 +410,7 @@ check_wildcard_prerequsite__done_yes__iterate_items:
     shift $S1, $P2
 #     print "wildcard: "
 #     say $S1
-    $P1 = '!BIND-TARGET'( $S1, 0 )
+    $P1 = '!BIND-TARGET'( $S1, TARGET_TYPE_NORMAL )
     push prerequisites, $P1
     goto check_wildcard_prerequsite__done_yes__iterate_items
 check_wildcard_prerequsite__done_yes__iterate_items__end:
@@ -513,22 +513,11 @@ check_and_convert_suffix_target__check_suffixes__done:
 
 .sub "!MAKE-RULE"
     .param pmc mo_targets
-    .param pmc mo_prerequsites
+    .param pmc mo_prerequisites
     .param pmc mo_orderonly
     .param pmc mo_actions
     .param pmc smart_command    :optional
     .param pmc static_targets   :optional
-
-    if null static_targets goto go
-    print "TODO: "
-    print static_targets
-    print ":"
-    print mo_targets
-    print ":"
-    print mo_orderonly
-    print "\n"
-    .return()
-go:
     
     .const int ACTION_T    = 0
     .const int ACTION_P    = 1
@@ -561,14 +550,14 @@ go:
     '!SETUP-DEFAULT-GOAL'( numberOneTarget )
     
 process_prerequisites:
-    moa = mo_prerequsites
+    moa = mo_prerequisites
     at = ACTION_P
     bsr map_match_object_array
     
     moa = mo_orderonly
     at = ACTION_O
     bsr map_match_object_array
-
+    
     if null smart_command goto map_actions
     $P1 = 'new:Action'( smart_command, 1 )
     push actions, $P1
@@ -578,6 +567,45 @@ map_actions:
     at = ACTION_A
     bsr map_match_object_array
 
+    ## 
+    ## Handle with the static targets
+    ## 
+    if null static_targets goto return_result
+    .local pmc statics
+    .local pmc pattern
+    .local pmc out
+    .local pmc it
+    $S0 = static_targets
+    pattern = 'new:Pattern'( mo_targets )
+    out = rule.'static-targets'()
+    split statics, " ", $S0
+    new it, 'Iterator', statics
+iterate_static_targets:
+    unless it goto iterate_static_targets_end
+    shift $S0, it
+    $S1 = pattern.'match'( $S0 )
+    unless $S1 == "" goto push_static_target
+    $S1 = "smart: Target '" . $S0
+    $S1 .= "' doesn't match the target pattern '"
+    $S2 = pattern
+    $S1 .= $S2
+    $S1 .= "'.\n"
+    
+    printerr $S1
+    
+    ## TODO: should I push the unmatched target here?
+#     $P0 = '!BIND-TARGET'( $S0, TARGET_TYPE_NORMAL )
+#     getattribute $P1, $P0, 'rules'
+#     push $P1, rule
+# #     text = pattern
+# #     bsr check_and_handle_pattern_target
+    goto iterate_static_targets
+    
+push_static_target:
+    push out, $S1
+    goto iterate_static_targets
+iterate_static_targets_end:
+    
 return_result:
     .return(rule)
     
@@ -604,15 +632,10 @@ iterate_match_object_array_loop:
     $S0 = $P2 #$P2.'text'()
     
     unless at == ACTION_A goto split_items_and_check_more
-    text = $S0
-    $P1 = 'new:Action'( text, 0 )
+    $P1 = 'new:Action'( $S0, 0 )
     push actions, $P1
     goto iterate_match_object_array_loop    
     
-#     print "a: "
-#     print $S0
-#     print "\n"
-
 split_items_and_check_more:
     ##items = '~expanded-items'( $S0 )
     split items, " ", $S0
@@ -649,7 +672,6 @@ map_match_object_array__done:
 action_pack_target:
     ## Check and convert suffix rules into pattern rule if any,
     ## if the convertion did, text will be changed into pattern string
-    #bsr check_and_convert_suffix_target
     text = '!CONVERT-SUFFIX-TARGET'( prerequisites, text )
     
     ## If any target is a pattern, than the rule is a implicit rule.
@@ -658,16 +680,15 @@ action_pack_target:
     bsr check_and_handle_pattern_target
     if $I0 goto action_pack_target__done ## got and handled pattern
     #if implicit goto error_mixed_implicit_and_normal_rule
-
+    
     ## Check if archive-members
-    #bsr check_and_split_archive_members
     ( $S0, $P0 ) = '!CHECK-AND-SPLIT-ARCHIVE-MEMBERS'( text )
     if $S0 == "" goto action_pack_target__bind_normal
     new $P1, 'Iterator', $P0
 action_pack_target__iterate_archive:
     unless $P1 goto action_pack_target__iterate_archive_end
     shift $S0, $P1
-    $P2 = '!BIND-TARGET'( $S0, 1 )
+    $P2 = '!BIND-TARGET'( $S0, TARGET_TYPE_MEMBER )
     getattribute $P3, $P2, 'rules'
     push $P3, rule ## bind the rule with the target
     unless null numberOneTarget goto action_pack_target__iterate_archive
@@ -679,16 +700,15 @@ action_pack_target__iterate_archive_end:
     ## Finally...
 action_pack_target__bind_normal:
     ## Normal targets are bind directly.
-    $P1 = '!BIND-TARGET'( text, 1 )
+    $P1 = '!BIND-TARGET'( text, TARGET_TYPE_NORMAL )
     getattribute $P2, $P1, 'rules'
     push $P2, rule
     
-    #push targets, $P1 # push the target
     unless null numberOneTarget goto action_pack_target__done
     set numberOneTarget, $P1
 action_pack_target__done:
     ret
-
+    
     ######################
     ## local: check_and_handle_pattern_target
     ##          IN: text(the target name)
@@ -696,19 +716,14 @@ action_pack_target__done:
 check_and_handle_pattern_target:
     $I0 = '!CHECK-AND-STORE-PATTERN-TARGET'( text, rule )
     unless $I0 goto check_and_handle_pattern_target__validate_non_mixed
-
     set implicit, 1
-    goto check_and_handle_pattern_target__done
-    
+    ret
 check_and_handle_pattern_target__validate_non_mixed:
     if implicit goto error_mixed_implicit_and_normal_rule
-    
-check_and_handle_pattern_target__done:
     ret
-    
 error_mixed_implicit_and_normal_rule:
-    $S0 = "smart: *** Mixed implicit and normal rules: "
-    #$S0 .= match
+    $S1 = mo_targets
+    $S0 = "smart: *** Mixed implicit and normal rules: " . $S1
     $S0 .= "\n"
     printerr $S0
     exit EXIT_ERROR_MIXED_RULE
@@ -717,11 +732,8 @@ error_mixed_implicit_and_normal_rule:
     ######################
     ##  IN: text(the text value)
 action_pack_prerequisite:
-#     print "prereq: "
-#     say text
     if implicit goto action_pack_prerequisite__push_implicit
 
-    #bsr check_and_split_archive_members
     ( $S0, $P0 ) = '!CHECK-AND-SPLIT-ARCHIVE-MEMBERS'( text )
     if $S0 == "" goto action_pack_prerequisite__handle_single
     .local pmc ait
@@ -736,25 +748,24 @@ action_pack_prerequisite__iterate_archives_end:
 
 action_pack_prerequisite__handle_single:
     ## Firstly, check to see if wildcard, and handle it if yes
-    #bsr check_wildcard_prerequsite
     $I0 = '!WILDCARD-PREREQUISITE'( prerequisites, text )
     if $I0 goto action_pack_prerequisite__done
-
+    
 action_pack_prerequisite__push:
     ## Than dealing with the normal prerequisite
-    $P1 = '!BIND-TARGET'( text, 0 )
+    $P1 = '!BIND-TARGET'( text, TARGET_TYPE_NORMAL )
     push prerequisites, $P1
     goto action_pack_prerequisite__done
     
 action_pack_prerequisite__push_implicit:
     ## Handle with the implicit target
     ## TODO: ???
-    $P1 = '!BIND-TARGET'( text, 0 )
+    $P1 = '!BIND-TARGET'( text, TARGET_TYPE_NORMAL )
     push prerequisites, $P1
     
 action_pack_prerequisite__done:
     ret
-
+    
     
     ######################
     ##  IN: text(the text value)
@@ -782,6 +793,9 @@ action_pack_orderonly__done:
 .end # sub "!MAKE-RULE"
 
 
+=item
+"!UPDATE-SPECIAL-RULE"
+=cut
 .sub "!UPDATE-SPECIAL-RULE"
     .param string name
     .param pmc items    :slurpy
@@ -986,7 +1000,7 @@ iterate_items_end:
 =cut
 .sub "!BIND-TARGET"
     .param string name
-    .param int is_target           ## is target declaraed as rule?
+    .param int type       ## target type, se constants.pir
     .local pmc target
     .local string name
     

@@ -1102,8 +1102,18 @@ update_prerequisites_of_rules__done:
 check_out_pattern_targets_for_updating:
     .local pmc patterns, pattern_it
     .local pmc pattern_target
+    
+    get_hll_global patterns, ['smart';'make'], "@<*%>"
+    bsr try_patterns
+    if null patterns goto try_next
+
+try_next:
     get_hll_global patterns, ['smart';'make'], "@<%>"
-    if null patterns goto check_out_pattern_targets_for_updating__iterate_end
+    bsr try_patterns
+    if null patterns goto try_match_anything
+    goto try_match_anything
+
+try_patterns:
     new pattern_it, 'Iterator', patterns
 check_out_pattern_targets_for_updating__iterate:
     unless pattern_it goto check_out_pattern_targets_for_updating__iterate_end
@@ -1118,6 +1128,9 @@ check_out_pattern_targets_for_updating__iterate:
     goto check_out_pattern_targets_for_updating__done
 
 check_out_pattern_targets_for_updating__iterate_end:
+    ret
+
+try_match_anything:
     ## Here, we got not matched pattern, try match-anything
     get_hll_global pattern_target, ['smart';'make'], "$<%>"
     if null pattern_target goto report_error_if_file_not_existed

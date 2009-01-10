@@ -522,7 +522,7 @@ report_null_variable__return:
 error__unterminated_var:
     $I0 = n - pos
     $S1 = substr str, pos, $I0
-    $S0 = "smart: ** unterminated variable reference '"
+    $S0 = "smart: ** Unterminated variable reference '"
     $S0 .= $S1
     $S0 .= "'. Stop.\n"
     print $S0

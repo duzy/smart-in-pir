@@ -27,3 +27,9 @@
 .const int MAKEFILE_VARIABLE_ORIGIN_automatic           = 7
 .const int MAKEFILE_VARIABLE_ORIGIN_smart_code          = 8
 
+.const int TARGET_TYPE_NORMAL                   = 0
+.const int TARGET_TYPE_PATTERN                  = 1
+.const int TARGET_TYPE_STATIC_PATTERN           = 2
+.const int TARGET_TYPE_ARCHIVE                  = 3
+.const int TARGET_TYPE_MEMBER                   = 4
+

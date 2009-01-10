@@ -15,16 +15,11 @@ The '@[%]' variable holds the list of implicit rules.
 
 .namespace []
 .sub "new:Rule"
-    #.param pmc match
     .param pmc targets          :optional
     .param pmc prerequisites    :optional
     .param pmc orderonly        :optional
     .local pmc rule
     rule = new 'Rule'
-
-#     unless null targets goto has_targets
-#     targets = new 'ResizablePMCArray'
-# has_targets:
 
     unless null prerequisites goto has_prerequisites
     prerequisites = new 'ResizablePMCArray'
@@ -33,10 +28,13 @@ has_prerequisites:
     unless null orderonly goto has_orderonly
     orderonly = new 'ResizablePMCArray'
 has_orderonly:
+
+    .local pmc statics
+    new statics, 'ResizableStringArray'
     
-    #setattribute rule, 'targets', targets
     setattribute rule, 'prerequisites', prerequisites
-    setattribute rule, 'order-only', orderonly
+    setattribute rule, 'order-only',    orderonly
+    setattribute rule, 'static-targets', statics
     .return(rule)
 .end
 
@@ -44,86 +42,12 @@ has_orderonly:
 .namespace ['Rule']
 .sub "__init_class" :anon :init :load
     newclass $P0, 'Rule'
-    addattribute $P0, 'targets' ## if implicit, it's patterns
+    addattribute $P0, 'static-targets' ## if implicit, it's patterns
     addattribute $P0, 'prerequisites'
     addattribute $P0, 'order-only' ## order-only prerequisites
     addattribute $P0, 'actions'
     addattribute $P0, 'implicit'
 .end
-
-
-# =item <match_pattern(IN target)>
-#     Returns the stem match with one the patterns.
-# =cut
-# .sub "match_patterns" :method
-#     .param pmc target
-#     .local string object, stem
-#     .local pmc targets
-    
-#     $P0 = getattribute self, 'implicit'
-#     $I0 = $P0
-#     unless $I0 goto end_matching
-    
-#     targets = getattribute self, 'targets'
-#     stem = ""
-    
-#     object = target.'object'()
-    
-#     #print "match-pattern-for: " ##!!!!!!!!!!
-#     #say object ##!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
-#     .local pmc pattern, iter
-#     .local string prefix, suffix
-#     iter = new 'Iterator', targets
-# #     print "number-of-patterns: "
-# #     say targets
-# iterate_patterns:
-#     unless iter goto end_iterate_patterns
-#     pattern = shift iter
-#     $S0 = pattern.'object'()
-#     $I0 = index $S0, "%"
-# #     print "rule-pattern: "
-# #     say $S0
-#     if $I0 < 0 goto got_bad_pattern
-#     prefix = substr $S0, 0, $I0
-#     inc $I0
-#     $I1 = length $S0
-#     $I1 = $I1 - $I0
-#     suffix = substr $S0, $I0, $I1
-#     if prefix == "" goto no_check_prefix
-#     $I0 = index object, prefix
-#     ##if $I0 < 0 goto iterate_patterns
-#     if $I0 != 0 goto iterate_patterns
-# no_check_prefix:
-#     $I1 = length object
-#     $I2 = length suffix
-#     $I1 = $I1 - $I2
-#     if suffix == "" goto no_check_suffix
-#     $I2 = index object, suffix, $I1
-#     ##if $I1 < 0 goto iterate_patterns
-#     if $I1 != $I2 goto iterate_patterns
-# no_check_suffix:
-#     $I0 = length prefix
-#     $I1 = $I1 - $I0
-#     stem = substr object, $I0, $I1
-#     goto end_matching ## done!
-#     ##goto iterate_patterns
-# got_bad_pattern:
-#     $S1 = "smart: ** Not an pattern string '"
-#     $S1 .= $S0
-#     $S1 .= "' in rule '"
-#     $S0 = self.'match'()
-#     $S1 .= $S0
-#     $S1 .= "'. Stop.\n"
-#     #die $S1
-#     printerr $S1
-#     exit EXIT_ERROR_BAD_PATTERN
-    
-# end_iterate_patterns:
-    
-# end_matching:
-#     .return (stem)
-# .end
 
 
 =item <execute_actions()>
@@ -161,11 +85,11 @@ invalid_action_object:
 =item <targets()>
 Returns the target list for which can the rule update
 =cut
-.sub "targets" :method
+.sub "static-targets" :method
     .local pmc targets
-    getattribute targets, self, 'targets'
+    getattribute targets, self, 'static-targets'
     .return(targets)
-.end # sub "targets"
+.end # sub "static-targets"
 
 
 =item <prerequisites()>

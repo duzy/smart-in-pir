@@ -20,14 +20,24 @@ T = $(t)
 C = C$(T)
 
 all: a d.h foo.o bar.o baz.o
-	@echo "objects: $(OBJECTS)"
+	@echo $@ done
+	@echo "objects: $(pre$(O)E$(C)suf)"
 
-a: gen/*.pir
+a: c.d gen/*.pir
 	@echo "$^ -> $@"
 
 #$(OBJECTS):%.o:%.c
-ba.o $(pre$(O)E$(C)suf) fo.o:%.o:%.c | a.c
+
+## Multi target pattern will is allowned in smart-make
+#c.d ba.o $(pre$(O)E$(C)suf) fo.o:%.o %.d:%.c a.c %.d | b.c
+c.d ba.o $(pre$(O)E$(C)suf) fo.o:%.o:%.c a.c | b.c
 	@echo "compile $< -> $@, stem: $*"
+
+# %.o:%.c
+# 	@echo "$< -> $@, stem: $*"
+
+%.d:
+	@echo "$@"
 
 .c.h:
 	@echo "header $@ <- $<"
