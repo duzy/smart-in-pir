@@ -261,27 +261,6 @@ iterate_items_end:
     .local pmc targets
 .end # sub "!MAKE-TARGETS"
 
-.sub "!MAKE-STATIC-PATTERN-RULE"
-    .param string a_targets
-    .param string a_target_pattern
-    .param string a_prereq_pattern
-    .param string a_orderonly
-    .param pmc a_actions
-    .param pmc smart_action :optional
-    
-    .local pmc rule
-    rule = 'new:Rule'()
-    
-    .local pmc targets
-    .local pmc prereqs
-    .local pmc orderonly
-    
-    split targets, " ", a_targets
-    
-    
-    .return(rule)
-.end # sub "!MAKE-STATIC-PATTERN-RULE"
-
 .sub "!CHECK-AND-STORE-PATTERN-TARGET"
     .param string text
     .param pmc rule
@@ -301,7 +280,6 @@ iterate_items_end:
     set_hll_global ['smart';'make'], "@<%>", pattern_targets
 check_and_handle_pattern_target_go:
 
-    #local_branch call_stack, check_and_split_archive_members
     ( $S0, $P0 ) = '!CHECK-AND-SPLIT-ARCHIVE-MEMBERS'( text )
     if $S0 == "" goto check_and_handle_pattern_target__store_normal
     new $P1, 'Iterator', $P0
@@ -401,7 +379,7 @@ check_and_split_archive_members_done:
 .end # sub "!CHECK-AND-SPLIT-ARCHIVE-MEMBERS"
 
 .sub "!WILDCARD-PREREQUISITE"
-    .param pmc prerequisites ## *OUT*
+    .param pmc prerequisites ## *OUT/unshift*
     .param string text
     
 check_wildcard_prerequsite:
@@ -439,7 +417,6 @@ check_wildcard_prerequsite__done_yes__iterate_items__end:
     null $P1
     $I0 = 1
 check_wildcard_prerequsite__done:
-    #local_return call_stack
     .return($I0)
 .end # sub "!WILDCARD-PREREQUISITE"
 
@@ -460,12 +437,12 @@ check_and_convert_suffix_target:
     set $I0, 1 ## tells number of suffixes
     
     $S3 = text
-    #local_branch call_stack, check_and_convert_suffix_target__check_suffixes
     bsr check_and_convert_suffix_target__check_suffixes
     unless $I1 goto check_and_convert_suffix_target__done
     
-    print "one-suffix-rule: "   #!!!
-    say text                    #!!!
+#     print "one-suffix-rule: "   #!!!
+#     say text                    #!!!
+
     $S2 = "%"
     $S2 .= text ## implicit:  %.text
     unshift prerequisites, $S2
@@ -485,19 +462,18 @@ check_and_convert_suffix_target__check_two_suffixes:
     $S1 = substr text, $I1, $I2 ## the second suffix
     
     $S3 = $S0
-    #local_branch call_stack, check_and_convert_suffix_target__check_suffixes
     bsr check_and_convert_suffix_target__check_suffixes
     unless $I1 goto check_and_convert_suffix_target__done
     
     $S3 = $S1
-    #local_branch call_stack, check_and_convert_suffix_target__check_suffixes
     bsr check_and_convert_suffix_target__check_suffixes
     unless $I1 goto check_and_convert_suffix_target__done
     
-    print "two-suffix-rule: "   #!!!
-    print $S0                   #!!! 
-    print ", "                  #!!!
-    say $S1                     #!!!
+#     print "two-suffix-rule: "   #!!!
+#     print $S0                   #!!! 
+#     print ", "                  #!!!
+#     say $S1                     #!!!
+
     text = "%"
     text .= $S1
     $S2 = "%"
@@ -505,7 +481,6 @@ check_and_convert_suffix_target__check_two_suffixes:
     unshift prerequisites, $S2
     
 check_and_convert_suffix_target__done:
-    #local_return call_stack
     .return(text)
     
     
@@ -532,8 +507,6 @@ check_and_convert_suffix_target__iterate_suffixes_done:
     $S4 .= "'\n"
     print $S4
 check_and_convert_suffix_target__check_suffixes__done:
-    #local_return call_stack
-    #.return(text)
     ret
    
 .end # sub '!CONVERT-SUFFIX-TARGET'
@@ -562,9 +535,6 @@ go:
     .const int ACTION_O    = 2
     .const int ACTION_A    = 3
     
-    .local pmc call_stack
-    new call_stack, 'ResizableIntegerArray'
-    
     .local pmc rule
     rule = 'new:Rule'()
     
@@ -586,18 +556,18 @@ go:
     
     moa = mo_targets
     at = ACTION_T
-    local_branch call_stack, map_match_object_array
+    bsr map_match_object_array
     if implicit goto process_prerequisites
     '!SETUP-DEFAULT-GOAL'( numberOneTarget )
     
 process_prerequisites:
     moa = mo_prerequsites
     at = ACTION_P
-    local_branch call_stack, map_match_object_array
+    bsr map_match_object_array
     
     moa = mo_orderonly
     at = ACTION_O
-    local_branch call_stack, map_match_object_array
+    bsr map_match_object_array
 
     if null smart_command goto map_actions
     $P1 = 'new:Action'( smart_command, 1 )
@@ -606,7 +576,7 @@ process_prerequisites:
 map_actions:
     moa = mo_actions
     at = ACTION_A
-    local_branch call_stack, map_match_object_array
+    bsr map_match_object_array
 
 return_result:
     .return(rule)
@@ -633,13 +603,19 @@ iterate_match_object_array_loop:
     shift $P2, it
     $S0 = $P2 #$P2.'text'()
     
-    if at == ACTION_A goto to_action_pack_action
+    unless at == ACTION_A goto split_items_and_check_more
+    text = $S0
+    $P1 = 'new:Action'( text, 0 )
+    push actions, $P1
+    goto iterate_match_object_array_loop    
     
 #     print "a: "
 #     print $S0
 #     print "\n"
-    
-    items = '~expanded-items'( $S0 )
+
+split_items_and_check_more:
+    ##items = '~expanded-items'( $S0 )
+    split items, " ", $S0
     new iit, 'Iterator', items 
 iterate_match_object_array_loop_iterate_items:
     unless iit goto iterate_match_object_array_loop_iterate_items_end
@@ -648,49 +624,43 @@ iterate_match_object_array_loop_iterate_items:
     if at == ACTION_P goto to_action_pack_prerequisite
     if at == ACTION_O goto to_action_pack_orderonly
     goto iterate_match_object_array_loop_iterate_items
+    
 to_action_pack_target:
-#     print "target: "
-#     print text
-#     print "\n"
-    local_branch call_stack, action_pack_target
+    bsr action_pack_target
     goto iterate_match_object_array_loop_iterate_items
 to_action_pack_prerequisite:
-    local_branch call_stack, action_pack_prerequisite
+    bsr action_pack_prerequisite
     goto iterate_match_object_array_loop_iterate_items
 to_action_pack_orderonly:
-    local_branch call_stack, action_pack_orderonly
+    bsr action_pack_orderonly
     goto iterate_match_object_array_loop_iterate_items
+    
 iterate_match_object_array_loop_iterate_items_end:
     null iit
-    goto iterate_match_object_array_loop
-    
-to_action_pack_action:
-    text = $S0
-    local_branch call_stack, action_pack_action
     goto iterate_match_object_array_loop
     
 iterate_match_object_array_loop_end:
     null it
 map_match_object_array__done:
-    local_return call_stack
+    ret
     
     ######################
     ##  IN: text(the text value)
 action_pack_target:
     ## Check and convert suffix rules into pattern rule if any,
     ## if the convertion did, text will be changed into pattern string
-    #local_branch call_stack, check_and_convert_suffix_target
+    #bsr check_and_convert_suffix_target
     text = '!CONVERT-SUFFIX-TARGET'( prerequisites, text )
     
     ## If any target is a pattern, than the rule is a implicit rule.
     ## The suffix target is converted into a pattern. If the rule is implicit,
     ## then only pattern target could exists in the rule.
-    local_branch call_stack, check_and_handle_pattern_target
+    bsr check_and_handle_pattern_target
     if $I0 goto action_pack_target__done ## got and handled pattern
     #if implicit goto error_mixed_implicit_and_normal_rule
 
     ## Check if archive-members
-    #local_branch call_stack, check_and_split_archive_members
+    #bsr check_and_split_archive_members
     ( $S0, $P0 ) = '!CHECK-AND-SPLIT-ARCHIVE-MEMBERS'( text )
     if $S0 == "" goto action_pack_target__bind_normal
     new $P1, 'Iterator', $P0
@@ -717,7 +687,7 @@ action_pack_target__bind_normal:
     unless null numberOneTarget goto action_pack_target__done
     set numberOneTarget, $P1
 action_pack_target__done:
-    local_return call_stack
+    ret
 
     ######################
     ## local: check_and_handle_pattern_target
@@ -734,7 +704,7 @@ check_and_handle_pattern_target__validate_non_mixed:
     if implicit goto error_mixed_implicit_and_normal_rule
     
 check_and_handle_pattern_target__done:
-    local_return call_stack
+    ret
     
 error_mixed_implicit_and_normal_rule:
     $S0 = "smart: *** Mixed implicit and normal rules: "
@@ -751,7 +721,7 @@ action_pack_prerequisite:
 #     say text
     if implicit goto action_pack_prerequisite__push_implicit
 
-    #local_branch call_stack, check_and_split_archive_members
+    #bsr check_and_split_archive_members
     ( $S0, $P0 ) = '!CHECK-AND-SPLIT-ARCHIVE-MEMBERS'( text )
     if $S0 == "" goto action_pack_prerequisite__handle_single
     .local pmc ait
@@ -759,14 +729,14 @@ action_pack_prerequisite:
 action_pack_prerequisite__iterate_archives:
     unless ait goto action_pack_prerequisite__iterate_archives_end
     shift text, ait
-    local_branch call_stack, action_pack_prerequisite__handle_single
+    bsr action_pack_prerequisite__handle_single
     goto action_pack_prerequisite__iterate_archives
 action_pack_prerequisite__iterate_archives_end:
     goto action_pack_prerequisite__done
 
 action_pack_prerequisite__handle_single:
     ## Firstly, check to see if wildcard, and handle it if yes
-    #local_branch call_stack, check_wildcard_prerequsite
+    #bsr check_wildcard_prerequsite
     $I0 = '!WILDCARD-PREREQUISITE'( prerequisites, text )
     if $I0 goto action_pack_prerequisite__done
 
@@ -783,13 +753,13 @@ action_pack_prerequisite__push_implicit:
     push prerequisites, $P1
     
 action_pack_prerequisite__done:
-    local_return call_stack
+    ret
 
     
     ######################
     ##  IN: text(the text value)
 action_pack_orderonly:
-    #local_branch call_stack, check_and_split_archive_members
+    #bsr check_and_split_archive_members
     ( $S0, $P0 ) = '!CHECK-AND-SPLIT-ARCHIVE-MEMBERS'( text )
     if $S0 == "" goto action_pack_orderonly__handle_single
     .local pmc ait
@@ -797,7 +767,7 @@ action_pack_orderonly:
 action_pack_orderonly__iterate_archives:
     unless ait goto action_pack_orderonly__iterate_archives_end
     shift text, ait
-    local_branch call_stack, action_pack_orderonly__handle_single
+    bsr action_pack_orderonly__handle_single
     goto action_pack_orderonly__iterate_archives
 action_pack_orderonly__iterate_archives_end:
     goto action_pack_orderonly__done
@@ -807,16 +777,8 @@ action_pack_orderonly__handle_single:
     push orderonly, $P1
     
 action_pack_orderonly__done:
-    local_return call_stack
+    ret
 
-    
-    ######################
-    ##  IN: text(the text value)
-action_pack_action:
-    $P1 = 'new:Action'( text, 0 )
-    push actions, $P1
-    local_return call_stack
-    
 .end # sub "!MAKE-RULE"
 
 
@@ -824,60 +786,57 @@ action_pack_action:
     .param string name
     .param pmc items    :slurpy
 
-    .local pmc call_stack
-    call_stack = new 'ResizableIntegerArray'
-
 check_if_PHONY:
     unless name == ".PHONY" goto check_if_SUFFIXES
-    local_branch call_stack, update_special_PHONY
+    bsr update_special_PHONY
     goto check_name_done
 check_if_SUFFIXES:
     unless name == ".SUFFIXES" goto check_if_DEFAULT
-    local_branch call_stack, update_special_SUFFIXES
+    bsr update_special_SUFFIXES
     goto check_name_done
 check_if_DEFAULT:
     unless name == ".DEFAULTS" goto check_if_PRECIOUS
-    local_branch call_stack, update_special_DEFAULTS
+    bsr update_special_DEFAULTS
     goto check_name_done
 check_if_PRECIOUS:
     unless name == ".PRECIOUS" goto check_if_INTERMEDIATE
-    local_branch call_stack, update_special_PRECIOUS
+    bsr update_special_PRECIOUS
     goto check_name_done
 check_if_INTERMEDIATE:
     unless name == ".INTERMEDIATE" goto check_if_SECONDARY
-    local_branch call_stack, update_special_INTERMEDIATE
+    bsr update_special_INTERMEDIATE
     goto check_name_done
 check_if_SECONDARY:
     unless name == ".SECONDARY" goto check_if_SECONDEXPANSION
-    local_branch call_stack, update_special_SECONDARY
+    bsr update_special_SECONDARY
     goto check_name_done
 check_if_SECONDEXPANSION:
     unless name == ".SECONDEXPANSION" goto check_if_DELETE_ON_ERROR
-    local_branch call_stack, update_special_SECONDEXPANSION
+    bsr update_special_SECONDEXPANSION
     goto check_name_done
 check_if_DELETE_ON_ERROR:
     unless name == ".DELETE_ON_ERROR" goto check_if_IGNORE
-    local_branch call_stack, update_special_DELETE_ON_ERROR
+    bsr update_special_DELETE_ON_ERROR
     goto check_name_done
 check_if_IGNORE:
     unless name == ".IGNORE" goto check_if_LOW_RESOLUTION_TIME
-    local_branch call_stack, update_special_IGNORE
+    bsr update_special_IGNORE
     goto check_name_done
 check_if_LOW_RESOLUTION_TIME:
     unless name == ".LOW_RESOLUTION_TIME" goto check_if_SILENT
-    local_branch call_stack, update_special_LOW_RESOLUTION_TIME
+    bsr update_special_LOW_RESOLUTION_TIME
     goto check_name_done
 check_if_SILENT:
     unless name == ".SILENT" goto check_if_EXPORT_ALL_VARIABLES
-    local_branch call_stack, update_special_SILENT
+    bsr update_special_SILENT
     goto check_name_done
 check_if_EXPORT_ALL_VARIABLES:
     unless name == ".EXPORT_ALL_VARIABLES" goto check_if_NOTPARALLEL
-    local_branch call_stack, update_special_EXPORT_ALL_VARIABLES
+    bsr update_special_EXPORT_ALL_VARIABLES
     goto check_name_done
 check_if_NOTPARALLEL:
     unless name == ".NOTPARALLEL" goto check_name_done
-    local_branch call_stack, update_special_NOTPARALLEL
+    bsr update_special_NOTPARALLEL
     goto check_name_done
 check_name_done:
 
@@ -887,81 +846,81 @@ check_name_done:
     ## local routine: update_special_PHONY
 update_special_PHONY:
     $S0 = ".PHONY"
-    local_branch call_stack, update_special_array_rule
-    local_return call_stack
+    bsr update_special_array_rule
+    ret
 
     ######################
     ## local routine: update_special_SUFFIXES
 update_special_SUFFIXES:
     $S0 = ".SUFFIXES"
-    local_branch call_stack, update_special_array_rule
-    local_return call_stack
+    bsr update_special_array_rule
+    ret
 
     ######################
     ## local routine: update_special_DEFAULTS
 update_special_DEFAULTS:
     say "TODO: .DEFAULTS rule..."
-    local_return call_stack
+    ret
 
     ######################
     ## local routine: update_special_PRECIOUS
 update_special_PRECIOUS:
     say "TODO: .PRECIOUS rule..."
-    local_return call_stack
+    ret
 
     ######################
     ## local routine: update_special_INTERMEDIATE
 update_special_INTERMEDIATE:
     say "TODO: .INTERMEDIATE rule..."
-    local_return call_stack
+    ret
 
     ######################
     ## local routine: update_special_SECONDARY
 update_special_SECONDARY:
     say "TODO: .SECONDARY rule..."
-    local_return call_stack
+    ret
 
     ######################
     ## local routine: update_special_SECONDEXPANSION
 update_special_SECONDEXPANSION:
     say "TODO: .SECONDEXPANSION rule..."
-    local_return call_stack
+    ret
 
     ######################
     ## local routine: update_special_DELETE_ON_ERROR
 update_special_DELETE_ON_ERROR:
     say "TODO: .DELETE_ON_ERROR rule..."
-    local_return call_stack
+    ret
 
     ######################
     ## local routine: update_special_IGNORE
 update_special_IGNORE:
     say "TODO: .IGNORE rule..."
-    local_return call_stack
+    ret
 
     ######################
     ## local routine: update_special_LOW_RESOLUTION_TIME
 update_special_LOW_RESOLUTION_TIME:
     say "TODO: .LOW_RESOLUTION_TIME rule..."
-    local_return call_stack
+    ret
 
     ######################
     ## local routine: update_special_SILENT
 update_special_SILENT:
     say "TODO: .SILENT rule..."
-    local_return call_stack
+    ret
 
     ######################
     ## local routine: update_special_EXPORT_ALL_VARIABLES
 update_special_EXPORT_ALL_VARIABLES:
     say "TODO: .EXPORT_ALL_VARIABLES rule..."
-    local_return call_stack
+    ret
 
     ######################
     ## local routine: update_special_NOTPARALLEL
 update_special_NOTPARALLEL:
     say "TODO: .NOTPARALLEL rule..."
-    local_return call_stack
+    ret
 
     ######################
     ## local routine: update_special_array_rule
@@ -974,8 +933,8 @@ update_special_array_rule:
     set_hll_global ['smart';'make';'rule'], $S0, array
 update_special_PHONY__got_phony_array:
     $P0 = array
-    local_branch call_stack, convert_items_into_array
-    local_return call_stack
+    bsr convert_items_into_array
+    ret
     
     ######################
     ## local routine: convert_items_into_array
@@ -994,7 +953,7 @@ convert_items_into_array__iterate_items:
     goto convert_items_into_array__iterate_items
 convert_items_into_array__iterate_items_end:
 convert_items_into_array__done:
-    local_return call_stack
+    ret
 
 .end # sub !UPDATE-SPECIAL-RULE
 
