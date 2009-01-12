@@ -20,11 +20,13 @@ T = $(t)
 C = C$(T)
 
 all: a d.h foo.o bar.o baz.o
+	@echo "todo: compatibility: gmake match 'c.d' with static-pattern(14-rule-static-pattern.t)"
 	@echo $@ done
 
-a: c.d gen/*.pir
-	@echo "list:(a c.d gen/gen_actions.pir gen/gen_builtins.pir gen/gen_grammar.pir):$@ $^"
-	@echo "list:(foo.c bar.c baz.c):$(pre$(O)E$(C)suf)"
+## Node: GNU-make will match 'c.d' with the static-pattern bellow, but
+##	 smart-make now direct it to "%.d".
+a: c.d
+	@echo "list:(foo.o bar.o baz.o):$(pre$(O)E$(C)suf)"
 
 #$(OBJECTS):%.o:%.c
 

@@ -17,4 +17,3 @@ C = C$(T)
 say "check:(foo.c bar.c baz.c):", expand("$(preOBJECTSsuf)");
 say "check:(foo.c bar.c baz.c):", expand("$(pre$(O)E$(C)suf)");
 
-
