@@ -478,7 +478,7 @@ parse_pattern_substitution:
     print "TODO: expand inner variable: "
     print str
     print ", at "
-    say n
+    say $I0
     goto parse_pattern_substitution____do_patsubst
 
 parse_pattern_substitution_normally:
