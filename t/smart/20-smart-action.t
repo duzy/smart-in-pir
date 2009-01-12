@@ -9,15 +9,15 @@ all: foo
 }
 
 foo: bar fod | baz ; {
-	say $(@), ':', $(^), '|', $(|);
-	say " <- ", $(<);
+  say $(@), ':', $(^), '|', $(|);
+  say " <- ", $(<);
 }
 
 bar: 
 {
-	#say $(wildcard "gen/*.pir");
-	say $(@), ":";
-	#say expand("$(wildcard gen/*.pir)");
+  #say $(wildcard "gen/*.pir");
+  say $(@), ":";
+  #say expand("$(wildcard gen/*.pir)");
 }
 
 fod:

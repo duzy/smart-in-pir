@@ -181,22 +181,28 @@ invalid_arg:
     
     target_changetime = target.'changetime'()
     
-    .local pmc prerequisites
-    .local pmc iter, prereq
+    .local pmc prerequisites, oo
     .local int is_oo
     
-    set is_oo, 0
+    oo = self.'orderonly'()
     prerequisites = self.'prerequisites'()
+    
+    set is_oo, 0
     bsr do_update_on_prerequisites
     
+    #typeof $S0, self
+    #say $S0
+    
+    prerequisites = oo
     set is_oo, 1
-    prerequisites = self.'orderonly'()
     bsr do_update_on_prerequisites
     
     goto return_result
 
 do_update_on_prerequisites:
+    .local pmc iter, prereq
     new iter, 'Iterator', prerequisites
+    
 iterate_prerequisites:
     unless iter goto iterate_prerequisites_end
     shift prereq, iter
@@ -229,3 +235,4 @@ iterate_prerequisites_end:
 return_result:
     .return (count_updated, count_newer, count_actions)
 .end # sub "update-prerequisites"
+

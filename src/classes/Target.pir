@@ -1104,16 +1104,18 @@ check_out_pattern_targets_for_updating:
     .local pmc pattern_target
     
     get_hll_global patterns, ['smart';'make'], "@<*%>"
-    bsr try_patterns
     if null patterns goto try_next
+    bsr try_patterns
+    if $I0 goto check_out_pattern_targets_for_updating__done
 
 try_next:
     get_hll_global patterns, ['smart';'make'], "@<%>"
-    bsr try_patterns
     if null patterns goto try_match_anything
-    goto try_match_anything
+    bsr try_patterns
+    if $I0 goto check_out_pattern_targets_for_updating__done
 
 try_patterns:
+    set $I0, 0
     new pattern_it, 'Iterator', patterns
 check_out_pattern_targets_for_updating__iterate:
     unless pattern_it goto check_out_pattern_targets_for_updating__iterate_end
@@ -1125,6 +1127,7 @@ check_out_pattern_targets_for_updating__iterate:
     add count_newer,   $I2
     add count_actions, $I3
     target.'updated'( 1 )
+    set $I0, 1
     goto check_out_pattern_targets_for_updating__done
 
 check_out_pattern_targets_for_updating__iterate_end:

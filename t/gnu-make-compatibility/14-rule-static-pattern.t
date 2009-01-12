@@ -21,10 +21,10 @@ C = C$(T)
 
 all: a d.h foo.o bar.o baz.o
 	@echo $@ done
-	@echo "objects: $(pre$(O)E$(C)suf)"
 
 a: c.d gen/*.pir
-	@echo "$^ -> $@"
+	@echo "list:(a c.d gen/gen_actions.pir gen/gen_builtins.pir gen/gen_grammar.pir):$@ $^"
+	@echo "list:(foo.c bar.c baz.c):$(pre$(O)E$(C)suf)"
 
 #$(OBJECTS):%.o:%.c
 
@@ -37,10 +37,10 @@ c.d ba.o $(pre$(O)E$(C)suf) fo.o:%.o:%.c a.c | b.c
 # 	@echo "$< -> $@, stem: $*"
 
 %.d:
-	@echo "$@"
+	@echo "check:(c.d):$@"
 
 .c.h:
-	@echo "header $@ <- $<"
+	@echo "check:(d.h, d.c):$@, $<"
 
 %.c:
 	@echo "source: $@"
