@@ -32,9 +32,9 @@ object.
 .include "src/constants.pir"
 
 .sub 'onload' :anon :load :init
-    load_bytecode 'PCT.pbc'
-
     warningson .PARROT_WARNINGS_DEPRECATED_FLAG
+
+    load_bytecode 'PCT.pbc'
 
     $P0 = get_hll_global ['PCT'], 'HLLCompiler'
     $P1 = $P0.'new'()

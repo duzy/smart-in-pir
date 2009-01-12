@@ -14,6 +14,6 @@ t = T$(S)
 T = $(t)
 C = C$(T)
 
-say "check:(foo.c bar.c baz.c):", expand("$(preOBJECTSsuf)");
-say "check:(foo.c bar.c baz.c):", expand("$(pre$(O)E$(C)suf)");
+say "check:(foo.o bar.o baz.o):", expand("$(preOBJECTSsuf)");
+say "check:(foo.o bar.o baz.o):", expand("$(pre$(O)E$(C)suf)");
 

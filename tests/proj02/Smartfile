@@ -7,24 +7,36 @@ CXXFLAGS =
 RM = rm
 RM_RF = $(RM) -rf
 
+V = debug
+
+OUT_DIR  = build/foo/$(V)
+OUT_BIN  = $(OUT_DIR)/bin
+OUT_OBJS = $(OUT_DIR)/objs
+
 SOURCES = $(wildcard src/*.cpp)
 OBJECTS = $(SOURCES:.cpp=.o)
+
+BUILT_OBJECT_PAT = $(OUT_OBJS)/%.o
+BUILT_OBJECTS = $(OBJECTS:%.o=$(BUILT_OBJECT_PAT))
 
 TARGET = foo
 
 #.DEFAULT_GOAL := $(TARGET)
 
-all:
-	@echo $(.DEFAULT_GOAL) $@
+MKDIR_IF_NON = @[ -d $(@D) ] || mkdir -p $(@D)
+
+all: $(TARGET)
+	@echo $(.DEFAULT_GOAL) done
 
 clean:
-	@echo $(.DEFAULT_GOAL)
-	$(RM_RF) $(TARGET) $(OBJECTS)
+	$(RM_RF) $(TARGET) $(BUILT_OBJECTS)
 
-$(TARGET): $(OBJECTS)
+$(TARGET): $(BUILT_OBJECTS)
+	$(MKDIR_IF_NON)
 	$(CXX) $(LDFLAGS) $^ $(LOADLIBES) $() -o $@
 
-$(OBJECTS):%.o:%.cpp
+$(BUILT_OBJECTS):$(BUILT_OBJECT_PAT):%.cpp
+	$(MKDIR_IF_NON)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 

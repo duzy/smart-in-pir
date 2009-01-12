@@ -17,15 +17,15 @@ use lib qw( . lib ../lib ../../lib ../../lib );
 #     path	=> [ 't', 't/smart', 't/misc' ],
     ;
 
-# use Smart::Test::Unit   files   => [ 't/gnu-make-compatibility/*.t' ],
-#     path	=> [ 't', 't/smart', 't/misc' ],
-#     smart   => '../../parrot smart.pbc';
-
-use Smart::Test::Unit
-    files=> [
-        't/gnu-make-compatibility/14-rule-static-pattern.t',
-        't/misc/01-pattern-target-and-archive.t',
-    ],
-    path	=> [ 't/smart' ],
+use Smart::Test::Unit   files   => [ 't/gnu-make-compatibility/*.t' ],
+    path	=> [ 't', 't/smart', 't/misc' ],
     smart   => '../../parrot smart.pbc';
+
+# use Smart::Test::Unit
+#     files=> [
+#         't/gnu-make-compatibility/14-rule-static-pattern.t',
+#         't/misc/01-pattern-target-and-archive.t',
+#     ],
+#     path	=> [ 't/smart' ],
+#     smart   => '../../parrot smart.pbc';
 
