@@ -466,21 +466,24 @@ check_and_handle_callable_variable__done:
     ##          OUT: name (modifying)
     ##               n (modifying, the position of the right paren)
 parse_pattern_substitution:
-    ## Parse patsubst variable like: $(VAR:.cpp=.o)
+    ## Parse patsubst variable like: $(VAR:.cpp=.o), $(VAR:%.cpp=%.o)
     name = ""
     $I0 = pos + 2
     $I1 = n - $I0
     $S0 = substr str, $I0, $I1 ## fetch the variable name
     inc n ## skip the ":" character
-    $I0 = index str, "=", n
+    
+    
+    
+    $I0 = index str, "=", n ## find the '=' sign
     if $I0 < 0 goto parse_pattern_substitution____failed
     $I1 = $I0 - n
-    $S1 = substr str, n, $I1
+    $S1 = substr str, n, $I1 ## fetch the left-hand-side part
     inc $I0 ## skip the "=" character
     n = index str, paren, $I0 ## updating the 'n'
     if n < 0 goto error__unterminated_var
     $I1 = n - $I0
-    $S2 = substr str, $I0, $I1
+    $S2 = substr str, $I0, $I1 ## fetch the right-hand-side part
 #     print "patsubst: " #!!!!!!!!!!!!!!!!!!!!!!
 #     print $S0
 #     print ": "
@@ -503,6 +506,8 @@ parse_pattern_substitution____failed:
     inc n ## skip the right paren
 parse_pattern_substitution__done:
     ret
+
+    
 
     ######################
     ## local routine: handle_callable_variable__shell
