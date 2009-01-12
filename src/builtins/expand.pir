@@ -473,8 +473,15 @@ parse_pattern_substitution:
     $S0 = substr str, $I0, $I1 ## fetch the variable name
     inc n ## skip the ":" character
     
-    
-    
+    $I0 = index str, "$", n ## find any inner variable
+    if $I0 < 0 goto parse_pattern_substitution_normally
+    print "TODO: expand inner variable: "
+    print str
+    print ", at "
+    say n
+    goto parse_pattern_substitution____do_patsubst
+
+parse_pattern_substitution_normally:
     $I0 = index str, "=", n ## find the '=' sign
     if $I0 < 0 goto parse_pattern_substitution____failed
     $I1 = $I0 - n
@@ -484,14 +491,10 @@ parse_pattern_substitution:
     if n < 0 goto error__unterminated_var
     $I1 = n - $I0
     $S2 = substr str, $I0, $I1 ## fetch the right-hand-side part
-#     print "patsubst: " #!!!!!!!!!!!!!!!!!!!!!!
-#     print $S0
-#     print ": "
-#     print $S1
-#     print ", "
-#     say $S2
-    name = $S0
     inc n ## skip the right paren
+    name = $S0
+
+parse_pattern_substitution____do_patsubst:
     get_hll_global $P0, ['smart';'make';'variable'], name
     if null $P0 goto parse_pattern_substitution____failed____null_var
     $S3 = $P0.'expand'()
