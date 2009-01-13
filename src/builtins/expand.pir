@@ -472,13 +472,96 @@ parse_pattern_substitution:
     $I1 = n - $I0
     $S0 = substr str, $I0, $I1 ## fetch the variable name
     inc n ## skip the ":" character
-    
+
+    ## Expand recursively any inner variable found
     $I0 = index str, "$", n ## find any inner variable
     if $I0 < 0 goto parse_pattern_substitution_normally
-    print "TODO: expand inner variable: "
-    print str
-    print ", at "
-    say $I0
+    .local string pat ## looks like '%.cpp=%.o', '.cpp=.o'
+    set pat, ""
+    $I1 = $I0 - n
+    $S10 = substr str, n, $I1
+    concat pat, $S10 ## concat the first part
+    
+    .local int inner_start
+    .local int inner_count
+    .local pmc inner_parens
+    set inner_start, $I0
+    set inner_count, 0
+    new inner_parens, 'ResizableStringArray'
+check_var_sign:
+    unless $I0 < len goto error__unterminated_var
+    $S10 = substr str, $I0, 2 ## fetch the variable left paren: "$(" or "${"
+    unless $S10 == "$(" goto check_var_sign_case2
+    push inner_parens, ")"
+    inc $I0
+    goto check_var_sign_next
+    
+check_var_sign_case2:
+    unless $S10 == "${" goto check_var_sign_case3
+    push inner_parens, "}"
+    inc $I0
+    goto check_var_sign_next
+    
+check_var_sign_case3:
+    $S11 = substr str, $I0, 1
+    if $S11 == ")" goto check_var_sign_right_paren
+    if $S11 == "}" goto check_var_sign_right_paren
+    goto check_var_sign_next
+check_var_sign_right_paren:
+    $S12 = inner_parens[-1]
+    unless $S11 == $S12 goto check_var_sign_done
+    pop $S12, inner_parens
+    elements $I1, inner_parens
+    unless $I1 <= 0 goto check_var_sign_next
+    
+    $I1 = $I0 - inner_start
+    inc $I1
+    $S10 = substr str, inner_start, $I1
+    $S10 = '~expand-string'( $S10 ) ## expand inner
+    concat pat, $S10 ## concat the inner value
+
+    inc $I0 ## skip the closing paren of inner variable
+    $S10 = substr str, $I0, 1
+    if $S10 == paren goto check_var_sign_done
+
+    ## check if another inner variable existed
+    $I1 = index str, "$", $I0
+    if $I1 < 0 goto check_var_sign_ending
+    $I2 = $I1 - $I0
+    $S10 = substr str, $I0, $I2 ## fetch the string between the two inner vars
+    concat pat, $S10 ## concat the string
+    $I0 = $I1 ## reset the value of $I0 for restarting
+    goto check_var_sign
+check_var_sign_ending:
+
+    $I1 = index str, paren, $I0
+    if $I1 < 0 goto error__unterminated_var
+
+    ## extract the last part of substitution-pattern
+    $I2 = $I1 - $I0
+    $S10 = substr str, $I0, $I2
+    concat pat, $S10 ## concat the last part
+    $I0 = $I1 ## reset the value of $I0
+    goto check_var_sign_done
+    
+check_var_sign_next:
+    inc $I0
+    goto check_var_sign
+    
+check_var_sign_done:
+    
+    name = $S0 ## set the name
+    n = $I0 + 1 ## reset the 'n' value
+    
+    $I0 = index pat, "=", 0 ## find the '=' sign
+    if $I0 < 0 goto parse_pattern_substitution____failed
+    $I1 = $I0
+    $S1 = substr pat, 0, $I1 ## fetch the left-hand-side part
+    inc $I0 ## skip the "=" character
+    $I1 = length pat
+    $I1 = $I1 - $I0
+    $S2 = substr pat, $I0, $I1 ## fetch the right-hand-side part
+
     goto parse_pattern_substitution____do_patsubst
 
 parse_pattern_substitution_normally:
