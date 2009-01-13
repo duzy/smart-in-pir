@@ -29,12 +29,8 @@ has_prerequisites:
     orderonly = new 'ResizablePMCArray'
 has_orderonly:
 
-    .local pmc statics
-    new statics, 'ResizableStringArray'
-    
     setattribute rule, 'prerequisites', prerequisites
     setattribute rule, 'order-only',    orderonly
-    setattribute rule, 'static-targets', statics
     .return(rule)
 .end
 
@@ -46,7 +42,6 @@ has_orderonly:
     addattribute $P0, 'prerequisites'
     addattribute $P0, 'order-only' ## order-only prerequisites
     addattribute $P0, 'actions'
-    addattribute $P0, 'implicit'
 .end
 
 

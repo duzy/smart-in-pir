@@ -1,4 +1,4 @@
-# -*- mode: makefile -*-
+# -*- Makefile -*-
 
 say "1..6";
 

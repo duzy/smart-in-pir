@@ -261,6 +261,9 @@ iterate_items_end:
     .param string text
     .param pmc rule
 
+    .local pmc out_statics
+    out_statics = rule.'static-targets'()
+
     set $I0, 0
 
     index $I1, text, "%"
@@ -277,7 +280,7 @@ iterate_items_end:
 check_and_handle_pattern_target_go:
 
     ( $S0, $P0 ) = '!CHECK-AND-SPLIT-ARCHIVE-MEMBERS'( text )
-    if $S0 == "" goto check_and_handle_pattern_target__store_normal
+    if $S0 == "" goto check_and_handle_pattern_target__store_normal_pattern
     new $P1, 'Iterator', $P0
 check_and_handle_pattern_target_iterate_arcives:
     unless $P1 goto check_and_handle_pattern_target_iterate_arcives_end
@@ -295,16 +298,20 @@ check_and_handle_pattern_target_iterate_arcives_end:
     null $P1
     null $P2
     null $P3
-    goto check_and_handle_pattern_target__done
+    goto return_result
 
-check_and_handle_pattern_target__store_normal:
+check_and_handle_pattern_target__store_normal_pattern:
     $P1 = 'new:Target'( text )
     $P2 = 'new:Pattern'( text )
-    setattribute $P1, 'object', $P2
+    setattribute $P1, 'object', $P2 ## reset the target's object attribute
     getattribute $P10, $P1, 'rules'
     push $P10, rule ## bind the rule with the pattern target
     null $P2
     null $P10
+
+    ## If static rule, the pattern target will not be stored, but bind with
+    ## the static targets instead
+    unless null out_statics goto bind_static_targets
     
     if text == "%" goto check_and_handle_pattern_target__store_match_anything
     
@@ -312,17 +319,17 @@ check_and_handle_pattern_target__store_pattern_target:
     push pattern_targets, $P1
     null $P1
     null pattern_targets
-    #set implicit, 1 ## flag implicit for the rule
     set $I0, 1 ## set the result
-    goto check_and_handle_pattern_target__done
+    goto return_result
     
 check_and_handle_pattern_target__store_match_anything:
     set_hll_global ['smart';'make'], "$<%>", $P1
-    #set implicit, 1 ## flag implicit for the rule
     set $I0, 1 ## set the result
-    goto check_and_handle_pattern_target__done
+    goto return_result
 
-check_and_handle_pattern_target__done:
+bind_static_targets:
+    say "TODO: bind the static targets"
+    
 return_result:
     .return ($I0)
 .end # sub "!CHECK-AND-STORE-PATTERN-TARGET"
@@ -522,6 +529,48 @@ check_and_convert_suffix_target__check_suffixes__done:
     
     .local pmc rule
     rule = 'new:Rule'()
+
+    ## 
+    ## Handle with the static targets
+    ## 
+    if null static_targets goto make_non_static
+    .local pmc statics
+    .local pmc pattern
+    .local pmc out_statics
+    .local pmc it
+    $S0 = static_targets
+    pattern = 'new:Pattern'( mo_targets )
+    
+    out_statics = rule.'static-targets'()
+    unless null out_statics goto split_and_make_static_targets
+    new out_statics, 'ResizablePMCArray'
+    setattribute rule, 'static-targets', out_statics
+split_and_make_static_targets:
+    
+    split statics, " ", $S0
+    new it, 'Iterator', statics
+iterate_static_targets:
+    unless it goto iterate_static_targets_end
+    shift $S0, it
+    $S1 = pattern.'match'( $S0 )
+    unless $S1 == "" goto push_static_target
+    $S1 = "smart: Target '" . $S0
+    $S1 .= "' doesn't match the target pattern '"
+    $S2 = pattern
+    $S1 .= $S2
+    $S1 .= "'.\n"
+    printerr $S1
+    goto iterate_static_targets
+    
+push_static_target:
+    $P0 = '!BIND-TARGET'( $S0, TARGET_TYPE_NORMAL )
+    #getattribute $P1, $P0, 'rules'
+    #push $P1, rule
+    push out_statics, $P0
+    goto iterate_static_targets
+iterate_static_targets_end:
+
+make_non_static:
     
     .local pmc prerequisites
     .local pmc orderonly
@@ -563,45 +612,6 @@ map_actions:
     at = ACTION_A
     bsr map_match_object_array
 
-    ## 
-    ## Handle with the static targets
-    ## 
-    if null static_targets goto return_result
-    .local pmc statics
-    .local pmc pattern
-    .local pmc out
-    .local pmc it
-    $S0 = static_targets
-    pattern = 'new:Pattern'( mo_targets )
-    out = rule.'static-targets'()
-    split statics, " ", $S0
-    new it, 'Iterator', statics
-iterate_static_targets:
-    unless it goto iterate_static_targets_end
-    shift $S0, it
-    $S1 = pattern.'match'( $S0 )
-    unless $S1 == "" goto push_static_target
-    $S1 = "smart: Target '" . $S0
-    $S1 .= "' doesn't match the target pattern '"
-    $S2 = pattern
-    $S1 .= $S2
-    $S1 .= "'.\n"
-    
-    printerr $S1
-    
-    ## TODO: should I push the unmatched target here?
-#     $P0 = '!BIND-TARGET'( $S0, TARGET_TYPE_NORMAL )
-#     getattribute $P1, $P0, 'rules'
-#     push $P1, rule
-# #     text = pattern
-# #     bsr check_and_handle_pattern_target
-    goto iterate_static_targets
-    
-push_static_target:
-    push out, $S1
-    goto iterate_static_targets
-iterate_static_targets_end:
-    
 return_result:
     .return(rule)
     

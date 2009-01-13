@@ -99,14 +99,11 @@ token expanded_text {
 }
 
 token expanded_targets {
-    [
-      |[ $<pre>=[[<!before [':']><-[\\\n$\ \t:;|]>]+]
-         <expandable>?
-         $<suf>=[[<!before [':']><-[\\\n$\ \t:;|]>]*]
-       ]
-      | <expandable>
-    ]
-    {*}
+    |[ $<pre>=[[<!before [':']><-[\\\n$\ \t:;|]>]+]
+       <expandable>?
+       $<suf>=[[<!before [':']><-[\\\n$\ \t:;|]>]*]
+     ] {*}                      #= mixed 
+    | <expandable> {*}          #= pure
 }
 
 token make_rule {

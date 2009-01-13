@@ -32,7 +32,7 @@ a: c.d
 
 ## Multi target pattern will is allowned in smart-make
 #c.d ba.o $(pre$(O)E$(C)suf) fo.o:%.o %.d:%.c a.c %.d | b.c
-c.d ba.o $(pre$(O)E$(C)suf) fo.o:%.o:%.c a.c | b.c
+ ba.o $(pre$(O)E$(C)suf) fo.o:%.o:%.c a.c | b.c
 	@echo "compile $< -> $@, stem: $*"
 
 # %.o:%.c

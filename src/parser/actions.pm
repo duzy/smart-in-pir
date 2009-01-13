@@ -229,21 +229,16 @@ method expanded_text($/) {
     make $past;
 }
 
-method expanded_targets($/) {
+method expanded_targets($/, $key) {
     my $text;
-    if $<pre> {
-        $text := ~$text~$<pre>;
-    }
+    if $<pre> { $text := ~$text~$<pre>; }
     if $<expandable> {
         my $e := PAST::Compiler.compile( $($<expandable>) );
         my $s := $e();
         $text := ~$text~$s;
     }
-    if $<suf> {
-        $text := ~$text~$<suf>;
-    }
-    make PAST::Block.new( :blocktype('declaration'),
-      :name('__expanded_targets'),
+    if $<suf> { $text := ~$text~$<suf>; }
+    make PAST::Block.new( :blocktype('declaration'), :name('__expanded_targets'),
       PAST::Val.new( :value( ~$text ) ) );
 }
 
