@@ -1131,7 +1131,7 @@ check_out_pattern_targets_for_updating__iterate:
     goto check_out_pattern_targets_for_updating__done
 
 check_out_pattern_targets_for_updating__iterate_end:
-    ret
+    goto check_out_pattern_targets_for_updating__done
 
 try_match_anything:
     ## Here, we got not matched pattern, try match-anything

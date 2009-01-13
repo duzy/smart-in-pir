@@ -181,33 +181,14 @@ invalid_arg:
     
     target_changetime = target.'changetime'()
     
-    .local pmc prerequisites, oo
-    .local int is_oo
-    
-    oo = self.'orderonly'()
-    prerequisites = self.'prerequisites'()
-    
-    set is_oo, 0
-    bsr do_update_on_prerequisites
-    
-    #typeof $S0, self
-    #say $S0
-    
-    prerequisites = oo
-    set is_oo, 1
-    bsr do_update_on_prerequisites
-    
-    goto return_result
-
-do_update_on_prerequisites:
+    .local pmc prerequisites
     .local pmc iter, prereq
+    prerequisites = self.'prerequisites'()
     new iter, 'Iterator', prerequisites
-    
 iterate_prerequisites:
     unless iter goto iterate_prerequisites_end
     shift prereq, iter
-    if is_oo goto invoke_update
-    
+
     ## Checking if prerequsite newer than the target
     $I0 = prereq.'changetime'()
     if target_changetime < $I0  goto increce_newer_counter
@@ -218,19 +199,25 @@ increce_newer_counter:
     inc count_newer
     
 invoke_update:
-    #say prereq
     ($I1, $I2, $I3) = prereq.'update'()
-    if is_oo goto iterate_prerequisites
     unless 0 < $I3 goto iterate_prerequisites
     count_updated += $I1
     count_newer   += $I2
     count_actions += $I3
     goto iterate_prerequisites
 iterate_prerequisites_end:
-    
     null prerequisites
     null iter
-    ret
+
+    ## update orderonly prerequisites
+    prerequisites = self.'orderonly'()
+    new iter, 'Iterator', prerequisites
+iterate_orderonly:
+    unless iter goto iterate_orderonly_end
+    shift prereq, iter
+    ($I1, $I2, $I3) = prereq.'update'()
+    goto iterate_orderonly
+iterate_orderonly_end:
 
 return_result:
     .return (count_updated, count_newer, count_actions)

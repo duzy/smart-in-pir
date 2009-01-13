@@ -12,15 +12,15 @@ echo: trick1.txt trick2.txt trick3.txt | foo bar cat
 	@$@ "ok, [$?], [$^], [$|]"
 
 trick1.txt trick2.txt trick3.txt: t/foo t/foo t/foo
-	@echo "$(@D)"
-	@echo "$(@F)"
+	@echo "check:(.):$(@D)"
+	@echo "any:(trick1.txt trick2.txt trick3.txt):$(@F)"
 	@echo "$(@D)" > $@
 	@echo "$(@F)" >> $@
-	@echo "ok, $@, [$(^D)], [$(^F)]"
+	@echo "check:([t], [foo]):[$(^D)], [$(^F)]"
 
 t/foo:
-	@echo "ok, dir $(@D)"
-	@echo "ok, file $(@F)"
+	@echo "check:(t):$(@D)"
+	@echo "check:(foo):$(@F)"
 
 %:
 	@echo "anything: $@"
