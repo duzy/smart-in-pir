@@ -83,12 +83,12 @@ token make_variable_declaration {
 token expandable {
     [
       |[ $<lp>=['$'] <-[({]> ]
-      |[ $<lp>=['$('] <expanded_text>+ $<rp>=[')'] ]
-      |[ $<lp>=['${'] <expanded_text>+ $<rp>=['}'] ]
+      |[ $<lp>=['$('] <expandable_text>+ $<rp>=[')'] ]
+      |[ $<lp>=['${'] <expandable_text>+ $<rp>=['}'] ]
     ]
     {*}
 }
-token expanded_text {
+token expandable_text {
     [
       |[<expandable> $<suf>=[[<!before [')'|'$']><-[\n]>]+]]
       |[$<pre>=[[<!before [')'|'$']><-[\n]>]+] <expandable>]
@@ -99,11 +99,12 @@ token expanded_text {
 }
 
 token expanded_targets {
-    |[ $<pre>=[[<!before [':']><-[\\\n$\ \t:;|]>]+]
-       <expandable>?
+    |[ $<pre>=[[<!before [':']><-[\\\n$\ \t:;|]>]*]
+       <expandable>
        $<suf>=[[<!before [':']><-[\\\n$\ \t:;|]>]*]
-     ] {*}                      #= mixed 
-    | <expandable> {*}          #= pure
+     ] {*}                                              #= mixed
+    | $<txt>=[[<!before [':']><-[\\\n$\ \t:;|]>]+] {*}  #= text
+    | <expandable> {*}                                  #= pure
 }
 
 token make_rule {

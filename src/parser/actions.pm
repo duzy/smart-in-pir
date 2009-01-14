@@ -190,7 +190,7 @@ method make_rule($/) {
 }
 method expandable($/) {
     my $name;
-    for $<expanded_text> {
+    for $<expandable_text> {
         my $e := PAST::Compiler.compile( $($_) );
         my $s := $e();
         $name := ~$name~$s;
@@ -206,7 +206,7 @@ method expandable($/) {
     );
     make $past;
 }
-method expanded_text($/) {
+method expandable_text($/) {
     my $name;
     if $<pre> {
         $name := ~$name~$<pre>;
@@ -223,7 +223,7 @@ method expanded_text($/) {
     }
     if !$name { $name := ~$/; }
     my $past := PAST::Block.new(
-        :blocktype('declaration'), :name('__expanded_text'),
+        :blocktype('declaration'), :name('__expandable_text'),
         PAST::Val.new( :value( ~$name ) )
     );
     make $past;
@@ -231,13 +231,18 @@ method expanded_text($/) {
 
 method expanded_targets($/, $key) {
     my $text;
-    if $<pre> { $text := ~$text~$<pre>; }
-    if $<expandable> {
-        my $e := PAST::Compiler.compile( $($<expandable>) );
-        my $s := $e();
-        $text := ~$text~$s;
+    if $key eq "text" {
+        $text := ~$<txt>;
     }
-    if $<suf> { $text := ~$text~$<suf>; }
+    else {
+        if $<pre> { $text := ~$text~$<pre>; }
+        if $<expandable> {
+            my $e := PAST::Compiler.compile( $($<expandable>) );
+            my $s := $e();
+           $text := ~$text~$s;
+        }
+        if $<suf> { $text := ~$text~$<suf>; }
+    }
     make PAST::Block.new( :blocktype('declaration'), :name('__expanded_targets'),
       PAST::Val.new( :value( ~$text ) ) );
 }
@@ -348,15 +353,12 @@ method expanded_orderonly($/) {
 # }
 
 method smart_action($/) {
-    #make PAST::Op.new( :inline( "say 'TODO: smart_action'" ) );
     our $RULE_NUMBER;
     $RULE_NUMBER := $RULE_NUMBER + 1;
     my $past := PAST::Block.new( :blocktype('declaration'), :node($/) );
     $past.name( "__smart_rule_" ~ $RULE_NUMBER );
     $past.namespace( "smart::rule" );
-    for $<smart_statement> {
-        $past.push( $($_) );
-    }
+    for $<smart_statement> { $past.push( $($_) ); }
     make $past;
 }
 

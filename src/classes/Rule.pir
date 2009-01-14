@@ -173,7 +173,8 @@ invalid_arg:
     set count_updated, 0
     set count_actions, 0
     set count_newer,   0
-    
+
+    say target
     target_changetime = target.'changetime'()
     
     .local pmc prerequisites
