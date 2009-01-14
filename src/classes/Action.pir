@@ -35,8 +35,8 @@ init_smart_action:
     addattribute $P0, 'type'
     addattribute $P0, 'command'
 
-    subclass $P1, 'Action', 'SmartAction'
-    subclass $P2, 'Action', 'ShellAction'
+    subclass $P1, $P0, 'SmartAction'
+    subclass $P2, $P0, 'ShellAction'
 .end
 
 =item <command(OPT cmd)>

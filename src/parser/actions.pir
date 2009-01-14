@@ -264,6 +264,7 @@ iterate_items_end:
     .local pmc out_statics
     out_statics = rule.'static-targets'()
 
+    ## $I0 will be used to store the result value
     set $I0, 0
 
     index $I1, text, "%"
@@ -277,13 +278,15 @@ iterate_items_end:
     unless null pattern_targets goto check_and_handle_pattern_target_go
     new pattern_targets, 'ResizablePMCArray'
     set_hll_global ['smart';'make'], "@<%>", pattern_targets
+    
 check_and_handle_pattern_target_go:
 
     ( $S0, $P0 ) = '!CHECK-AND-SPLIT-ARCHIVE-MEMBERS'( text )
     if $S0 == "" goto check_and_handle_pattern_target__store_normal_pattern
+    
     new $P1, 'Iterator', $P0
-check_and_handle_pattern_target_iterate_arcives:
-    unless $P1 goto check_and_handle_pattern_target_iterate_arcives_end
+iterate_arcives:
+    unless $P1 goto iterate_arcives_end
     shift $S0, $P1
     $P2 = 'new:Target'( $S0 )
     $P3 = 'new:Pattern'( $S0 )
@@ -291,8 +294,8 @@ check_and_handle_pattern_target_iterate_arcives:
     getattribute $P10, $P2, 'rules'
     push $P10, rule ## bind the rule with the pattern target
     push pattern_targets, $P2
-    goto check_and_handle_pattern_target_iterate_arcives
-check_and_handle_pattern_target_iterate_arcives_end:
+    goto iterate_arcives
+iterate_arcives_end:
     #set implicit, 1 ## flag implicit for the rule
     set $I0, 1 ## set the result
     null $P1
@@ -311,7 +314,9 @@ check_and_handle_pattern_target__store_normal_pattern:
 
     ## If static rule, the pattern target will not be stored, but bind with
     ## the static targets instead
-    unless null out_statics goto bind_static_targets
+    ##unless null out_statics goto bind_static_targets
+    bsr bind_static_targets
+    if $I0 goto return_result
     
     if text == "%" goto check_and_handle_pattern_target__store_match_anything
     
@@ -326,9 +331,25 @@ check_and_handle_pattern_target__store_match_anything:
     set_hll_global ['smart';'make'], "$<%>", $P1
     set $I0, 1 ## set the result
     goto return_result
-
+    
+    
 bind_static_targets:
-    say "TODO: bind the static targets"
+    if null out_statics goto bind_static_targets_done
+    .local pmc sit, st
+    new sit, 'Iterator', out_statics
+iterate_static_targets:
+    unless sit goto iterate_static_targets_end
+    shift st, sit
+    ## Bind the static targets with the target-pattern
+    getattribute $P10, st, 'rules'
+    push $P10, $P1 ## $P1 should be the target-pattern
+    goto iterate_static_targets
+iterate_static_targets_end:
+    set $I0, 1 ## set the result
+    
+bind_static_targets_done:
+    ret
+    
     
 return_result:
     .return ($I0)

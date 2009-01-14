@@ -177,7 +177,7 @@ method make_rule($/) {
                 PIR q< '!MAKE-RULE'( $P1, $P2, $P3, $P4, $P5 ) >;
             }
             else {
-                my @actions   := $<make_action>;
+                my @actions    := $<make_action>;
                 PIR q< find_lex $P1, "$targets" >;
                 PIR q< find_lex $P2, "$prerequisites" >;
                 PIR q< find_lex $P3, "$orderonly" >;
@@ -278,79 +278,6 @@ method expanded_orderonly($/) {
     my $past := make_targets_block( $/, '__expanded_orderonly' );
     make $past;
 }
-
-# method make_target($/) {
-#     if $<make_variable_ref> {
-#         my $past := PAST::Op.new( :name('!BIND-TARGETS-BY-EXPANDING-STRING'),
-#           :returns('ResizablePMCArray'), :pasttype('call') );
-#         #$past.push( PAST::Val.new( :value(1), :returns('Integer') ) );
-#         $past.push( ~$/ );
-# #         PIR q< find_lex $P0, "$/" >;
-# #         PIR q< set $S0, $P0 >;
-# #         PIR q< print "target: " >;
-# #         PIR q< say $S0 >;
-#         make $past;
-#     }
-#     else {
-#         my $name := strip( ~$/ );
-#         my $t := PAST::Var.new( :name($name),
-#           :lvalue(0),
-#           :isdecl(1),
-#           :viviself('Undef'),
-#           :scope('lexical'),
-#           :node( $/ )
-#         );
-#         my $c := PAST::Op.new( :pasttype('call'), :returns('Target'),
-#           :name('!BIND-TARGET') );
-#         $c.push( PAST::Val.new( :value($t.name()), :returns('String') ) );
-#         $c.push( PAST::Val.new( :value(1), :returns('Integer') ) );
-#         make PAST::Op.new( $t, $c, :pasttype('bind'),
-#                            :name('bind-target-variable'),
-#                            :node($/) );
-#     }
-# }
-# method make_prerequisite($/) {
-#     if $<make_variable_ref> {
-#         my $past := PAST::Op.new( :name('!BIND-TARGETS-BY-EXPANDING-STRING'),
-#           :returns('ResizablePMCArray'), :pasttype('call') );
-#         #$past.push( PAST::Val.new( :value(0), :returns('Integer') ) );
-#         $past.push( ~$/ );
-# #         PIR q< find_lex $P0, "$/" >;
-# #         PIR q< set $S0, $P0 >;
-# #         PIR q< print "prerequisite: " >;
-# #         PIR q< say $S0 >;
-#         make $past;
-#     }
-#     else {
-#         my $p := PAST::Var.new(
-#             :name(~$/),
-#             :lvalue(0),
-#             :isdecl(1),
-#             :viviself('Undef'),
-#             :scope('lexical') );
-#         my $c := PAST::Op.new(
-#             :pasttype('call'),
-#             :name('!BIND-TARGET'),
-#             :returns('Target') );
-#         $c.push( PAST::Val.new( :value($p.name()), :returns('String') ) );
-#         $c.push( PAST::Val.new( :value(0), :returns('Integer') ) );
-#         make PAST::Op.new( $p, $c, :pasttype('bind'),
-#                            :name('bind-prerequisite'),
-#                            :node($/) );
-#     }
-# }
-# method order_only_prerequisites($/) {
-#     my $past := PAST::Op.new( :pasttype('call'),
-#       :name('!PACK-RULE-TARGETS'), :returns('ResizablePMCArray') );
-#     for $<make_prerequisite> { $past.push( $( $_ ) ); }
-#     make $past;
-# }
-# method make_action($/) {
-#     my $past := PAST::Op.new( :pasttype('call'), :returns('MakeAction'),
-#       :name('!CREATE-ACTION'), :node($/) );
-#     $past.push( PAST::Val.new( :value(~$/), :returns('String') ) );
-#     make $past;
-# }
 
 method smart_action($/) {
     our $RULE_NUMBER;

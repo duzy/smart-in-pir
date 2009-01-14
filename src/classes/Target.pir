@@ -1048,6 +1048,8 @@ return_result:
     .return (count_updated, count_newer, count_actions)
 .end # sub "update-target"
 
+=item
+=cut
 .sub "update-all-prerequisites" :anon
     .param pmc target
     
@@ -1059,16 +1061,24 @@ return_result:
     set count_newer,   0
 
     .local pmc rules
-    .local pmc rule, rule_it
+    .local pmc updator, updator_it
     
     rules = target.'rules'()
     
 update_prerequisites_of_rules:
-    new rule_it, 'Iterator', rules
+    new updator_it, 'Iterator', rules
 update_prerequisites_of_rules__iterate:
-    unless rule_it goto update_prerequisites_of_rules__iterate_end
-    shift rule, rule_it
-    ($I1, $I2, $I3) = rule.'update-prerequisites'( target )
+    unless updator_it goto update_prerequisites_of_rules__iterate_end
+    shift updator, updator_it
+
+    ## Check the type of updator, it can be 'Rule' or 'Target'(target-pattern)
+    typeof $S0, updator
+    unless $S0 == 'Target' goto update_by_rule_object
+    bsr update_target_by_target_pattern
+    goto update_prerequisites_of_rules__iterate
+update_by_rule_object:
+    
+    ($I1, $I2, $I3) = updator.'update-prerequisites'( target )
     #unless 0 < $I3 goto update_prerequisites_of_rules__iterate
     add count_updated, $I1
     add count_newer,   $I2
@@ -1076,12 +1086,25 @@ update_prerequisites_of_rules__iterate:
     goto update_prerequisites_of_rules__iterate
 update_prerequisites_of_rules__iterate_end:
     ## TODO: the last rule's action will be executed?
-    null rule_it
+    null updator_it
 update_prerequisites_of_rules__done:
 
     .return (count_updated, count_newer, count_actions)
+
+update_target_by_target_pattern:
+    .local int matched
+    set matched, 0
+    ($I1, $I2, $I3, matched) = 'update-target-%'( updator, target )
+    unless matched goto update_target_by_target_pattern_done
+    add count_updated, $I1
+    add count_newer,   $I2
+    add count_actions, $I3
+update_target_by_target_pattern_done:
+    ret
 .end # sub "update-all-prerequisites"
 
+=item
+=cut
 .sub "update-target-through-pattern-targets" :anon
     .param pmc target
     .param int stop_if_no_match
@@ -1116,6 +1139,8 @@ try_next:
 
 try_patterns:
     set $I0, 0
+#    typeof $S0, patterns
+#    say $S0
     new pattern_it, 'Iterator', patterns
 check_out_pattern_targets_for_updating__iterate:
     unless pattern_it goto check_out_pattern_targets_for_updating__iterate_end
