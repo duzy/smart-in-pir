@@ -3,9 +3,9 @@
 # checker: 06-target
 # 
 
-say '1..2';
+#say '1..2';
 
 all:
-	@echo "ok: foobar (no echo)"
-	echo "ok: foobar, $@"
+	@echo "ok: (no echo)"
+	echo "check:(all):$@"
 
