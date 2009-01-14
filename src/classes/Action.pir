@@ -12,9 +12,9 @@
     .param int is_smart_action
 
     .local pmc action
-    action = new 'Action'
-
     if is_smart_action goto init_smart_action
+
+    action = new 'ShellAction'
 
     setattribute action, 'command', acommand
     new $P0, 'Integer'
@@ -23,6 +23,8 @@
     .return(action)
 
 init_smart_action:
+    action = new 'SmartAction'
+    
     setattribute action, 'command', acommand
     new $P0, 'Integer'
     assign $P0, is_smart_action
@@ -31,12 +33,18 @@ init_smart_action:
 .end # sub "new:Action"
 
 
+######################################################################
+##      Action
+######################################################################
 .namespace ['Action']
 .sub '__init_class' :anon :init :load
     newclass $P0, 'Action'
     addattribute $P0, 'type'
     addattribute $P0, 'command'
     addattribute $P0, 'smart'
+
+    subclass $P1, 'Action', 'SmartAction'
+    subclass $P2, 'Action', 'ShellAction'
 .end
 
 =item <command(OPT cmd)>
@@ -101,14 +109,82 @@ return_value:
     Execute the command of the action, returns the status code.
 =cut
 .sub 'execute' :method
-    getattribute $P0, self, 'smart'
-    $I0 = $P0
-    unless $I0 goto execute_shell_command
-    getattribute $P0, self, 'command'
-    $P0()
-    .return(1)
-execute_shell_command:
+#     getattribute $P0, self, 'smart'
+#     $I0 = $P0
+#     unless $I0 goto execute_shell_command
+#     getattribute $P0, self, 'command'
+#     $P0()
+#     .return(1)
+# execute_shell_command:
     
+#     .local string command
+#     .local int echo_on
+#     .local int ignore_error
+
+#     $S0 = self.'command'()
+#     $S0 = 'expand'( $S0 )
+#     command = $S0
+    
+#     substr $S1, command, 0, 1
+#     echo_on      = $S1 != "@"
+#     ignore_error = $S1 != "-"
+#     $I0 = and echo_on, ignore_error
+#     if $I0 goto execute_the_command
+#     $I0 = length command
+#     $I0 -= 1
+#     substr $S1, command, 1, $I0
+#     command = $S1
+    
+# execute_the_command:
+    
+#     unless echo_on goto no_echo
+#     print command
+#     print "\n"
+# no_echo:
+
+#     spawnw $I0, command
+#     if $I0 == 0 goto succeed
+    
+#     set $S2, $I0
+#     set $S1, "smart: ** Command '"
+#     concat $S1, command
+#     concat $S1, "' failed with exit code '"
+#     concat $S1, $S2
+#     concat $S1, "'\n"
+#     print $S1
+    
+#     if ignore_error goto succeed
+#     exit -1
+    
+# succeed:
+#     .return ($I0)
+    
+# failed:
+    .return (0)
+.end
+
+
+######################################################################
+##      SmartAction
+######################################################################
+.namespace ['SmartAction']
+.sub 'execute' :method
+    $I0 = 0
+    getattribute $P0, self, 'command'
+    if null $P0 goto return_result
+    $P0() ## invoke the smart-block
+    $I0 = 1
+    
+return_result:
+    .return($I0)
+.end # execute
+
+
+######################################################################
+##      ShellAction
+######################################################################
+.namespace ['ShellAction']
+.sub 'execute' :method
     .local string command
     .local int echo_on
     .local int ignore_error
@@ -153,5 +229,4 @@ succeed:
     
 failed:
     .return (0)
-.end
-
+.end # execute
