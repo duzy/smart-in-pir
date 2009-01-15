@@ -291,7 +291,7 @@ iterate_arcives:
     $P2 = 'new:Target'( $S0 )
     $P3 = 'new:Pattern'( $S0 )
     setattribute $P2, 'object', $P3
-    getattribute $P10, $P2, 'rules'
+    getattribute $P10, $P2, 'updators'
     push $P10, rule ## bind the rule with the pattern target
     push pattern_targets, $P2
     goto iterate_arcives
@@ -307,7 +307,7 @@ check_and_handle_pattern_target__store_normal_pattern:
     $P1 = 'new:Target'( text )
     $P2 = 'new:Pattern'( text )
     setattribute $P1, 'object', $P2 ## reset the target's object attribute
-    getattribute $P10, $P1, 'rules'
+    getattribute $P10, $P1, 'updators'
     push $P10, rule ## bind the rule with the pattern target
     null $P2
     null $P10
@@ -341,7 +341,7 @@ iterate_static_targets:
     unless sit goto iterate_static_targets_end
     shift st, sit
     ## Bind the static targets with the target-pattern
-    getattribute $P10, st, 'rules'
+    getattribute $P10, st, 'updators'
     push $P10, $P1 ## $P1 should be the target-pattern
     goto iterate_static_targets
 iterate_static_targets_end:
@@ -585,7 +585,7 @@ iterate_static_targets:
     
 push_static_target:
     $P0 = '!BIND-TARGET'( $S0, TARGET_TYPE_NORMAL )
-    #getattribute $P1, $P0, 'rules'
+    #getattribute $P1, $P0, 'updators'
     #push $P1, rule
     push out_statics, $P0
     goto iterate_static_targets
@@ -716,7 +716,7 @@ action_pack_target__iterate_archive:
     unless $P1 goto action_pack_target__iterate_archive_end
     shift $S0, $P1
     $P2 = '!BIND-TARGET'( $S0, TARGET_TYPE_MEMBER )
-    getattribute $P3, $P2, 'rules'
+    getattribute $P3, $P2, 'updators'
     push $P3, rule ## bind the rule with the target
     unless null numberOneTarget goto action_pack_target__iterate_archive
     set numberOneTarget, $P2
@@ -728,7 +728,7 @@ action_pack_target__iterate_archive_end:
 action_pack_target__bind_normal:
     ## Normal targets are bind directly.
     $P1 = '!BIND-TARGET'( text, TARGET_TYPE_NORMAL )
-    getattribute $P2, $P1, 'rules'
+    getattribute $P2, $P1, 'updators'
     push $P2, rule
     
     unless null numberOneTarget goto action_pack_target__done

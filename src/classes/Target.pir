@@ -25,11 +25,11 @@ pattern targets(the match-anything rule is excluded).
 
     .local string object
     .local pmc member
-    .local pmc rules
+    .local pmc updators
     .local pmc target
 
     new member, 'String'
-    new rules, 'ResizablePMCArray'
+    new updators, 'ResizablePMCArray'
     
     set object, aobject
     set member, ""
@@ -56,7 +56,7 @@ pattern targets(the match-anything rule is excluded).
 init_target:
     new target, 'Target'
     setattribute target, 'object', aobject
-    setattribute target, 'rules', rules
+    setattribute target, 'updators', updators
     setattribute target, 'member', member
     
 return_target:
@@ -68,7 +68,7 @@ return_target:
     newclass $P0, 'Target'
     addattribute $P0, 'object'  ## filename of the object or instance of Pattern
     addattribute $P0, 'member'  ## for Archive target, indicates the member name
-    addattribute $P0, 'rules'   ## Rules to update the object
+    addattribute $P0, 'updators'## Updators to update the object
     addattribute $P0, 'updated' ## 1/0, wether the object has been updated
 .end
 
@@ -126,12 +126,12 @@ return_result:
     .return($P0)
 .end # sub "members"
 
-=item <rules()>
+=item <updators()>
 =cut
-.sub "rules" :method
-    getattribute $P0, self, 'rules'
+.sub "updators" :method
+    getattribute $P0, self, 'updators'
     .return($P0)
-.end # sub "rules"
+.end # sub "updators"
 
 =item
 =cut
@@ -282,41 +282,49 @@ loop_tag_end:
     .local pmc prerequisites, orderonly
     new prerequisites, 'ResizablePMCArray'
     new orderonly, 'ResizablePMCArray'
-collect_prerequisites_of_rules:
-    .local pmc rules, rule_it, rule
-    getattribute rules, target, "rules"
-    new rule_it, 'Iterator', rules
-collect_prerequisites_of_rules__iterate:
-    unless rule_it goto collect_prerequisites_of_rules__iterate_end
-    shift rule, rule_it
-    
-    $P1 = rule.'prerequisites'()
+collect_prerequisites_of_updators:
+    .local pmc updators, updator_it, updator
+    getattribute updators, target, "updators"
+    new updator_it, 'Iterator', updators
+collect_prerequisites_of_updators__iterate:
+    unless updator_it goto collect_prerequisites_of_updators__iterate_end
+    shift updator, updator_it
+
+try_process_pattern_target:
+    typeof $S0, updator
+    if $S0 == 'Rule' goto process_rule_object
+    say "TODO: handle pattern target"
+    goto collect_prerequisites_of_updators__iterate
+
+process_rule_object:
+    $P1 = updator.'prerequisites'()
     new $P2, 'Iterator', $P1
-collect_prerequisites_of_rules__iterate_prerequisite:
-    unless $P2 goto collect_prerequisites_of_rules__iterate_prerequisite_end
+collect_prerequisites_of_updators__iterate_prerequisite:
+    unless $P2 goto collect_prerequisites_of_updators__iterate_prerequisite_end
     shift $P3, $P2
     push prerequisites, $P3
-    goto collect_prerequisites_of_rules__iterate_prerequisite
-collect_prerequisites_of_rules__iterate_prerequisite_end:
+    goto collect_prerequisites_of_updators__iterate_prerequisite
+collect_prerequisites_of_updators__iterate_prerequisite_end:
     null $P1
     null $P2
     null $P3
 
-    $P1 = rule.'orderonly'()
+    $P1 = updator.'orderonly'()
     new $P2, 'Iterator', $P1
-collect_prerequisites_of_rules__iterate_orderonly:
-    unless $P2 goto collect_prerequisites_of_rules__iterate_orderonly_end
+collect_prerequisites_of_updators__iterate_orderonly:
+    unless $P2 goto collect_prerequisites_of_updators__iterate_orderonly_end
     shift $P3, $P2
     push orderonly, $P3
-    goto collect_prerequisites_of_rules__iterate_orderonly
-collect_prerequisites_of_rules__iterate_orderonly_end:
+    goto collect_prerequisites_of_updators__iterate_orderonly
+collect_prerequisites_of_updators__iterate_orderonly_end:
     null $P1
     null $P2
     null $P3
     
-    goto collect_prerequisites_of_rules__iterate
-collect_prerequisites_of_rules__iterate_end:
-collect_prerequisites_of_rules_done:
+    goto collect_prerequisites_of_updators__iterate
+collect_prerequisites_of_updators__iterate_end:
+    
+collect_prerequisites_of_updators_done:
     .return(prerequisites, orderonly)
 .end # sub "!get-prerequisites-of-target"
 
@@ -884,11 +892,21 @@ return_result:
     set count_updated, 0
     set count_actions, 0
     
-    .local pmc rule
-    local_branch cs, update_prerequisites_of_rules
+    .local pmc updator
+    local_branch cs, update_prerequisites_of_updators
     
+    typeof $S0, updator
+    if $S0 == 'Rule' goto invoke_actions_on_rule_object
+#     ( $I1, $I2, $I3, $I4 ) = 'update-target-%'( updator, target )
+#     unless $I4 goto return_result
+#     add count_updated, $I1
+#     add count_newer,   $I2
+#     add count_actions, $I3
+    goto return_result
+
+invoke_actions_on_rule_object:
     '!setup-automatic-variables%'( pattern_target, target, stem )
-    ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
+    ($I0, $I1) = updator.'execute_actions'() ## (command_state, action_count)
     '!clear-automatic-variables'()
 
     unless $I0 goto return_result
@@ -902,20 +920,28 @@ return_nothing:
     .return(0, 0, 0, 0)
 
     ######################
-    ## local: update_prerequisites_of_rules
-update_prerequisites_of_rules:
-    .local pmc rules, rule_it
-    getattribute rules, pattern_target, 'rules'
-    new rule_it, 'Iterator', rules
-update_prerequisites_of_rules__iterate:
-    unless rule_it goto update_prerequisites_of_rules__iterate_end
-    shift rule, rule_it
+    ## local: update_prerequisites_of_updators
+update_prerequisites_of_updators:
+    .local pmc updators, updator_it
+    getattribute updators, pattern_target, 'updators'
+    new updator_it, 'Iterator', updators
+update_prerequisites_of_updators__iterate:
+    unless updator_it goto update_prerequisites_of_updators__iterate_end
+    shift updator, updator_it
+    
+try_process_pattern_target:
+    typeof $S0, updator
+    if $S0 == 'Rule' goto process_rule_object
+    say "TODO: handle pattern target(2)"
+    goto update_prerequisites_of_updators__iterate
+    
+process_rule_object:
     local_branch cs, update_prerequisites
-    goto update_prerequisites_of_rules__iterate
-update_prerequisites_of_rules__iterate_end:
+    goto update_prerequisites_of_updators__iterate
+update_prerequisites_of_updators__iterate_end:
     ## TODO: the last rule's action will be executed?
-    null rule_it
-update_prerequisites_of_rules__done:
+    null updator_it
+update_prerequisites_of_updators__done:
     local_return cs
 
     ######################
@@ -923,7 +949,7 @@ update_prerequisites_of_rules__done:
 update_prerequisites:
     .local pmc prerequisites
     .local pmc pre
-    prerequisites = rule.'prerequisites'()
+    prerequisites = updator.'prerequisites'()
     new $P1, 'Iterator', prerequisites 
 update_prerequisites__iterate:
     unless $P1 goto update_prerequisites__iterate_end
@@ -980,10 +1006,10 @@ fatal_not_a_pattern_target:
     .local int is_phony
     is_phony = target.'is_phony'()
     
-    .local pmc rules, rule
-    getattribute rules, target, 'rules'
-    elements $I0, rules
-    ## If no rules binded with the target
+    .local pmc updators, updator
+    getattribute updators, target, 'updators'
+    elements $I0, updators
+    ## If no updators binded with the target
     unless $I0 <= 0 goto do_normal_update
     $I0 = target.'exists'()
     if $I0 goto return_without_execution
@@ -998,16 +1024,17 @@ do_normal_update:
     .local int target_changetime
     target_changetime = target.'changetime'()
     
-    .local pmc rule_it
+    .local pmc updator_it
     ($I1, $I2, $I3) = 'update-all-prerequisites'( target )
     #unless 0 < $I3 goto do_update_target
     add count_updated, $I1
     add count_newer,   $I2
     add count_actions, $I3
+    
 do_update_target:
     
-    ## TODO: Only executes the last rule?
-    rule = rules[-1]
+    ## TODO: Only executes the last updator?
+    updator = updators[-1]
     
     if 0 < count_updated goto execute_actions
 
@@ -1024,8 +1051,17 @@ return_without_execution:
     .return(0, count_newer, 0)
     
 execute_actions:
+    typeof $S0, updator
+    if $S0 == 'Rule' goto invoke_actions_on_rule_object
+#     ( $I1, $I2, $I3 ) = 'update-target-%'( updator, target )
+#     add count_updated, $I1
+#     add count_newer,   $I2
+#     add count_actions, $I3
+    goto return_result
+    
+invoke_actions_on_rule_object:
     '!setup-automatic-variables'( target )
-    ($I0, $I1) = rule.'execute_actions'() ## (command_state, action_count)
+    ($I0, $I1) = updator.'execute_actions'() ## (command_state, action_count)
     '!clear-automatic-variables'()
 
     ## If no actions for the target, we should try to find a pattern
@@ -1060,34 +1096,34 @@ return_result:
     set count_actions, 0
     set count_newer,   0
 
-    .local pmc rules
+    .local pmc updators
     .local pmc updator, updator_it
     
-    rules = target.'rules'()
+    updators = target.'updators'()
     
-update_prerequisites_of_rules:
-    new updator_it, 'Iterator', rules
-update_prerequisites_of_rules__iterate:
-    unless updator_it goto update_prerequisites_of_rules__iterate_end
+update_prerequisites_of_updators:
+    new updator_it, 'Iterator', updators
+update_prerequisites_of_updators__iterate:
+    unless updator_it goto update_prerequisites_of_updators__iterate_end
     shift updator, updator_it
 
     ## Check the type of updator, it can be 'Rule' or 'Target'(target-pattern)
     typeof $S0, updator
     unless $S0 == 'Target' goto update_by_rule_object
     bsr update_target_by_target_pattern
-    goto update_prerequisites_of_rules__iterate
+    goto update_prerequisites_of_updators__iterate
 update_by_rule_object:
     
     ($I1, $I2, $I3) = updator.'update-prerequisites'( target )
-    #unless 0 < $I3 goto update_prerequisites_of_rules__iterate
+    #unless 0 < $I3 goto update_prerequisites_of_updators__iterate
     add count_updated, $I1
     add count_newer,   $I2
     add count_actions, $I3
-    goto update_prerequisites_of_rules__iterate
-update_prerequisites_of_rules__iterate_end:
+    goto update_prerequisites_of_updators__iterate
+update_prerequisites_of_updators__iterate_end:
     ## TODO: the last rule's action will be executed?
     null updator_it
-update_prerequisites_of_rules__done:
+update_prerequisites_of_updators__done:
 
     .return (count_updated, count_newer, count_actions)
 
@@ -1119,28 +1155,29 @@ update_target_by_target_pattern_done:
     set matched,        0
 
     ##############################################################
-    ## If there is no rules binded with the 'target', we need to check out
+    ## If there is no updators binded with the 'target', we need to check out
     ## pattern targets and find a matched pattern, invoke updatation on it.
     ##############################################################
 check_out_pattern_targets_for_updating:
     .local pmc patterns, pattern_it
     .local pmc pattern_target
-    
-    get_hll_global patterns, ['smart';'make'], "@<*%>"
-    if null patterns goto try_next
-    bsr try_patterns
-    if $I0 goto check_out_pattern_targets_for_updating__done
 
-try_next:
-    get_hll_global patterns, ['smart';'make'], "@<%>"
-    if null patterns goto try_match_anything
-    bsr try_patterns
-    if $I0 goto check_out_pattern_targets_for_updating__done
+try_static_patterns:
+#     get_hll_global patterns, ['smart';'make'], "@<*%>"
+#     if null patterns goto try_patterns
+#     bsr update_by_patterns
+#     if $I0 goto check_out_pattern_targets_for_updating__done
 
 try_patterns:
+    get_hll_global patterns, ['smart';'make'], "@<%>"
+    if null patterns goto try_match_anything
+    bsr update_by_patterns
+    #if $I0 goto check_out_pattern_targets_for_updating__done
+    goto check_out_pattern_targets_for_updating__done
+
+    
+update_by_patterns:
     set $I0, 0
-#    typeof $S0, patterns
-#    say $S0
     new pattern_it, 'Iterator', patterns
 check_out_pattern_targets_for_updating__iterate:
     unless pattern_it goto check_out_pattern_targets_for_updating__iterate_end
@@ -1156,8 +1193,11 @@ check_out_pattern_targets_for_updating__iterate:
     goto check_out_pattern_targets_for_updating__done
 
 check_out_pattern_targets_for_updating__iterate_end:
-    goto check_out_pattern_targets_for_updating__done
+    null patterns
+    null pattern_target
+    ret
 
+    
 try_match_anything:
     ## Here, we got not matched pattern, try match-anything
     get_hll_global pattern_target, ['smart';'make'], "$<%>"
