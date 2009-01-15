@@ -25,13 +25,13 @@ TARGET = foo
 
 MKDIR_IF_NON = @[ -d $(@D) ] || mkdir -p $(@D)
 
-all: $(TARGET)
+all: $(TARGET:%=$(OUT_BIN)/%)
 	@echo $(.DEFAULT_GOAL) done
 
 clean:
-	$(RM_RF) $(TARGET) $(BUILT_OBJECTS)
+	$(RM_RF) $(TARGET:%=$(OUT_BIN)/%) $(BUILT_OBJECTS)
 
-$(TARGET): $(BUILT_OBJECTS)
+$(TARGET:%=$(OUT_BIN)/%): $(BUILT_OBJECTS)
 	$(MKDIR_IF_NON)
 	$(CXX) $(LDFLAGS) $^ $(LOADLIBES) $() -o $@
 
