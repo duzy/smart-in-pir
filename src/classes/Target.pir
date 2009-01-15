@@ -867,6 +867,7 @@ return_result:
 .sub "update-target-%"
     .param pmc pattern_target
     .param pmc target # the file target to be updated
+    .param int update_prerequisites_only :optional
     
     .local pmc pattern
     getattribute pattern, pattern_target, "object"
@@ -894,9 +895,11 @@ return_result:
     
     .local pmc updator
     local_branch cs, update_prerequisites_of_updators
+    if update_prerequisites_only goto return_result
     
     typeof $S0, updator
     if $S0 == 'Rule' goto invoke_actions_on_rule_object
+    ## TODO: should do something!!
 #     ( $I1, $I2, $I3, $I4 ) = 'update-target-%'( updator, target )
 #     unless $I4 goto return_result
 #     add count_updated, $I1
@@ -1053,10 +1056,11 @@ return_without_execution:
 execute_actions:
     typeof $S0, updator
     if $S0 == 'Rule' goto invoke_actions_on_rule_object
-#     ( $I1, $I2, $I3 ) = 'update-target-%'( updator, target )
-#     add count_updated, $I1
-#     add count_newer,   $I2
-#     add count_actions, $I3
+    ( $I1, $I2, $I3, $I4 ) = 'update-target-%'( updator, target )
+    unless $I4 goto return_result
+    add count_updated, $I1
+    add count_newer,   $I2
+    add count_actions, $I3
     goto return_result
     
 invoke_actions_on_rule_object:
@@ -1130,7 +1134,7 @@ update_prerequisites_of_updators__done:
 update_target_by_target_pattern:
     .local int matched
     set matched, 0
-    ($I1, $I2, $I3, matched) = 'update-target-%'( updator, target )
+    ($I1, $I2, $I3, matched) = 'update-target-%'( updator, target, 1 )
     unless matched goto update_target_by_target_pattern_done
     add count_updated, $I1
     add count_newer,   $I2
@@ -1182,7 +1186,6 @@ update_by_patterns:
 check_out_pattern_targets_for_updating__iterate:
     unless pattern_it goto check_out_pattern_targets_for_updating__iterate_end
     shift pattern_target, pattern_it
-
     ($I1, $I2, $I3, matched) = 'update-target-%'( pattern_target, target )
     unless matched goto check_out_pattern_targets_for_updating__iterate
     add count_updated, $I1
