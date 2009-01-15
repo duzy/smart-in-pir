@@ -56,6 +56,9 @@ object.
     $P0 = new 'Integer'
     $P0 = 0
     set_hll_global ['smart';'Grammar';'Actions'], '$RULE_NUMBER', $P0
+    $P0 = new 'Integer'
+    $P0 = 0
+    set_hll_global ['smart';'Grammar';'Actions'], '$SMART_ACTION_NUMBER', $P0
 .end
 
 

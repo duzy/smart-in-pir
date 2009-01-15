@@ -24,7 +24,9 @@ method TOP($/, $key) {
     our @VAR_SWITCHES;
 
     if $key eq 'enter' {
-	$?BLOCK := PAST::Block.new( :blocktype('declaration'), :node( $/ ) );
+	$?BLOCK := PAST::Block.new( :blocktype('declaration'), :node( $/ ),
+          :name("_smart")
+        );
 	@?BLOCK.unshift( $?BLOCK );
     }
     else { # while leaving the block
@@ -128,6 +130,9 @@ sub expanded_items($arr) {
   targets : prerequsites
 =cut
 method make_rule($/) {
+    our $?BLOCK;
+    our $RULE_NUMBER;
+    $RULE_NUMBER := $RULE_NUMBER + 1;
     if ( $<make_special_rule> ) {
         make $( $<make_special_rule> );
     }
@@ -185,7 +190,15 @@ method make_rule($/) {
                 PIR q< '!MAKE-RULE'( $P1, $P2, $P3, $P4 ) >;
             }
         }
-        make PAST::Op.new( :pirop('noop') );
+        #make PAST::Op.new( :pirop('noop') );
+        my $past := PAST::Block.new(
+            :blocktype('declaration'), :name('_smart_rule_'~$RULE_NUMBER),
+            PAST::Op.new( :pirop('noop') )
+        );
+        $?BLOCK.push(
+            PAST::Op.new( :pasttype('call'), :name($past.name()) )
+        );
+        make $past;
     }
 }
 method expandable($/) {
@@ -195,7 +208,6 @@ method expandable($/) {
         my $s := $e();
         $name := ~$name~$s;
     }
-    #my $v := '$('~$name~')';
     my $v := ~$<lp>~$name~$<rp>;
     my $past := PAST::Block.new(
         :blocktype('declaration'), :name('__expand_name'),
@@ -280,10 +292,10 @@ method expanded_orderonly($/) {
 }
 
 method smart_action($/) {
-    our $RULE_NUMBER;
-    $RULE_NUMBER := $RULE_NUMBER + 1;
+    our $SMART_ACTION_NUMBER;
+    $SMART_ACTION_NUMBER := $SMART_ACTION_NUMBER + 1;
     my $past := PAST::Block.new( :blocktype('declaration'), :node($/) );
-    $past.name( "__smart_rule_" ~ $RULE_NUMBER );
+    $past.name( "__smart_rule_" ~ $SMART_ACTION_NUMBER );
     $past.namespace( "smart::rule" );
     for $<smart_statement> { $past.push( $($_) ); }
     make $past;
