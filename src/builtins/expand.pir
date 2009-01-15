@@ -524,14 +524,14 @@ check_var_sign_right_paren:
     $S10 = substr str, $I0, 1
     if $S10 == paren goto check_var_sign_done
 
-    ## check if another inner variable existed
-    $I1 = index str, "$", $I0
-    if $I1 < 0 goto check_var_sign_ending
-    $I2 = $I1 - $I0
-    $S10 = substr str, $I0, $I2 ## fetch the string between the two inner vars
-    concat pat, $S10 ## concat the string
-    $I0 = $I1 ## reset the value of $I0 for restarting
-    goto check_var_sign
+#     ## check if another inner variable existed
+#     $I1 = index str, "$", $I0
+#     if $I1 < 0 goto check_var_sign_ending
+#     $I2 = $I1 - $I0
+#     $S10 = substr str, $I0, $I2 ## fetch the string between the two inner vars
+#     concat pat, $S10 ## concat the string
+#     $I0 = $I1 ## reset the value of $I0 for restarting
+#     goto check_var_sign
 check_var_sign_ending:
 
     $I1 = index str, paren, $I0
