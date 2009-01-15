@@ -895,6 +895,7 @@ return_result:
     
     .local pmc updator
     local_branch cs, update_prerequisites_of_updators
+    
     if update_prerequisites_only goto return_result
     
     typeof $S0, updator
@@ -906,7 +907,7 @@ return_result:
 #     add count_newer,   $I2
 #     add count_actions, $I3
     goto return_result
-
+    
 invoke_actions_on_rule_object:
     '!setup-automatic-variables%'( pattern_target, target, stem )
     ($I0, $I1) = updator.'execute_actions'() ## (command_state, action_count)
@@ -940,6 +941,7 @@ try_process_pattern_target:
     
 process_rule_object:
     local_branch cs, update_prerequisites
+    local_branch cs, update_orderonlys
     goto update_prerequisites_of_updators__iterate
 update_prerequisites_of_updators__iterate_end:
     ## TODO: the last rule's action will be executed?
@@ -959,14 +961,11 @@ update_prerequisites__iterate:
     shift pre, $P1
 
     $S0 = pattern.'flatten'( pre, stem )
-
     ## If 'pre' and $S0 is equal, the 'pre' is not a pattern target
     if pre == $S0 goto update_prerequisites_invoke
-
     get_hll_global pre, ['smart';'make';'target'], $S0
     unless null pre goto update_prerequisites_invoke
-    ## Make a new target and store it.
-    pre = 'new:Target'( $S0 )
+    pre = 'new:Target'( $S0 ) ## Make a new target and store it.
     set_hll_global ['smart';'make';'target'], $S0, pre
 
 update_prerequisites_invoke:
@@ -985,10 +984,40 @@ update_prerequisites__iterate_end:
 update_prerequisites_end:
     local_return cs
 
+    ######################
+    ## local: update_orderonlys
+update_orderonlys:
+    .local pmc orderonlys
+    .local pmc oo
+    orderonlys = updator.'orderonly'()
+    new $P1, 'Iterator', orderonlys
+update_orderonlys_iterate:
+    unless $P1 goto update_orderonlys_iterate_end
+    shift oo, $P1
+    
+    $S0 = pattern.'flatten'( oo, stem )
+    ## If 'oo' and $S0 is equal, the 'oo' is not a pattern target
+    if oo == $S0 goto update_orderonly_invoke
+    get_hll_global oo, ['smart';'make';'target'], $S0
+    unless null oo goto update_orderonly_invoke
+    oo = 'new:Target'( $S0 ) ## Make a new target and store it.
+    set_hll_global ['smart';'make';'target'], $S0, oo
+
+update_orderonly_invoke:
+    ($I1, $I2, $I3) = 'update-target'( oo )
+    
+    goto update_orderonlys_iterate
+update_orderonlys_iterate_end:
+update_orderonlys_done:
+    local_return cs
+    
+
 fatal_not_a_pattern_target:
     die "smart: Not an pattern target"
 .end # sub "update-target-%"
 
+=item
+=cut
 .sub "update-target" :anon
     .param pmc target
     
@@ -1065,7 +1094,8 @@ execute_actions:
     
 invoke_actions_on_rule_object:
     '!setup-automatic-variables'( target )
-    ($I0, $I1) = updator.'execute_actions'() ## (command_state, action_count)
+    ## Returns: (command_state, action_count)
+    ($I0, $I1) = updator.'execute_actions'()
     '!clear-automatic-variables'()
 
     ## If no actions for the target, we should try to find a pattern

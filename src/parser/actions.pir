@@ -797,7 +797,6 @@ action_pack_prerequisite__done:
     ######################
     ##  IN: text(the text value)
 action_pack_orderonly:
-    #bsr check_and_split_archive_members
     ( $S0, $P0 ) = '!CHECK-AND-SPLIT-ARCHIVE-MEMBERS'( text )
     if $S0 == "" goto action_pack_orderonly__handle_single
     .local pmc ait
