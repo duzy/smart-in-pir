@@ -59,6 +59,17 @@ object.
 .end
 
 
+=item
+=cut
+.sub "show-usage"
+    $S0 = <<'END_USAGE'
+Usage:
+        TODO: show command usage.
+END_USAGE
+    say $S0
+.end
+
+
 =item <"override-variable-on-command-line"(name, value)>
 =cut
 .sub "override-variable-on-command-line" :anon
@@ -86,6 +97,8 @@ iterate_env:
 iterate_env_end:
 .end # sub "import-environment-variables"
 
+=item
+=cut
 .sub "parse-command-line-arguments" :anon
     .param pmc args
     .local pmc iter, new_args
@@ -111,7 +124,7 @@ loop_args:
     unless iter goto end_loop_args
     arg = shift iter
 
-check_arg_0:
+check_arg_0: ## Smartfile specifying
     unless arg == "-f" goto check_arg_1
     unless iter goto check_arg_0_bad
     $S0 = shift iter
@@ -119,17 +132,14 @@ check_arg_0:
     stat $I0, smartfile, 0
     unless $I0 goto check_arg_0_smartfile_not_existed
     goto check_arg_end
-check_arg_1:
+check_arg_1: ## usage screen
     unless arg == "-h" goto check_arg_2
-    #say "TODO: show command usage."
-    $S0 = <<'END_USAGE'
-Usage:
-    
-END_USAGE
-    say $S0
+    'show-usage'()
     exit EXIT_OK
     goto check_arg_end
-check_arg_2:
+check_arg_2: ## variable overriding
+    $S0 = substr arg, 0, 1
+    if $S0 == "-" goto check_arg_3
     $I0 = index arg, "="
     if $I0 < 0 goto check_arg_3
     $S0 = substr arg, 0, $I0
@@ -139,21 +149,31 @@ check_arg_2:
     $S1 = substr arg, $I0, $I1
     'override-variable-on-command-line'($S0, $S1)
     goto check_arg_end
-check_arg_3:
+check_arg_3: ## environment-variable overriding flag
     unless arg == "-e" goto check_arg_4
     $P0 = new 'Integer'
     $P0 = 1
     set_hll_global ['smart'], "$-e", $P0
     goto check_arg_end
-check_arg_4:
+check_arg_4: ## 
     unless arg == "--warn-undefined-variables" goto check_arg_5
     $P0 = new 'Integer'
     $P0 = 1
     set_hll_global ['smart'], "$--warn-undefined-variables", $P0
     goto check_arg_end
-check_arg_5:
-#     unless arg == "-f" goto check_arg_else
-#     goto check_arg_end
+check_arg_5: ## --target=xxx
+    $I0 = index arg, "--target"
+    unless $I0 == 0 goto check_arg_6
+    $I0 += 8 ## the length of '--target'
+    $I0 = index arg, "="
+    if $I0 < 0 goto check_arg_6
+    inc $I0
+    $I1 = length arg
+    $I1 = $I1 - $I0
+    $S0 = substr arg, $I0, $I1
+    push new_args, arg
+    goto check_arg_end
+check_arg_6: ##
 check_arg_else:
     $S0 = substr arg, 0, 1
     if $S0 == "-" goto check_arg_unknown_flag
@@ -169,13 +189,9 @@ check_arg_targets:
     set_hll_global ['smart';'make'], "@<?>", $P0
     got_target_list_variable:
     push $P0, arg
-    
-#     print "target: "
-#     say arg
-    
     goto check_arg_end
 check_arg_end:
-    goto loop_args
+    goto loop_args ## looping
     
 check_arg_0_bad:
     $S0 = "smart: No argument for '-f', it requires one argument.\n"
