@@ -35,6 +35,19 @@ method TOP($/, $key) {
 	    $past.push( $( $_ ) );
         }
 
+        our $numberOneTarget;
+        if $numberOneTarget {
+            $past.push( PAST::Op.new( :pasttype('call'),
+              :name('!SETUP-DEFAULT-GOAL'),
+              PAST::Var.new( :name('goal'), :scope('register'), :isdecl(1),
+                :viviself( PAST::Op.new( :pasttype('call'),
+                  :name('!GET-TARGET'),
+                  PAST::Val.new( :returns('String'), :value($numberOneTarget) ) ) )
+              )
+            )
+          );
+        }
+
         # push last op to the block to active target updating
         $past.push( PAST::Op.new( :name('!UPDATE-GOALS'),
           :pasttype('call'),
@@ -126,6 +139,16 @@ sub expanded_items($arr) {
     return $str;
 }
 
+sub split_items($str) {
+    my @items;
+    PIR q< find_lex $P0, '$str' >;
+    PIR q< find_lex $P1, '@items' >;
+    PIR q< set $S0, $P0 >;
+    PIR q< split $P1, " ", $S0 >;
+    PIR q< store_lex '@items', $P1 >;
+    return @items;
+}
+
 =item
   targets : prerequsites
 =cut
@@ -195,46 +218,74 @@ method make_rule($/) {
           :name('_smart_rule_'~$RULE_NUMBER), :node($/)
         );
 
-        my $past_rule := PAST::Var.new( :name('rule'), :scope('register'),
-          :isdecl(1),
-          :viviself( PAST::Op.new( :pasttype('call'), :name('new:Rule') ) )
+        $past.push( PAST::Var.new( :name('rule'), :scope('register'), :isdecl(1),
+          :viviself( PAST::Op.new( :pasttype('call'), :name('new:Rule') ) ) )
         );
-        $past.push( $past_rule );
+        my $past_rule := PAST::Var.new( :name('rule'), :scope('register') );
 
         #my $past_split_targets := PAST::Op.new( :inline('    split %0, " ", %1'),
         #  PAST::Var.new( :name('targets'), :scope('register') ),
         #  $targets );
         #$past.push( $past_split_targets );
 
-        our $past_bt;
-        if !$past_bt {
-            $past_bt := PAST::Block.new( :blocktype('declaration'),
-              :name( '_smart_bind_target' ),
-              PAST::Var.new( :name('name'), :scope('parameter'), :isdecl(1) ),
-              PAST::Var.new( :name('rule'), :scope('parameter'), :isdecl(1) ),
-              PAST::Var.new( :name('target'), :scope('register'),
-                :viviself( PAST::Op.new( :pasttype('call'),
-                  :name('!BIND-TARGET'),
-                  PAST::Var.new( :name('name'), :scope('parameter') ),
-                  PAST::Val.new( :value(0) ) )
-                )
-              )
-            );
-            $?BLOCK.push( $past_bt );
+        # our $past_bt;
+        # if !$past_bt {
+        #     $past_bt := PAST::Block.new( :blocktype('declaration'),
+        #       :name( '_smart_bind_target' ),
+        #       PAST::Var.new( :name('name'), :scope('parameter'), :isdecl(1) ),
+        #       PAST::Var.new( :name('rule'), :scope('parameter'), :isdecl(1) ),
+        #       PAST::Var.new( :name('target'), :scope('register'),
+        #         :viviself( PAST::Op.new( :pasttype('call'),
+        #           :name('!BIND-TARGET'),
+        #           PAST::Var.new( :name('name'), :scope('parameter') ),
+        #           PAST::Val.new( :value(0) ) )
+        #         )
+        #       )
+        #     );
+        #     $?BLOCK.push( $past_bt );
+        # }
+        my @targets := split_items( $targets );
+        if $<static_prereq_pattern> {
+            ## If static pattern rule, <expanded_prerequisites> is the
+            ## target-pattern of the static pattern rule.
+            my $target_pattern := $prerequisites;
+            my $prereq_pattern := expanded_items( $<static_prereq_pattern> );
+            for @targets {
+                $past.push( PAST::Op.new( :pasttype('call'),
+                  :name(':BIND-TARGET'), #( $past_bt.name() ),
+                  PAST::Val.new( :value($_) ), $past_rule )
+                );
+            }
+        }
+        else {
+            our $numberOneTarget;
+            if !$numberOneTarget && @targets[0] {
+                $numberOneTarget := @targets[0];
+            }
+
+            for @targets {
+                $past.push( PAST::Op.new( :pasttype('call'),
+                  :name(':BIND-TARGET'), #( $past_bt.name() ),
+                  PAST::Val.new( :value($_) ),
+                  PAST::Var.new( :name('rule'), :scope('register') ) )
+                );
+            }
         }
 
-        my @targets;
-        PIR q< find_lex $P0, '$targets' >;
-        PIR q< find_lex $P1, '@targets' >;
-        PIR q< set $S0, $P0 >;
-        PIR q< split $P1, " ", $S0 >;
-        PIR q< store_lex '@targets', $P1 >;
-        for @targets {
-            $past.push( PAST::Op.new( :pasttype('call'), :name($past_bt.name()),
-              PAST::Val.new( :value($_) ),
-              PAST::Var.new( :name('rule'), :scope('register') ) )
+        $past.push( PAST::Var.new( :name('actions'), :scope('register'), :isdecl(1),
+          :viviself( PAST::Op.new( :pasttype('callmethod'), :name('actions'),
+            $past_rule ) ) )
+        );
+        for $<make_action> {
+            $past.push( PAST::Op.new( :inline('    push %0, %1'),
+              PAST::Var.new( :name('actions'), :scope('register') ),
+              PAST::Op.new( :pasttype('call'), :name('new:Action'),
+                PAST::Val.new( :value(~$_) ),
+                PAST::Val.new( :value(0) ) ) )
             );
         }
+
+        $past.push( $past_rule );
 
         $?BLOCK.push( PAST::Op.new( :pasttype('call'), :name($past.name()) ) );
         make $past;

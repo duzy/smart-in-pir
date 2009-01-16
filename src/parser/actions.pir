@@ -1044,8 +1044,32 @@ create_new_makefile_target:
     .return(target)
 .end # sub "!BIND-TARGET"
 
+=item
+=cut
+.sub ":BIND-TARGET"
+    .param string name
+    .param pmc rule
+    .local pmc target
+    
+    get_hll_global target, ['smart';'make';'target'], name
+    
+    unless null target goto push_rule
+    
+    target = 'new:Target'( name ) ## create a new target 
+    set_hll_global ['smart';'make';'target'], name, target
+    
+push_rule:
+    if null rule goto return_result
+    getattribute $P0, target, 'updators'
+    push $P0, rule ## bind the target with the rule
+    
+return_result:
+    .return (target)
+.end # sub "!BIND-TARGET~"
 
-.sub "!SETUP-DEFAULT-GOAL" :anon
+=item
+=cut
+.sub "!SETUP-DEFAULT-GOAL"
     .param pmc numberOneTarget
     
     ## the first rule should defines the number-one target
@@ -1064,3 +1088,11 @@ create_new_makefile_target:
 return_result:
     .return()
 .end # sub "!SETUP-DEFAULT-GOAL"
+
+=item
+=cut
+.sub "!GET-TARGET"
+    .param string name
+    get_hll_global $P0, ['smart';'make'], name
+    .return($P0)
+.end # sub "!GET-TARGET"
