@@ -276,13 +276,27 @@ method make_rule($/) {
           :viviself( PAST::Op.new( :pasttype('callmethod'), :name('actions'),
             $past_rule ) ) )
         );
-        for $<make_action> {
+
+        if $<smart_action> {
+            my $sa      := $( $<smart_action> );
+            #my $action  := PAST::Compiler.compile( $sa );
+
             $past.push( PAST::Op.new( :inline('    push %0, %1'),
               PAST::Var.new( :name('actions'), :scope('register') ),
               PAST::Op.new( :pasttype('call'), :name('new:Action'),
-                PAST::Val.new( :value(~$_) ),
-                PAST::Val.new( :value(0) ) ) )
+                $sa, #PAST::Val.new( :value($sa) ),
+                PAST::Val.new( :value(1) ) ) )
             );
+        }
+        else {
+            for $<make_action> {
+                $past.push( PAST::Op.new( :inline('    push %0, %1'),
+                  PAST::Var.new( :name('actions'), :scope('register') ),
+                  PAST::Op.new( :pasttype('call'), :name('new:Action'),
+                    PAST::Val.new( :value(~$_) ),
+                    PAST::Val.new( :value(0) ) ) )
+              );
+            }
         }
 
         $past.push( $past_rule );
