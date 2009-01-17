@@ -113,7 +113,7 @@ token make_rule {
        [<expanded_targets><.ws_inline>[\\\n<.ws_inline>]*]+
        ':' <.ws_inline> [\\\n<.ws_inline>]*
        [
-         ## If static pattern rule, <expanded_prerequisites> will represents
+         ## If static pattern rule, <expanded_prerequisites> represents
          ## static pattern target, in this case, the coninual match will be ':'
          <expanded_prerequisites>
          [ ':' <.ws_inline> [\\\n<.ws_inline>]* <static_prereq_pattern> ]?

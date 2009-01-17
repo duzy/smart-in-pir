@@ -356,6 +356,37 @@ return_result:
 .end # sub "!CHECK-AND-STORE-PATTERN-TARGET"
 
 =item
+=cut
+.sub ":MAKE-PATTERN-TARGET"
+    .param string name
+    .param pmc rule
+    .local pmc target
+    .local pmc pattern
+    target = 'new:Target'( name )
+    pattern = 'new:Pattern'( name )
+    setattribute target, 'object', pattern ## reset the target's object attribute
+    getattribute $P10, target, 'updators'
+    push $P10, rule ## bind the rule with the pattern target
+    .return(target)
+.end # sub ":MAKE-PATTERN-TARGET"
+
+=item
+=cut
+.sub ":STORE-PATTERN-TARGET"
+    .param pmc pattern_target
+    
+    .local pmc pattern_targets
+    get_hll_global pattern_targets, ['smart';'make'], "@<%>"
+    
+    unless null pattern_targets goto push_pattern_target
+    new pattern_targets, 'ResizablePMCArray'
+    set_hll_global ['smart';'make'], "@<%>", pattern_targets
+
+push_pattern_target:
+    push pattern_targets, pattern_target
+.end # sub ":STORE-PATTERN-TARGET"
+
+=item
 @returns 1 if succeed, or 0.
 =cut
 .sub "!CHECK-AND-SPLIT-ARCHIVE-MEMBERS"
@@ -1048,20 +1079,20 @@ create_new_makefile_target:
 =cut
 .sub ":BIND-TARGET"
     .param string name
-    .param pmc rule
+    .param pmc updator :optional
     .local pmc target
     
     get_hll_global target, ['smart';'make';'target'], name
     
-    unless null target goto push_rule
+    unless null target goto push_updator
     
     target = 'new:Target'( name ) ## create a new target 
     set_hll_global ['smart';'make';'target'], name, target
     
-push_rule:
-    if null rule goto return_result
+push_updator:
+    if null updator goto return_result
     getattribute $P0, target, 'updators'
-    push $P0, rule ## bind the target with the rule
+    push $P0, updator ## bind the target with the updator
     
 return_result:
     .return (target)
@@ -1071,13 +1102,14 @@ return_result:
 =cut
 .sub "!SETUP-DEFAULT-GOAL"
     .param pmc numberOneTarget
+
+    if null numberOneTarget goto return_result
     
     ## the first rule should defines the number-one target
     get_hll_global $P0, ['smart';'make'], "$<0>"
     
     unless null $P0 goto return_result
     
-    if null numberOneTarget goto return_result
     $S0 = numberOneTarget #.'object'()
     
     set_hll_global ['smart';'make'], "$<0>", numberOneTarget
@@ -1093,6 +1125,6 @@ return_result:
 =cut
 .sub "!GET-TARGET"
     .param string name
-    get_hll_global $P0, ['smart';'make'], name
+    get_hll_global $P0, ['smart';'make';'target'], name
     .return($P0)
 .end # sub "!GET-TARGET"
