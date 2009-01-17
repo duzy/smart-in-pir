@@ -169,7 +169,7 @@ sub check_wildcard( $str ) {
     return $res;
 }
 
-sub push_prerequisites( $past, $name, @prerequisites, $past_rule ) {
+sub push_prerequisites( $past, $name, @prerequisites, $past_rule, $implicit ) {
     $past.push(
         PAST::Var.new( :name($name), :scope('register'), :isdecl(1),
           :viviself(
@@ -177,20 +177,31 @@ sub push_prerequisites( $past, $name, @prerequisites, $past_rule ) {
                 $past_rule ) ) )
     );
     for @prerequisites {
-        if check_wildcard( $_ ) {
+        my $pat := check_pattern($_);
+        if $implicit && $pat {
             $past.push(
-                PAST::Op.new( :pasttype('call'), :name('!WILDCARD-PREREQUISITE'),
+                PAST::Op.new( :inline('    push %0, %1'),
                   PAST::Var.new( :name($name), :scope('register') ),
-                  PAST::Val.new( :value($_) ) )
+                  PAST::Op.new( :pasttype('call'), :name('new:Target'),
+                    PAST::Val.new( :value($_) ) ) )
             );
         }
         else {
-            $past.push(
-                PAST::Op.new( :inline('    push %0, %1'),
-                  PAST::Var.new( :scope('register'), :name('prerequisites') ),
-                  PAST::Op.new( :pasttype('call'), :name(':BIND-TARGET'),
-                    PAST::Val.new( :value($_) ) ) )
-              );
+            if check_wildcard( $_ ) {
+                $past.push(
+                    PAST::Op.new( :pasttype('call'), :name('!WILDCARD-PREREQUISITE'),
+                      PAST::Var.new( :name($name), :scope('register') ),
+                      PAST::Val.new( :value($_) ) )
+                  );
+            }
+            else {
+                $past.push(
+                    PAST::Op.new( :inline('    push %0, %1'),
+                      PAST::Var.new( :name($name), :scope('register') ),
+                      PAST::Op.new( :pasttype('call'), :name(':BIND-TARGET'),
+                        PAST::Val.new( :value($_) ) ) )
+                  );
+            }
         }
     }
 }
@@ -243,7 +254,6 @@ method make_rule($/) {
             ## If static pattern rule, <expanded_prerequisites> is the
             ## target-pattern of the static pattern rule.
             my $target_pattern := $prerequisites;
-            my $prereq_pattern := expanded( $<static_prereq_pattern> );
             $past.push(
                 PAST::Op.new( :pasttype('call'), :name(':STORE-PATTERN-TARGET'),
                   PAST::Var.new( :name('pattern_target'), :scope('register'), :isdecl(1),
@@ -264,7 +274,9 @@ method make_rule($/) {
                 );
             }
 
+            my $prereq_pattern := expanded( $<static_prereq_pattern> );
             @prerequisites := split_items( $prereq_pattern );
+            $implicit := 1;
         }
         else {
             our $numberOneTarget;
@@ -303,12 +315,12 @@ method make_rule($/) {
 
         if @prerequisites {
             push_prerequisites( $past, 'prerequisites', @prerequisites,
-                                $past_rule );
+                                $past_rule, $implicit );
         }
 
         if @orderonlys {
-            push_prerequisites( $past, 'orderonlys', @prerequisites,
-                                $past_rule );
+            push_prerequisites( $past, 'orderonlys', @orderonlys,
+                                $past_rule, $implicit );
         }
 
         $past.push( PAST::Var.new( :name('actions'), :scope('register'), :isdecl(1),

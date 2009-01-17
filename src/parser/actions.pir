@@ -518,6 +518,8 @@ check_wildcard_prerequsite__done:
     .return($I0)
 .end # sub "!WILDCARD-PREREQUISITE"
 
+=item
+=cut
 .sub "!CHECK-AND-CONVERT-SUFFIX"
     .param string text
 
@@ -598,6 +600,8 @@ check_and_convert_suffix_target__check_suffixes__done:
     ret
 .end # sub "!CHECK-AND-CONVERT-SUFFIX"
 
+=item
+=cut
 .sub "!CONVERT-SUFFIX-TARGET"
     .param pmc prerequisites ## *OUT*
     .param string text ## *IN* *OUT/modifying*
