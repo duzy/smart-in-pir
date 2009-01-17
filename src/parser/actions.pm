@@ -126,7 +126,7 @@ method make_variable_ref($/) {
                    );
 }
 
-sub expanded_items($arr) {
+sub expanded($arr) {
     my $str := "";
     if $arr {
         for $arr {
@@ -147,6 +147,16 @@ sub split_items($str) {
     PIR q< split $P1, " ", $S0 >;
     PIR q< store_lex '@items', $P1 >;
     return @items;
+}
+
+sub check_pattern( $tar ) {
+    my $res;
+    PIR q< find_lex $P0, '$tar' >;
+    PIR q< $I0 = '!CHECK-PATTERN'( $P0 ) >;
+    PIR q< $P0 = new 'Integer' >;
+    PIR q< $P0 = $I0 >;
+    PIR q< store_lex '$res', $P0 >;
+    return $res;
 }
 
 sub check_wildcard( $str ) {
@@ -198,10 +208,10 @@ method make_rule($/) {
         make $( $<make_special_rule> );
     }
     else {
-        my $targets   := expanded_items( $<expanded_targets> );
+        my $targets   := expanded( $<expanded_targets> );
         my $epre      := PAST::Compiler.compile( $($<expanded_prerequisites>) );
         my $prerequisites := $epre();
-        my $orderonlys := expanded_items( $<expanded_orderonly> );
+        my $orderonlys := expanded( $<expanded_orderonly> );
 
         my $past := PAST::Block.new( :blocktype('declaration'),
           :name('_smart_rule_'~$RULE_NUMBER), :node($/)
@@ -218,7 +228,7 @@ method make_rule($/) {
             ## If static pattern rule, <expanded_prerequisites> is the
             ## target-pattern of the static pattern rule.
             my $target_pattern := $prerequisites;
-            my $prereq_pattern := expanded_items( $<static_prereq_pattern> );
+            my $prereq_pattern := expanded( $<static_prereq_pattern> );
             $past.push(
                 PAST::Op.new( :pasttype('call'), :name(':STORE-PATTERN-TARGET'),
                   PAST::Var.new( :name('pattern_target'), :scope('register'), :isdecl(1),
@@ -247,10 +257,26 @@ method make_rule($/) {
                 $numberOneTarget := @targets[0];
             }
 
+            my $implicit;
             for @targets {
-                $past.push( PAST::Op.new( :pasttype('call'), :name(':BIND-TARGET'),
-                  PAST::Val.new( :value($_) ), $past_rule )
-                );
+                if check_pattern($_) {
+                    $past.push( PAST::Op.new( :pasttype('call'),
+                      :name(':STORE-PATTERN-TARGET'),
+                      PAST::Op.new( :pasttype('call'),
+                        :name(':MAKE-PATTERN-TARGET'),
+                        PAST::Val.new( :value($_) ), $past_rule ) )
+                    );
+                    $implicit := 1;
+                }
+                else {
+                    if $implicit {
+                        $/.panic("smart: * Mixed implicit and normal rules: '"~$_~"'");
+                    }
+                    $past.push( PAST::Op.new( :pasttype('call'),
+                      :name(':BIND-TARGET'),
+                      PAST::Val.new( :value($_) ), $past_rule )
+                    );
+                }
             }
 
             @prerequisites := split_items( $prerequisites );

@@ -257,6 +257,20 @@ iterate_items_end:
     .local pmc targets
 .end # sub "!MAKE-TARGETS"
 
+.sub "!CHECK-PATTERN"
+    .param string text
+    ## $I0 will be used to store the result value
+    set $I0, 0
+    index $I1, text, "%"
+    if $I1 < 0          goto return_result
+    $I2 = $I1 + 1
+    index $I2, text, "%", $I2
+    unless $I2 < 0      goto return_result
+    set $I0, 1
+return_result:
+    .return($I0)
+.end # sub "!CHECK-PATTERN"
+
 .sub "!CHECK-AND-STORE-PATTERN-TARGET"
     .param string text
     .param pmc rule
