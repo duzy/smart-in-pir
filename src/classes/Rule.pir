@@ -113,7 +113,7 @@ invalid_arg:
 .end
 
 
-.sub "orderonly" :method
+.sub "orderonlys" :method
     .param pmc orderonly        :optional
     .param int has_value        :opt_flag
     
@@ -133,7 +133,7 @@ got_value:
     
 invalid_arg:
     die "smart: *** Not an ResizablePMCArray object."
-.end
+.end # sub "orderonlys"
 
 
 =item <actions()>
@@ -205,7 +205,7 @@ iterate_prerequisites_end:
     null iter
 
     ## update orderonly prerequisites
-    prerequisites = self.'orderonly'()
+    prerequisites = self.'orderonlys'()
     new iter, 'Iterator', prerequisites
 iterate_orderonly:
     unless iter goto iterate_orderonly_end

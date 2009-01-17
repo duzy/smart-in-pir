@@ -309,7 +309,7 @@ collect_prerequisites_of_updators__iterate_prerequisite_end:
     null $P2
     null $P3
 
-    $P1 = updator.'orderonly'()
+    $P1 = updator.'orderonlys'()
     new $P2, 'Iterator', $P1
 collect_prerequisites_of_updators__iterate_orderonly:
     unless $P2 goto collect_prerequisites_of_updators__iterate_orderonly_end
@@ -989,7 +989,7 @@ update_prerequisites_end:
 update_orderonlys:
     .local pmc orderonlys
     .local pmc oo
-    orderonlys = updator.'orderonly'()
+    orderonlys = updator.'orderonlys'()
     new $P1, 'Iterator', orderonlys
 update_orderonlys_iterate:
     unless $P1 goto update_orderonlys_iterate_end

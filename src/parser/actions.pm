@@ -149,6 +149,42 @@ sub split_items($str) {
     return @items;
 }
 
+sub check_wildcard( $str ) {
+    my $res;
+    PIR q< find_lex $P0, '$str' >;
+    PIR q< $I0 = '!HAS-WILDCARD'( $P0 ) >;
+    PIR q< $P0 = new 'Integer' >;
+    PIR q< $P0 = $I0 >;
+    PIR q< store_lex '$res', $P0 >;
+    return $res;
+}
+
+sub push_prerequisites( $past, $name, @prerequisites, $past_rule ) {
+    $past.push(
+        PAST::Var.new( :name($name), :scope('register'), :isdecl(1),
+          :viviself(
+              PAST::Op.new( :pasttype('callmethod'), :name($name),
+                $past_rule ) ) )
+    );
+    for @prerequisites {
+        if check_wildcard( $_ ) {
+            $past.push(
+                PAST::Op.new( :pasttype('call'), :name('!WILDCARD-PREREQUISITE'),
+                  PAST::Var.new( :name($name), :scope('register') ),
+                  PAST::Val.new( :value($_) ) )
+            );
+        }
+        else {
+            $past.push(
+                PAST::Op.new( :inline('    push %0, %1'),
+                  PAST::Var.new( :scope('register'), :name('prerequisites') ),
+                  PAST::Op.new( :pasttype('call'), :name(':BIND-TARGET'),
+                    PAST::Val.new( :value($_) ) ) )
+              );
+        }
+    }
+}
+
 =item
   targets : prerequsites
   targets : prerequsites | orderonlys
@@ -221,37 +257,13 @@ method make_rule($/) {
         }
 
         if @prerequisites {
-            $past.push(
-                PAST::Var.new( :name('prerequisites'), :scope('register'), :isdecl(1),
-                  :viviself(
-                      PAST::Op.new( :pasttype('callmethod'), :name('prerequisites'),
-                        $past_rule ) ) )
-            );
-            for @prerequisites {
-                $past.push(
-                    PAST::Op.new( :inline('    push %0, %1'),
-                      PAST::Var.new( :scope('register'), :name('prerequisites') ),
-                      PAST::Op.new( :pasttype('call'), :name(':BIND-TARGET'),
-                        PAST::Val.new( :value($_) ) ) )
-                );
-            }
+            push_prerequisites( $past, 'prerequisites', @prerequisites,
+                                $past_rule );
         }
 
         if @orderonlys {
-            $past.push(
-                PAST::Var.new( :name('orderonlys'), :scope('register'), :isdecl(1),
-                  :viviself(
-                      PAST::Op.new( :pasttype('callmethod'), :name('orderonly'),
-                        $past_rule ) ) )
-            );
-            for @orderonlys {
-                $past.push(
-                    PAST::Op.new( :inline('    push %0, %1'),
-                      PAST::Var.new( :scope('register'), :name('orderonlys') ),
-                      PAST::Op.new( :pasttype('call'), :name(':BIND-TARGET'),
-                        PAST::Val.new( :value($_) ) ) )
-                );
-            }
+            push_prerequisites( $past, 'orderonlys', @prerequisites,
+                                $past_rule );
         }
 
         $past.push( PAST::Var.new( :name('actions'), :scope('register'), :isdecl(1),

@@ -433,6 +433,35 @@ check_and_split_archive_members_done:
     .return( $S0, $P0 )
 .end # sub "!CHECK-AND-SPLIT-ARCHIVE-MEMBERS"
 
+.sub "!HAS-WILDCARD"
+    .param string text
+    
+check_wildcard_prerequsite:
+    $I0 = 0
+check_wildcard_prerequsite__case1:
+    index $I1, text, "*"
+    if $I1 < 0 goto check_wildcard_prerequsite__case2
+    goto check_wildcard_prerequsite__done_yes
+check_wildcard_prerequsite__case2:
+    index $I1, text, "?"
+    if $I1 < 0 goto check_wildcard_prerequsite__case3
+    goto check_wildcard_prerequsite__done_yes
+check_wildcard_prerequsite__case3:
+    index $I1, text, "["
+    if $I1 < 0 goto check_wildcard_prerequsite__case4
+    index $I2, text, "]", $I1
+    if $I2 < 0 goto check_wildcard_prerequsite__case4
+    goto check_wildcard_prerequsite__done_yes
+check_wildcard_prerequsite__case4:
+    ## more other case?
+    goto check_wildcard_prerequsite__done
+
+check_wildcard_prerequsite__done_yes:
+    $I0 = 1
+check_wildcard_prerequsite__done:
+    .return($I0)
+.end # "!HAS-WILDCARD"
+
 .sub "!WILDCARD-PREREQUISITE"
     .param pmc prerequisites ## *OUT/unshift*
     .param string text
