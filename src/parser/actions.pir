@@ -518,6 +518,86 @@ check_wildcard_prerequsite__done:
     .return($I0)
 .end # sub "!WILDCARD-PREREQUISITE"
 
+.sub "!CHECK-AND-CONVERT-SUFFIX"
+    .param string text
+
+    .local string pat1
+    .local string pat2
+    
+check_and_convert_suffix_target:
+    set $I0, 0
+    substr $S0, text, 0, 1
+    unless $S0 == "." goto check_and_convert_suffix_target__done
+    index $I1, text, ".", 1
+    unless $I1 < 0 goto check_and_convert_suffix_target__check_two_suffixes
+    set $I0, 1 ## tells number of suffixes
+    
+    $S3 = text ## check the suffix
+    bsr check_and_convert_suffix_target__check_suffixes
+    unless $I1 goto check_and_convert_suffix_target__done
+    
+    ## ".c:" => "%: %.c"
+    pat1 = "%"
+    pat2 = "%"
+    pat2 .= text
+    
+    goto check_and_convert_suffix_target__done
+    
+check_and_convert_suffix_target__check_two_suffixes:
+    unless 2 <= $I1 goto check_and_convert_suffix_target__done ## avoid ".."
+    $I2 = $I1 + 1
+    $I2 = index text, ".", $I2  ## no third "." should existed
+    unless $I2 < 0 goto check_and_convert_suffix_target__done
+    $I2 = length text
+    $I2 = $I2 - $I1
+    $I0 = 2 ## tells number of suffixes
+    $S0 = substr text, 0, $I1 ## the first suffix
+    $S1 = substr text, $I1, $I2 ## the second suffix
+    
+    $S3 = $S0 ## check the first suffix
+    bsr check_and_convert_suffix_target__check_suffixes
+    unless $I1 goto check_and_convert_suffix_target__done
+    
+    $S3 = $S1 ## check the second suffix
+    bsr check_and_convert_suffix_target__check_suffixes
+    unless $I1 goto check_and_convert_suffix_target__done
+    
+    ## ".c.o:" => "%.o:%.c"
+    pat1 = "%"
+    pat1 .= $S1
+    pat2 = "%"
+    pat2 .= $S0
+    
+check_and_convert_suffix_target__done:
+    .return(pat1, pat2)
+    
+    
+    ######################
+    ## local: check_and_convert_suffix_target__check_suffixes
+    ##          IN: $S3
+    ##          OUT: $I1
+check_and_convert_suffix_target__check_suffixes:
+    .local pmc suffixes
+    get_hll_global suffixes, ['smart';'make';'rule'], ".SUFFIXES"
+    if null suffixes goto check_and_convert_suffix_target__check_suffixes__done
+    $P0 = new 'Iterator', suffixes
+    $I1 = 0
+check_and_convert_suffix_target__iterate_suffixes:
+    unless $P0 goto check_and_convert_suffix_target__iterate_suffixes_done
+    $S4 = shift $P0
+    unless $S4 == $S3 goto check_and_convert_suffix_target__iterate_suffixes
+    inc $I1
+check_and_convert_suffix_target__iterate_suffixes_done:
+    null $P0
+    if $I1 goto check_and_convert_suffix_target__check_suffixes__done
+    $S4 = "smart: Unknown suffix '"
+    $S4 .= $S3
+    $S4 .= "'\n"
+    print $S4
+check_and_convert_suffix_target__check_suffixes__done:
+    ret
+.end # sub "!CHECK-AND-CONVERT-SUFFIX"
+
 .sub "!CONVERT-SUFFIX-TARGET"
     .param pmc prerequisites ## *OUT*
     .param string text ## *IN* *OUT/modifying*

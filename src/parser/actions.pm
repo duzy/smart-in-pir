@@ -195,6 +195,20 @@ sub push_prerequisites( $past, $name, @prerequisites, $past_rule ) {
     }
 }
 
+sub check_and_convert_suffix($str) {
+    my $pat1;
+    my $pat2;
+    PIR q< find_lex $P0, '$str' >;
+    PIR q< ($S1, $S2) = '!CHECK-AND-CONVERT-SUFFIX'( $P0 ) >;
+    PIR q< new $P0, 'String' >;
+    PIR q< set $P0, $S1 >;
+    PIR q< store_lex '$pat1', $P0 >;
+    PIR q< new $P0, 'String' >;
+    PIR q< set $P0, $S2 >;
+    PIR q< store_lex '$pat2', $P0 >;
+    return ($pat1, $pat2);
+}
+
 =item
   targets : prerequsites
   targets : prerequsites | orderonlys
@@ -224,6 +238,7 @@ method make_rule($/) {
         my @targets := split_items( $targets );
         my @prerequisites;
         my @orderonlys := split_items( $orderonlys );
+        my $implicit;
         if $<static_prereq_pattern> {
             ## If static pattern rule, <expanded_prerequisites> is the
             ## target-pattern of the static pattern rule.
@@ -257,8 +272,14 @@ method make_rule($/) {
                 $numberOneTarget := @targets[0];
             }
 
-            my $implicit;
+            @prerequisites := split_items( $prerequisites );
+
             for @targets {
+                my @pats := check_and_convert_suffix($_);
+                if @pats && @pats[0] && @pats[1] {
+                    $_ := @pats[0];
+                    @prerequisites.unshift( @pats[1] );
+                }
                 if check_pattern($_) {
                     $past.push( PAST::Op.new( :pasttype('call'),
                       :name(':STORE-PATTERN-TARGET'),
@@ -278,8 +299,6 @@ method make_rule($/) {
                     );
                 }
             }
-
-            @prerequisites := split_items( $prerequisites );
         }
 
         if @prerequisites {
