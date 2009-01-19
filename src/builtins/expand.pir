@@ -93,7 +93,7 @@ return_result:
     .local string char, paren, name
     .local int len, pos, var_len, beg
     .local pmc call_stack
-    
+
     result = ""
     len = length str
     beg = 0 # the start position of substring to be appended

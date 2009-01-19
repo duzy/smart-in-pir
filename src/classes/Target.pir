@@ -34,21 +34,10 @@ pattern targets(the match-anything rule is excluded).
     set object, aobject
     set member, ""
     
-    index $I1, object, "("
-    if $I1 < 0 goto init_target
-    index $I2, object, ")", $I1
-    if $I2 < 0 goto init_target
-    
-    substr $S1, object, 0, $I1
-    inc $I1
-    $I2 = $I2 - $I1
-    substr $S2, object, $I1, $I2
-    
-#     get_global $P0, ['Target'], "split-archive-member"
-#     #($S1, $S2) = 'split-archive-member'(object)
-#     ($S1, $S2) = $P0( object )
-#     if $S1 == "" goto init_target
-#     if $S2 == "" goto init_target
+    get_hll_global $P0, ['Target'], "split-archive-member"
+    ($S1, $S2) = $P0( object )
+    if $S1 == "" goto init_target
+    if $S2 == "" goto init_target
     
     set aobject, $S1
     set member, $S2
@@ -72,7 +61,7 @@ return_target:
     addattribute $P0, 'updated' ## 1/0, wether the object has been updated
 .end
 
-.sub "split-archive-member" :anon
+.sub "split-archive-member"
     .param string str
     
     set $S1, str
@@ -156,73 +145,6 @@ got_updated:
     .return(updated)
 .end # sub "updated"
 
-# =item <out_of_date()>
-# =cut
-# .sub "out_of_date" :method
-#     .local pmc rule
-#     getattribute rule, self, 'rule'
-#     if null rule goto no_rule_found
-    
-#     .local int out
-#     out = 0
-    
-#     $S0 = self.'object'()
-#     stat $I0, $S0, .STAT_EXISTS
-#     if $I0 goto object_already_exists
-    
-#     goto out_of
-    
-# object_already_exists:
-#     .local int changetime
-#     stat changetime, $S0, .STAT_CHANGETIME #7 # CHANGETIME
-    
-# #     print "time: "
-# #     print $S0
-# #     print "->"
-# #     say changetime
-
-#     .local pmc prerequisites, prerequisite, iter
-#     prerequisites = rule.'prerequisites'()
-#     iter = new 'Iterator', prerequisites
-# iterate_prerequisites:
-#     unless iter goto end_iterate_prerequisites
-#     prerequisite = shift iter
-#     $S1 = prerequisite.'object'()
-#     stat $I0, $S1, .STAT_EXISTS # EXISTS
-#     unless $I0 goto out_of # prerequisite not exists
-#     stat $I0, $S1, .STAT_CHANGETIME #7 # CHANGETIME
-    
-# #     print "time: "
-# #     print $S1
-# #     print "->"
-# #     say $I0
-    
-#     $I0 = changetime < $I0
-#     if $I0 goto out_of
-#     $I0 = $P0.'out_of_date'()
-#     if $I0 goto out_of
-#     goto iterate_prerequisites
-# out_of:
-#     out = 1
-# end_iterate_prerequisites:
-    
-#     .return (out)
-    
-# no_rule_found:
-#     $S0 = "smart: ** No rule to make target '"
-#     $S1 = self.'object'()
-#     $S0 .= $S1
-#     $S0 .= "', needed by '"
-#     $S0 .= "'. Stop.\n"
-#     print $S0
-#     exit -1
-# .end # sub "out_of_date"
-
-# .macro MAKEFILE_VARIABLE( var, name, h )
-#     $P1 = h[.name]
-#     $S1 = $P1
-#     .var = 'new:Variable'( .name, $S1, MAKEFILE_VARIABLE_ORIGIN_automatic )
-# .endm
 
 =item
     Separate directory and file parts of the object name.
@@ -702,95 +624,6 @@ loop_orderonly_end:
     set_hll_global ['smart';'make';'variable'], '*F', empty
 .end
 
-# =item
-#     A prerequisite could be a Target or an implicit prerequisite which
-#     is an pattern-string -- contains one "%".
-# =cut
-# .sub ".!calculate-object-of-prerequisite" :anon
-#     .param pmc self
-#     .param pmc prerequisite
-#     .local string stem
-#     $S0 = typeof prerequisite
-#     unless $S0 == "String" goto got_normal_prerequisite
-#     $S0 = prerequisite
-#     $I0 = index $S0, "%"
-#     if $I0 < 0 goto invalid_implicit_prerequisite
-#     $I1 = $I0 + 1
-#     $I2 = index $S0, "%", $I1
-#     unless $I2 < 0 goto invalid_implicit_prerequisite
-    
-#     getattribute $P0, self, 'stem'
-#     if null $P0 goto invalid_stem
-#     stem = $P0
-#     if stem == "" goto invalid_stem
-    
-#     $S1 = substr $S0, 0, $I0
-#     $I0 = length $S0
-#     $I0 = $I0 - $I1
-#     $S2 = substr $S0, $I1, $I0
-#     $S1 .= stem
-#     $S1 .= $S2
-    
-#     .return ($S1)
-    
-# got_normal_prerequisite:
-#     ## as to normal prerequisite, 'prerequisite' muste be a Target
-#     $S0 = prerequisite.'object'()
-#     .return ($S0)
-
-# invalid_implicit_prerequisite: ## it's an internal error!
-#     $S1 = "smart: ** Expecting a implicit prerequisite '"
-#     $S1 .= $S0
-#     $S1 .= "'\n"
-#     ##print $S1
-#     ##exit -1
-#     die $S1 ## it's an internal error
-
-# invalid_stem: ## another internal error
-#     $S1 = "smart: ** The stem is empty."
-#     die $S1 ## it's an internal error!
-# .end
-
-# =item
-# =cut
-# .sub ".!update-variable-prerequisite" :anon
-#     .param pmc self
-#     .param pmc var
-#     .param pmc requestor
-    
-#     .local int update_count, newer_count
-#     .local string object_name
-#     .local pmc objects, object, iter
-#     update_count = 0
-#     newer_count = 0
-#     $S0 = var.'expand'()
-#     objects = split " ", $S0
-#     iter = new 'Iterator', objects
-# iterate_objects:
-#     unless iter goto end_iterate_objects
-#     object_name = shift iter
-#     if object_name == "" goto iterate_objects
-# #     print "object: '"
-# #     print object_name
-# #     print "'\n"
-#     get_hll_global object, ['smart';'make';'target'], object_name
-#     unless null object goto got_stored_target_object
-#     object = 'new:Target'( object_name )
-#     set_hll_global ['smart';'make';'target'], object_name, object
-    
-# got_stored_target_object:
-#     ($I0, $I1) = 'update-target'( object, requestor )
-#     if $I1 <= 0 goto no_inc_newer_counter
-#     newer_count += $I1
-#     no_inc_newer_counter:
-#     if $I0 <= 0 goto iterate_objects
-#     update_count += $I0
-#     goto iterate_objects
-# end_iterate_objects:
-    
-# update_done:
-#     .return (update_count, newer_count)
-# .end # sub ".!update-variable-prerequisite"
 
 =item <Target::is_phony()>
 =cut
@@ -817,8 +650,11 @@ return_result:
     .return($I0)
 .end
 
-#.sub "touch" :method
-#.end
+=item
+=cut
+.sub "touch" :method
+    say "todo: touch the target"
+.end # sub "touch"
 
 =item <Target::changetime()>
 =cut
@@ -832,6 +668,8 @@ return_result:
     .return($I0)
 .end # .sub "changetime"
 
+=item
+=cut
 .sub "exists" :method
     .local string str
     str = self.'object'()
@@ -883,8 +721,8 @@ return_result:
     stem   = pattern.'match'( target )
     if stem == "" goto return_nothing
     
-    .local pmc cs
-    new cs, 'ResizableIntegerArray'
+    #.local pmc cs
+    #new cs, 'ResizableIntegerArray'
     
     .local int count_updated
     .local int count_newer
@@ -894,7 +732,8 @@ return_result:
     set count_actions, 0
     
     .local pmc updator
-    local_branch cs, update_prerequisites_of_updators
+    #local_branch cs, update_prerequisites_of_updators
+    bsr update_prerequisites_of_updators
     
     if update_prerequisites_only goto return_result
     
@@ -940,14 +779,17 @@ try_process_pattern_target:
     goto update_prerequisites_of_updators__iterate
     
 process_rule_object:
-    local_branch cs, update_prerequisites
-    local_branch cs, update_orderonlys
+    #local_branch cs, update_prerequisites
+    #local_branch cs, update_orderonlys
+    bsr update_prerequisites
+    bsr update_orderonlys
     goto update_prerequisites_of_updators__iterate
 update_prerequisites_of_updators__iterate_end:
     ## TODO: the last rule's action will be executed?
     null updator_it
 update_prerequisites_of_updators__done:
-    local_return cs
+    #local_return cs
+    ret
 
     ######################
     ## local: update_prerequisites
@@ -982,7 +824,8 @@ update_prerequisites__iterate_end:
     null $P2
     null $S0
 update_prerequisites_end:
-    local_return cs
+    #local_return cs
+    ret
 
     ######################
     ## local: update_orderonlys
@@ -1009,8 +852,8 @@ update_orderonly_invoke:
     goto update_orderonlys_iterate
 update_orderonlys_iterate_end:
 update_orderonlys_done:
-    local_return cs
-    
+    #local_return cs
+    ret
 
 fatal_not_a_pattern_target:
     die "smart: Not an pattern target"

@@ -13,8 +13,8 @@
 .sub "declare_variable"
     .param string name
     .param string sign
+    .param string value
     .param int override
-    .param pmc items
     
     .local pmc var
     .local int existed
@@ -66,23 +66,25 @@ check_origin__environment__origin_file:
     
 do_update_variable:
     
-    if null items goto done
-    $S0 = typeof items
-    if $S0 == "Undef" goto done
-    if sign == "" goto done
+#     if null items goto done
+#     $S0 = typeof items
+#     if $S0 == "Undef" goto done
+#     if sign == "" goto done
     
-    .local pmc iter
+#     .local pmc iter
     
-    $S0 = ""
-    iter = new 'Iterator', items
-    unless iter goto iterate_items_end
-iterate_items:
-    $S1 = shift iter
-    concat $S0, $S1
-    unless iter goto iterate_items_end
-    concat $S0, " "
-    goto iterate_items
-iterate_items_end:
+#     $S0 = ""
+#     iter = new 'Iterator', items
+#     unless iter goto iterate_items_end
+# iterate_items:
+#     $S1 = shift iter
+#     concat $S0, $S1
+#     unless iter goto iterate_items_end
+#     concat $S0, " "
+#     goto iterate_items
+# iterate_items_end:
+    if null value goto done
+    $S0 = value
     
     if $S0  == ""   goto done
     if sign == "="  goto set_value
@@ -98,7 +100,9 @@ assign_with_expansion:
     
 append_value:
     $S1 = var.'value'()
+    if $S1 == "" goto do_append
     concat $S1, " "
+do_append:
     concat $S1, $S0
     $S0 = $S1
     goto set_value
@@ -112,16 +116,101 @@ done:
     .return (var)
 .end
 
-
-=item
-=cut
 .sub "!BIND-VARIABLE"
     .param string name
     .local pmc var
-    name = 'expand'( name )
     get_hll_global var, ['smart';'make';'variable'], name
+    
+    unless null var goto return_result
+    $S0 = ""
+    $I0 = MAKEFILE_VARIABLE_ORIGIN_file
+    var = 'new:Variable'( name, $S0, $I0 )
+    set_hll_global ['smart';'make';'variable'], name, var
+    
+return_result:
     .return(var)
 .end # sub "!BIND-VARIABLE"
+
+.sub "!set-var" :anon
+    .param pmc var
+    .param pmc val
+    setattribute var, 'value', val
+.end # sub "!set-var"
+
+.sub "vardecl:="
+    .param string name
+    .param string value
+    .local pmc var
+    var = '!BIND-VARIABLE'( name )
+    '!set-var'( var, value )
+.end # sub "vardecl:="
+
+.sub "vardecl::="
+    .param string name
+    .param string value
+    .local pmc var
+    var = '!BIND-VARIABLE'( name )
+    '!set-var'( var, value )
+.end # sub "vardecl::="
+
+.sub "vardecl:?="
+    .param string name
+    .param string value
+    .local pmc var
+    get_hll_global var, ['smart';'make';'variable'], name
+    if null var goto return_result
+    
+    '!set-var'( var, value )
+    
+return_result:
+    .return()
+.end # sub "vardecl:?="
+
+.sub "vardecl:+="
+    .param string name
+    .param string value
+    .local pmc var
+    var = '!BIND-VARIABLE'( name )
+    
+    getattribute $P0, var, 'value'
+    if null $P0 goto set_value
+    $S0 = $P0
+    ##value = $S0 . value
+    concat value, $S0, value
+    
+set_value:
+    '!set-var'( var, value )
+.end # sub "vardecl:+="
+
+.sub "varover:="
+    .param string name
+    .param string value
+.end # sub "varover:="
+
+.sub "varover::="
+    .param string name
+    .param string value
+.end # sub "varover::="
+
+.sub "varover:?="
+    .param string name
+    .param string value
+.end # sub "varover:?="
+
+.sub "varover:+="
+    .param string name
+    .param string value
+.end # sub "varover:+="
+
+
+=item
+=cut
+.sub "!GET-VARIABLE"
+    .param string name
+    .local pmc var
+    get_hll_global var, ['smart';'make';'variable'], name
+    .return(var)
+.end # sub "!GET-VARIABLE"
 
 
 =item

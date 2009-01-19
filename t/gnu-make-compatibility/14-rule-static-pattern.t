@@ -20,7 +20,6 @@ T = $(t)
 C = C$(T)
 
 all: a d.h foo.o bar.o baz.o
-	@echo "todo: compatibility: gmake match 'c.d' with static-pattern(14-rule-static-pattern.t)"
 	@echo $@ done
 
 ## Node: GNU-make will match 'c.d' with the static-pattern bellow, but

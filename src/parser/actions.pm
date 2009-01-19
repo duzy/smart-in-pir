@@ -75,22 +75,47 @@ method make_variable_declaration($/) {
     if ( $VAR_ON ) {
         my $name;
         my $sign;
-        my @items;
+        my $value := "";
+        #my @items;
         ## declare variable at parse stage
         $name := expand(strip(~$<name>));
         $sign := ~$<sign>;
         if ( $sign eq 'define' ) {
-            my $value := ~$<value>;
+            $value := ~$<value>;
             #$value := chop( $value );
-            @items.push( $value );
+            #@items.push( $value );
         }
         else {
             #for $<item> { @items.push( ~$_ ); }
-            @items := $<item>;
+            #@items := $<item>;
+            for $<item> {
+                if $value { $value := ~$value~" "~$_; }
+                else { $value := ~$_; }
+            }
         }
-        declare_variable( $name, $sign, $<override>, @items );
+
+        if 0 {
+        my $name_pre := 'vardecl:';
+        if    $<override>   { $name_pre := 'varover:';    }
+        my $past := PAST::Op.new( :pasttype('call'), :name($name_pre~'='),
+          PAST::Val.new( :value($name),         :returns('String') ),
+          PAST::Val.new( :value($value),        :returns('String') )
+        );
+        if    $sign eq ':=' { $past.name($name_pre~':='); }
+        elsif $sign eq '?=' { $past.name($name_pre~'?='); }
+        elsif $sign eq '+=' { $past.name($name_pre~'+='); }
+        my $e := PAST::Compiler.compile( $past );
+        $e(); ## declare variables at compile time
+        }
+        else {
+        declare_variable( $name, $sign, $value, $<override> );
+        }
+
+        make PAST::Op.new( :pirop("noop") );
     }
-    make PAST::Op.new( :pirop("noop") );
+    else {
+        make PAST::Op.new( :pirop("noop") );
+    }
 }
 
 method make_variable_method_call($/) {
@@ -107,6 +132,7 @@ method make_variable_ref($/) {
     elsif $<make_variable_ref2> {
         $name := ~$<make_variable_ref2><name>;
     }
+    $name := expand( $name );
     my $var := PAST::Var.new( :name($name),
       :scope('package'),
       :namespace('smart::makefile::variable'),
@@ -116,7 +142,7 @@ method make_variable_ref($/) {
       :node($/)
     );
     my $binder := PAST::Op.new( :pasttype('call'),
-      :name('!BIND-VARIABLE'),
+      :name('!GET-VARIABLE'),
       :returns('Variable') );
     $binder.push( PAST::Val.new( :value($var.name()), :returns('String') ) );
 
@@ -349,8 +375,8 @@ method make_rule($/) {
 
         $past.push( $past_rule );
 
-        $?BLOCK.push( PAST::Op.new( :pasttype('call'), :name($past.name()) ) );
-        make $past;
+        $?BLOCK.push( $past );
+        make PAST::Op.new( :pasttype('call'), :name($past.name()) );
     }
 }
 method expandable($/) {
@@ -446,9 +472,11 @@ method expanded_orderonly($/) {
 method smart_action($/) {
     our $SMART_ACTION_NUMBER;
     $SMART_ACTION_NUMBER := $SMART_ACTION_NUMBER + 1;
+    my @ns := ( 'smart', 'action' );
     my $past := PAST::Block.new( :blocktype('declaration'), :node($/) );
     $past.name( "_smart_action_" ~ $SMART_ACTION_NUMBER );
-    $past.namespace( "smart::action" );
+    #$past.namespace( "smart::action" );
+    $past.namespace( @ns );
     for $<smart_statement> { $past.push( $($_) ); }
     make $past;
 }

@@ -47,8 +47,8 @@ token make_variable_declaration {
          'endef' <.ws_inline> \n
        ]
       |[ $<name>=[ <-[ : = # \ \t \n ]> <-[ : = # + ? \n ]>*: ]
-         $<sign>=[ '=' | ':=' | '?=' | '+=' ] <.ws_inline> [\\\n]?
-         [ $<item>=[<-[ \\ \n ]>+] [\\\n]? ]*
+         $<sign>=[ '=' | ':=' | '?=' | '+=' ] <.ws_inline> [\\\n<.ws_inline>]?
+         [ $<item>=[<-[ \\ \n ]>+] [\\\n<.ws_inline>]? ]*
          [ [\n | $] || <.panic: 'smart: * Unterminated makefile variable declaration'> ]
        ]
     ] {*}

@@ -39,7 +39,7 @@ $(BUILT_OBJECTS):$(BUILT_OBJECT_PAT):%.cpp
 	$(MKDIR_IF_NON)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-sa: ; {
-  say "hello: $@";
-}
+ sa: ; {
+   say "hello: $@";
+ }
 
