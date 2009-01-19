@@ -853,7 +853,7 @@ fatal_not_a_pattern_target:
 =item
         ($I1, $I2, $I3) = 'update-target'( target )
 =cut
-.sub "update-target" :anon :subid('ut')
+.sub "update-target" :anon :subid('update-target')
     .param pmc target
     
     .local pmc count_newer
@@ -927,16 +927,20 @@ return_without_execution:
 execute_actions:
     typeof $S0, updator
     if $S0 == 'Rule' goto invoke_actions_on_rule_object
-    ( $I1, $I2, $I3, $I4 ) = 'update-target-%'( updator, target )
-    unless $I4 goto return_result
-    add count_updated, $I1
-    add count_newer,   $I2
-    add count_actions, $I3
-#     .local pmc pattern
-#     getattribute pattern, updator, "object"
-#     .local string stem
-#     stem = pattern.'match'( target )
-#     if stem == "" goto return_result
+#     ( $I1, $I2, $I3, $I4 ) = 'update-target-%'( updator, target )
+#     unless $I4 goto return_result
+#     add count_updated, $I1
+#     add count_newer,   $I2
+#     add count_actions, $I3
+# #     .local pmc pattern
+# #     getattribute pattern, updator, "object"
+# #     .local string stem
+# #     stem = pattern.'match'( target )
+# #     if stem == "" goto return_result
+    .lex "$pattern_target", updator
+    .const 'Sub' $P1 = "update-by-pattern-target"
+    capture_lex $P1
+    $P1()
     goto return_result
     
 invoke_actions_on_rule_object:
@@ -964,7 +968,7 @@ check_execution_status:
 return_result:
     .return (count_updated, count_newer, count_actions)
 .end # sub "update-target"
-.sub '' :anon :outer('ut') :subid('update-prerequisite')
+.sub '' :anon :outer('update-target') :subid('update-prerequisite')
     .param pmc prereq
     .param int is_orderonly
     
@@ -990,11 +994,31 @@ do_update:
     count_newer   += $I2
     count_actions += $I3
 return_result:
-.end
-
+.end # :subid('update-prerequisite')
+.sub '' :anon :outer('update-target') :subid('update-by-pattern-target')
+    .local pmc count_updated
+    .local pmc count_newer
+    .local pmc count_actions
+    find_lex count_updated, "$count_updated"
+    find_lex count_newer,   "$count_newer"
+    find_lex count_actions, "$count_actions"
+    .local pmc target
+    find_lex target, "$target"
+    .local pmc pattern_target
+    find_lex pattern_target, "$pattern_target"
+    ( $I1, $I2, $I3, $I4 ) = 'update-target-%'( pattern_target, target )
+    unless $I4 goto return_result
+    add count_updated, $I1
+    add count_newer,   $I2
+    add count_actions, $I3
+return_result:
+.end # :subid('update-by-pattern-target')
 
 =item
         'foreach-updator'( target, visitor )
+
+    An updator could be Rule or Pattern Target, 'foreach-updator' invokes visitor
+    routine on each updator.
 =cut
 .sub "foreach-updator" :anon
     .param pmc target
@@ -1047,7 +1071,7 @@ visit_the_rule_object:
     .const 'Sub' $P2 = 'visit-rule-object'
     capture_lex $P2
     .tailcall $P2()
-.end
+.end # :subid('visit-prerequisite')
 .sub '' :anon :outer('visit-prerequisite') :subid('visit-pattern-target')
     .local pmc pattern_target
     find_lex pattern_target, "$pattern_target"
@@ -1065,7 +1089,7 @@ visit_the_rule_object:
     .const 'Sub' $P1 = 'visit-pattern-prerequisite'
     capture_lex $P1
     'foreach-prerequisite'( pattern_target, $P1 )
-.end
+.end # :subid('visit-pattern-target')
 .sub '' :anon :outer('visit-pattern-target') :subid('visit-pattern-prerequisite')
     .param pmc prerequisite
     .param int is_orderonly
@@ -1089,7 +1113,7 @@ visit_the_flatten_prerequisite:
     set_hll_global ['smart';'make';'target'], $S0, pre
 do_visit:
     .tailcall visit(pre, is_orderonly)
-.end
+.end # :subid('visit-pattern-prerequisite')
 .sub '' :anon :outer('visit-prerequisite') :subid('visit-rule-object')
     .local pmc updator
     find_lex updator, "$updator"
@@ -1117,7 +1141,7 @@ iterate_orderonlys:
     visit( prerequisite, 1 ) # '1' means an 'order-only' prerequisite
     goto iterate_orderonlys
 iterate_orderonlys_end:
-.end
+.end # :subid('visit-rule-object')
 
 
 =item
