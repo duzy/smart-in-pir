@@ -776,9 +776,6 @@ return:
     if $I0 goto return_without_execution
     if is_phony goto return_without_execution ## escape phony target
     'update-target-through-pattern-targets'( target, 1 )
-#     add count_updated, $I1
-#     add count_newer,   $I2
-#     add count_actions, $I3
     goto return_result
     
 do_normal_update:
@@ -859,17 +856,19 @@ do_update:
     $I2 = 0
     $I3 = 0
     $I0 = 'update-target'( prerequisite )
-    'add-newer'( target, $I0 )
+    getattribute $P0, prerequisite, 'count_newer'
+    $P0 += $I0
+    'add-newer'( target, $P0 )
 
     .local pmc count_newer
     getattribute count_newer, target, 'count_newer'
-    print "prerequisite: "
-    print prerequisite
-    print "-> "
-    print target
-    print ", "
-    print count_newer
-    print "\n"
+#     print "prerequisite: "
+#     print prerequisite
+#     print "-> "
+#     print target
+#     print ", "
+#     print count_newer
+#     print "\n"
 
     if is_orderonly goto return_result
 #     unless $I0 goto return_result
@@ -896,10 +895,10 @@ return_result:
     capture_lex $P1
     'foreach-prerequisite'( pattern_target, $P1, stem )
 
-    '!clear-automatic-variables'()
+    #'!clear-automatic-variables'()
 
 return_result:
-    .return()
+    .return(0)
     
 error_pattern_not_match:
     $S0 = "smart: * Target '"
@@ -910,7 +909,7 @@ error_pattern_not_match:
     $S0 .= $S1
     $S0 .= "'."
     printerr $S0
-    .return()
+    .return(0)
 .end # :subid('update-by-pattern-target')
 .sub '' :anon :outer('update-by-pattern-target') :subid('update-prerequisite-of-pattern-target')
     .param pmc target
