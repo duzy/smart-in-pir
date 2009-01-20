@@ -763,8 +763,6 @@ return:
 .sub "update-target" :anon #:subid('update-target')
     .param pmc target
 
-    .lex "$target", target
-
     ## If the target itself has been updated, than nothing should be done.
     $I0 = target.'updated'()
     if $I0 goto return_result
@@ -774,15 +772,20 @@ return:
     
     .local pmc updators, updator
     getattribute updators, target, 'updators'
+
+    .const 'Sub' update_by_pattern_target = "update-by-pattern-target"
+    capture_lex update_by_pattern_target
     
     elements $I0, updators
     ## If no updators binded with the target
     unless $I0 <= 0 goto do_normal_update
+    
     $I0 = target.'exists'()
     if $I0 goto return_without_execution
     if is_phony goto return_without_execution ## escape phony target
-    'update-target-through-pattern-targets'( target, 1 )
-    goto return_result
+    $P0 = 'find-pattern-target'( target )
+    if null $P0 goto error_not_rule_for_updating
+    .tailcall update_by_pattern_target( target, $P0 )
     
 do_normal_update:
     
@@ -816,10 +819,8 @@ execute_actions:
     typeof $S0, updator
     if $S0 == 'Rule' goto invoke_actions_on_rule_object
     
-    .lex "$pattern_target", updator
-    .const 'Sub' $P1 = "update-by-pattern-target"
-    capture_lex $P1
-    .tailcall $P1()
+    #.lex "$pattern_target", updator
+    .tailcall update_by_pattern_target( target, updator )
     
 invoke_actions_on_rule_object:
     '!setup-automatic-variables'( target )
@@ -831,8 +832,10 @@ invoke_actions_on_rule_object:
     ## as GNU make does.
     unless $I1 == 0 goto check_execution_status
     if is_phony goto return_result  ## TODO: should mark 'updated' flag?
-    $I0 = 'update-target-through-pattern-targets'( target, 0 )
-    goto return_result
+    $I0 = 0
+    $P0 = 'find-pattern-target'( target )
+    if null $P0 goto return_result
+    .tailcall update_by_pattern_target( target, $P0 )
 
 check_execution_status:
     #if $I0 != 0 goto return_result
@@ -840,7 +843,12 @@ check_execution_status:
     target.'updated'( $I0 ) ## Make the target as updated
     
 return_result:
-    .return (1)
+    .return ($I0)
+
+error_not_rule_for_updating:
+    $S0 = "smart: * "
+    printerr $S0
+    exit EXIT_ERROR_NO_RULE
 .end # sub "update-target"
 .sub '' :anon :outer('update-target') :subid('update-prerequisite')
     .param pmc target
@@ -867,11 +875,13 @@ return_result:
     .return()
 .end # :subid('update-prerequisite')
 .sub '' :anon :outer('update-target') :subid('update-by-pattern-target')
-    .local pmc target
-    .local pmc pattern_target
+    .param pmc target
+    .param pmc pattern_target
     
-    find_lex target, "$target"
-    find_lex pattern_target, "$pattern_target"
+    # .local pmc target
+    # .local pmc pattern_target
+    # find_lex target, "$target"
+    # find_lex pattern_target, "$pattern_target"
 
     .local pmc pattern
     .local pmc stem
@@ -1158,6 +1168,8 @@ do_visit:
     .return( target )
 .end
 
+=item
+=cut
 .sub "add-newer" :anon
     .param pmc target
     .param int c
@@ -1166,94 +1178,125 @@ do_visit:
 .end
 
 
-
 =item
 =cut
-.sub "update-target-through-pattern-targets" :anon
+.sub "find-pattern-target" :anon
     .param pmc target
-    .param int stop_if_no_match
-    
-    .local int count_newer
-    .local int count_updated
-    .local int count_actions # executed actions
-    .local int matched # if any pattern matched?
-    set count_newer,    0
-    set count_updated,  0
-    set count_actions,  0
-    set matched,        0
 
-    ##############################################################
-    ## If there is no updators binded with the 'target', we need to check out
-    ## pattern targets and find a matched pattern, invoke updatation on it.
-    ##############################################################
-check_out_pattern_targets_for_updating:
-    .local pmc patterns, pattern_it
+    .local pmc patterns
+    .local pmc pattern_it
     .local pmc pattern_target
 
-try_static_patterns:
-#     get_hll_global patterns, ['smart';'make'], "@<*%>"
-#     if null patterns goto try_patterns
-#     bsr update_by_patterns
-#     if $I0 goto check_out_pattern_targets_for_updating__done
-
-try_patterns:
     get_hll_global patterns, ['smart';'make'], "@<%>"
+    
     if null patterns goto try_match_anything
-    bsr update_by_patterns
-    #if $I0 goto check_out_pattern_targets_for_updating__done
-    goto check_out_pattern_targets_for_updating__done
-
     
-update_by_patterns:
-    set $I0, 0
     new pattern_it, 'Iterator', patterns
-check_out_pattern_targets_for_updating__iterate:
-    unless pattern_it goto check_out_pattern_targets_for_updating__iterate_end
+iterate_pattern_targets:
+    unless pattern_it goto iterate_pattern_targets_end
     shift pattern_target, pattern_it
-    ($I1, $I2, $I3, matched) = 'update-target-%'( pattern_target, target )
-    unless matched goto check_out_pattern_targets_for_updating__iterate
-    add count_updated, $I1
-    add count_newer,   $I2
-    add count_actions, $I3
-    target.'updated'( 1 )
-    set $I0, 1
-    goto check_out_pattern_targets_for_updating__done
+    $P1 = pattern_target.'object'()
+    $S0 = $P1.'match'( target )
+    if $S0 == "" goto iterate_pattern_targets
+    goto return_result ## Got a match!
+iterate_pattern_targets_end:
 
-check_out_pattern_targets_for_updating__iterate_end:
-    null patterns
-    null pattern_target
-    ret
-
-    
 try_match_anything:
     ## Here, we got not matched pattern, try match-anything
     get_hll_global pattern_target, ['smart';'make'], "$<%>"
-    if null pattern_target goto report_error_if_file_not_existed
-    
-    ($I1, $I2, $I3, matched) = 'update-target-%'( pattern_target, target )
-    unless matched goto check_out_pattern_targets_for_updating__done
-    add count_updated, $I1
-    add count_newer,   $I2
-    add count_actions, $I3
-    target.'updated'( 1 )
-    goto check_out_pattern_targets_for_updating__done
 
-report_error_if_file_not_existed:
-    #exists $I0, 
-check_out_pattern_targets_for_updating__failed:
-    unless stop_if_no_match goto check_out_pattern_targets_for_updating__done
-    
-    $S0 = target
-    $S1 = "smart: *** No rule to make target '"
-    $S1 .= $S0
-    $S1 .= "'. Stop.\n"
-    printerr $S1
-    exit EXIT_ERROR_NO_RULE
-    
-check_out_pattern_targets_for_updating__done:
-    null patterns
-    null pattern_target
+return_result:
+    .return(pattern_target)
+.end # sub "find-pattern-target"
 
-    .return (count_updated, count_newer, count_actions, matched)
-.end # sub "update-target-through-pattern-targets"
+
+# =item
+# =cut
+# .sub "update-target-through-pattern-targets" :anon
+#     .param pmc target
+#     .param int stop_if_no_match
+    
+#     .local int count_newer
+#     .local int count_updated
+#     .local int count_actions # executed actions
+#     .local int matched # if any pattern matched?
+#     set count_newer,    0
+#     set count_updated,  0
+#     set count_actions,  0
+#     set matched,        0
+
+#     ##############################################################
+#     ## If there is no updators binded with the 'target', we need to check out
+#     ## pattern targets and find a matched pattern, invoke updatation on it.
+#     ##############################################################
+# check_out_pattern_targets_for_updating:
+#     .local pmc patterns, pattern_it
+#     .local pmc pattern_target
+
+# try_static_patterns:
+# #     get_hll_global patterns, ['smart';'make'], "@<*%>"
+# #     if null patterns goto try_patterns
+# #     bsr update_by_patterns
+# #     if $I0 goto check_out_pattern_targets_for_updating__done
+
+# try_patterns:
+#     get_hll_global patterns, ['smart';'make'], "@<%>"
+#     if null patterns goto try_match_anything
+#     bsr update_by_patterns
+#     #if $I0 goto check_out_pattern_targets_for_updating__done
+#     goto check_out_pattern_targets_for_updating__done
+
+    
+# update_by_patterns:
+#     set $I0, 0
+#     new pattern_it, 'Iterator', patterns
+# check_out_pattern_targets_for_updating__iterate:
+#     unless pattern_it goto check_out_pattern_targets_for_updating__iterate_end
+#     shift pattern_target, pattern_it
+#     ($I1, $I2, $I3, matched) = 'update-target-%'( pattern_target, target )
+#     unless matched goto check_out_pattern_targets_for_updating__iterate
+#     add count_updated, $I1
+#     add count_newer,   $I2
+#     add count_actions, $I3
+#     target.'updated'( 1 )
+#     set $I0, 1
+#     goto check_out_pattern_targets_for_updating__done
+
+# check_out_pattern_targets_for_updating__iterate_end:
+#     null patterns
+#     null pattern_target
+#     ret
+
+    
+# try_match_anything:
+#     ## Here, we got not matched pattern, try match-anything
+#     get_hll_global pattern_target, ['smart';'make'], "$<%>"
+#     if null pattern_target goto report_error_if_file_not_existed
+    
+#     ($I1, $I2, $I3, matched) = 'update-target-%'( pattern_target, target )
+#     unless matched goto check_out_pattern_targets_for_updating__done
+#     add count_updated, $I1
+#     add count_newer,   $I2
+#     add count_actions, $I3
+#     target.'updated'( 1 )
+#     goto check_out_pattern_targets_for_updating__done
+
+# report_error_if_file_not_existed:
+#     #exists $I0, 
+# check_out_pattern_targets_for_updating__failed:
+#     unless stop_if_no_match goto check_out_pattern_targets_for_updating__done
+    
+#     $S0 = target
+#     $S1 = "smart: *** No rule to make target '"
+#     $S1 .= $S0
+#     $S1 .= "'. Stop.\n"
+#     printerr $S1
+#     exit EXIT_ERROR_NO_RULE
+    
+# check_out_pattern_targets_for_updating__done:
+#     null patterns
+#     null pattern_target
+
+#     .return (count_updated, count_newer, count_actions, matched)
+# .end # sub "update-target-through-pattern-targets"
 
