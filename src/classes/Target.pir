@@ -152,6 +152,16 @@ got_updated:
 
 
 =item
+Bind the target with the specified rule or target-pattern
+=cut
+.sub "bind" :method
+    .param pmc rule
+    getattribute $P0, self, 'updators'
+    push $P0, rule
+.end
+
+
+=item
     Separate directory and file parts of the object name.
 =cut
 .sub "!get<?D?F>" :anon
@@ -753,10 +763,6 @@ return:
 .sub "update-target" :anon #:subid('update-target')
     .param pmc target
 
-#     print "update: "
-#     print target
-#     print "\n"
-    
     .lex "$target", target
 
     ## If the target itself has been updated, than nothing should be done.
@@ -790,12 +796,10 @@ do_normal_update:
     
     .local pmc count_newer
     getattribute count_newer, target, 'count_newer'
-    print count_newer
-    print ";\t"
-    print target
-    print "\n"
-    
-do_update_target:
+    # print count_newer
+    # print "\t"
+    # print target
+    # print "\n"
     
     ## TODO: Only executes the last updator?
     updator = updators[-1]
@@ -811,9 +815,7 @@ return_without_execution:
 execute_actions:
     typeof $S0, updator
     if $S0 == 'Rule' goto invoke_actions_on_rule_object
-#     print "updator: "
-#     print updator
-#     print "\n"
+    
     .lex "$pattern_target", updator
     .const 'Sub' $P1 = "update-by-pattern-target"
     capture_lex $P1
@@ -833,8 +835,9 @@ invoke_actions_on_rule_object:
     goto return_result
 
 check_execution_status:
-    if $I0 != 0 goto return_result
-    target.'updated'( 1 ) ## Make the target as updated
+    #if $I0 != 0 goto return_result
+    #target.'updated'( 1 ) ## Make the target as updated
+    target.'updated'( $I0 ) ## Make the target as updated
     
 return_result:
     .return (1)
@@ -852,27 +855,14 @@ return_result:
     'add-newer'( target, 1 )
     
 do_update:
-    $I1 = 0
-    $I2 = 0
-    $I3 = 0
     $I0 = 'update-target'( prerequisite )
+    
+    if is_orderonly goto return_result
+    
     getattribute $P0, prerequisite, 'count_newer'
     $P0 += $I0
     'add-newer'( target, $P0 )
-
-    .local pmc count_newer
-    getattribute count_newer, target, 'count_newer'
-#     print "prerequisite: "
-#     print prerequisite
-#     print "-> "
-#     print target
-#     print ", "
-#     print count_newer
-#     print "\n"
-
-    if is_orderonly goto return_result
-#     unless $I0 goto return_result
-#     'add-newer'( target, 1 )
+    
 return_result:
     .return()
 .end # :subid('update-prerequisite')
@@ -895,7 +885,15 @@ return_result:
     capture_lex $P1
     'foreach-prerequisite'( pattern_target, $P1, stem )
 
-    #'!clear-automatic-variables'()
+    .local pmc rule
+    getattribute $P0, pattern_target, 'updators'
+    rule = $P0[-1]
+    '!setup-automatic-variables%'( pattern_target, target, stem )
+    $I0 = rule.'execute_actions'()
+    '!clear-automatic-variables'()
+
+    #target.'updated'( 1 )
+    target.'updated'( $I0 )
 
 return_result:
     .return(0)
@@ -924,14 +922,14 @@ error_pattern_not_match:
     'add-newer'( target, 1 )
 
 do_update:
-#     print "flattened-prerequisite: "
-#     print prerequisite
-#     print "\n"
     $I0 = 'update-target'( prerequisite )
-    'add-newer'( target, $I0 )
     
     if is_orderonly goto return_result
 
+    getattribute $P0, prerequisite, 'count_newer'
+    $P0 += $I0
+    'add-newer'( target, $P0 )
+    
 return_result:
     .return()
 .end # :subid('update-prerequisite-of-pattern-target')
