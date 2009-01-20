@@ -699,161 +699,53 @@ return_result:
 =cut
 .sub "update" :method
     ($I1, $I2, $I3) = 'update-target'( self )
+    #'test'( self )
     .return ($I1, $I2, $I3)
 .end
 
-# .sub "update-target-%"
-#     .param pmc pattern_target
-#     .param pmc target # the file target to be updated
-#     .param int update_prerequisites_only :optional
+.sub 'test' :anon
+    .param pmc target
     
-#     .local pmc pattern
-#     getattribute pattern, pattern_target, "object"
-#     if null pattern goto return_nothing
-#     $S0 = typeof pattern
-#     unless $S0 == "Pattern" goto fatal_not_a_pattern_target
+    .lex "$target", target
     
-#     #.local string prefix
-#     #.local string suffix
-#     .local string stem
-#     #prefix = pattern.'prefix'()
-#     #suffix = pattern.'suffix'()
-#     stem   = pattern.'match'( target )
-#     if stem == "" goto return_nothing
-    
-#     .local int count_updated
-#     .local int count_newer
-#     .local int count_actions # executed actions
-#     set count_newer,   0
-#     set count_updated, 0
-#     set count_actions, 0
-    
-#     .local pmc updator
-#     bsr update_prerequisites_of_updators
-    
-#     if update_prerequisites_only goto return_result
-    
-#     typeof $S0, updator
-#     if $S0 == 'Rule' goto invoke_actions_on_rule_object
-#     ## TODO: should do something!!
-# #     ( $I1, $I2, $I3, $I4 ) = 'update-target-%'( updator, target )
-# #     unless $I4 goto return_result
-# #     add count_updated, $I1
-# #     add count_newer,   $I2
-# #     add count_actions, $I3
-#     goto return_result
-    
-# invoke_actions_on_rule_object:
-#     '!setup-automatic-variables%'( pattern_target, target, stem )
-#     ($I0, $I1) = updator.'execute_actions'() ## (command_state, action_count)
-#     '!clear-automatic-variables'()
+    .const 'Sub' $P0 = "v"
+    capture_lex $P0
+    'foreach-prerequisite'( target, $P0 )
 
-#     unless $I0 goto return_result
-#     inc count_updated
-#     count_actions += $I1
-    
-# return_result:
-#     .return(count_updated, count_newer, count_actions, 1) ##( u)
-    
-# return_nothing:
-#     .return(0, 0, 0, 0)
-
-#     ######################
-#     ## local: update_prerequisites_of_updators
-# update_prerequisites_of_updators:
-#     .local pmc updators, updator_it
-#     getattribute updators, pattern_target, 'updators'
-#     new updator_it, 'Iterator', updators
-# update_prerequisites_of_updators__iterate:
-#     unless updator_it goto update_prerequisites_of_updators__iterate_end
-#     shift updator, updator_it
-    
-# try_process_pattern_target:
-#     typeof $S0, updator
-#     if $S0 == 'Rule' goto process_rule_object
-#     say "TODO: handle pattern target(2)"
-#     goto update_prerequisites_of_updators__iterate
-    
-# process_rule_object:
-#     bsr update_prerequisites
-#     bsr update_orderonlys
-#     goto update_prerequisites_of_updators__iterate
-# update_prerequisites_of_updators__iterate_end:
-#     ## TODO: the last rule's action will be executed?
-#     null updator_it
-# update_prerequisites_of_updators__done:
-#     ret
-
-#     ######################
-#     ## local: update_prerequisites
-# update_prerequisites:
-#     .local pmc prerequisites
-#     .local pmc pre
-#     prerequisites = updator.'prerequisites'()
-#     new $P1, 'Iterator', prerequisites 
-# update_prerequisites__iterate:
-#     unless $P1 goto update_prerequisites__iterate_end
-#     shift pre, $P1
-
-#     $S0 = pattern.'flatten'( pre, stem )
-#     ## If 'pre' and $S0 is equal, the 'pre' is not a pattern target
-#     if pre == $S0 goto update_prerequisites_invoke
-#     get_hll_global pre, ['smart';'make';'target'], $S0
-#     unless null pre goto update_prerequisites_invoke
-#     pre = 'new:Target'( $S0 ) ## Make a new target and store it.
-#     set_hll_global ['smart';'make';'target'], $S0, pre
-
-# update_prerequisites_invoke:
-#     ($I1, $I2, $I3) = 'update-target'( pre )
-#     add count_updated, $I1
-#     add count_newer,   $I2
-#     add count_actions, $I3
-#     goto update_prerequisites__iterate
-    
-# update_prerequisites__iterate_end:
-#     null prerequisites
-#     null pre
-#     null $P1
-#     null $P2
-#     null $S0
-# update_prerequisites_end:
-#     ret
-
-#     ######################
-#     ## local: update_orderonlys
-# update_orderonlys:
-#     .local pmc orderonlys
-#     .local pmc oo
-#     orderonlys = updator.'orderonlys'()
-#     new $P1, 'Iterator', orderonlys
-# update_orderonlys_iterate:
-#     unless $P1 goto update_orderonlys_iterate_end
-#     shift oo, $P1
-    
-#     $S0 = pattern.'flatten'( oo, stem )
-#     ## If 'oo' and $S0 is equal, the 'oo' is not a pattern target
-#     if oo == $S0 goto update_orderonly_invoke
-#     get_hll_global oo, ['smart';'make';'target'], $S0
-#     unless null oo goto update_orderonly_invoke
-#     oo = 'new:Target'( $S0 ) ## Make a new target and store it.
-#     set_hll_global ['smart';'make';'target'], $S0, oo
-
-# update_orderonly_invoke:
-#     ($I1, $I2, $I3) = 'update-target'( oo )
-    
-#     goto update_orderonlys_iterate
-# update_orderonlys_iterate_end:
-# update_orderonlys_done:
-#     ret
-
-# fatal_not_a_pattern_target:
-#     die "smart: Not an pattern target"
-# .end # sub "update-target-%"
+    say target
+.end
+.sub '' :anon :outer('test') :subid('v')
+    .param pmc target
+    .param pmc prereq
+    .param int isoo
+    .local pmc target
+    #find_lex target, "$target"
+    .include "interpinfo.pasm"
+    if null target goto return
+    #'test'( prereq )
+    #$P0 = interpinfo .INTERPINFO_CURRENT_SUB
+    #$P0 = $P0.'get_outer'()
+    .const 'Sub' $P0 = 'v'
+    'foreach-prerequisite'( prereq, $P0 )
+    print target
+    print " <- "
+    print prereq
+    print "\n"
+    .return()
+return:
+    #'test'( prereq )
+    $P0 = interpinfo .INTERPINFO_CURRENT_SUB
+    #$P0 = $P0.'get_outer'()
+    'foreach-prerequisite'( prereq, $P0 )
+    print prereq
+    print "\n"
+    .return()
+.end
 
 =item
         ($I1, $I2, $I3) = 'update-target'( target )
 =cut
-.sub "update-target" :anon :subid('update-target')
+.sub "update-target" :anon #:subid('update-target')
     .param pmc target
 
 #     print "update: "
@@ -901,7 +793,6 @@ do_normal_update:
     
     .local pmc target_changetime
     target_changetime = target.'changetime'()
-    .lex "$target_changetime", target_changetime
     
     .local pmc updator_it
     .const 'Sub' $P1 = 'update-prerequisite'
@@ -939,7 +830,7 @@ execute_actions:
     .lex "$pattern_target", updator
     .const 'Sub' $P1 = "update-by-pattern-target"
     capture_lex $P1
-    $P1()
+    $P1() #( target, pattern_target )
     goto return_result
     
 invoke_actions_on_rule_object:
@@ -969,6 +860,7 @@ return_result:
     .return (count_updated, count_newer, count_actions)
 .end # sub "update-target"
 .sub '' :anon :outer('update-target') :subid('update-prerequisite')
+    .param pmc target
     .param pmc prerequisite
     .param int is_orderonly
     
@@ -981,42 +873,41 @@ return_result:
 
     if is_orderonly goto do_update
     
-    .local pmc target_changetime
-    find_lex target_changetime, "$target_changetime"
+    $I1 = target.'changetime'()
     $I2 = prerequisite.'changetime'()
-    unless target_changetime < $I2 goto do_update
+    unless $I1 < $I2 goto do_update
     count_newer   += 1
-    
+
 do_update:
-    .local pmc target
-    find_lex target, "$target"
-    print "prerequisite: "
-    print prerequisite
-    print " -> "
-    print target
-    print "\n"
+    $I1 = 0
+    $I2 = 0
+    $I3 = 0
     ($I1, $I2, $I3) = 'update-target'( prerequisite )
-    if is_orderonly goto return_result
     
+#     print "prerequisite: "
+#     print prerequisite
+#     print "-> "
+#     print target
+#     print "\n"
+
+    if is_orderonly goto return_result
     add count_updated, $I1
     add count_newer,   $I2
     add count_actions, $I3
 
-#     store_lex   "$count_newer", count_newer
-#     store_lex "$count_updated", count_updated
-#     store_lex "$count_actions", count_actions
-    
 return_result:
     .return()
 .end # :subid('update-prerequisite')
 .sub '' :anon :outer('update-target') :subid('update-by-pattern-target')
     .local pmc target
-    find_lex target, "$target"
     .local pmc pattern_target
+    
+    find_lex target, "$target"
     find_lex pattern_target, "$pattern_target"
+
     .local pmc pattern
-    pattern = pattern_target.'object'()
     .local pmc stem
+    pattern = pattern_target.'object'()
     stem = pattern.'match'( target )
     if stem == "" goto error_pattern_not_match
     
@@ -1024,6 +915,8 @@ return_result:
 #     print pattern
 #     print ", "
 #     print stem
+#     print " -> "
+#     print target
 #     print "\n"
     
     .lex "$stem", stem
@@ -1068,6 +961,7 @@ error_pattern_not_match:
     .return()
 .end # :subid('update-by-pattern-target')
 .sub '' :anon :outer('update-by-pattern-target') :subid('update-prerequisite-of-pattern-target')
+    .param pmc target
     .param pmc prerequisite
     .param int is_orderonly
 
@@ -1080,10 +974,9 @@ error_pattern_not_match:
 
     if is_orderonly goto do_update
     
-    .local pmc target_changetime
-    find_lex target_changetime, "$target_changetime"
+    $I1 = target.'changetime'()
     $I2 = prerequisite.'changetime'()
-    unless target_changetime < $I2 goto do_update
+    unless $I1 < $I2 goto do_update
     count_newer   += 1
 
 do_update:
@@ -1100,6 +993,8 @@ do_update:
 return_result:
     .return()
 .end # :subid('update-prerequisite-of-pattern-target')
+
+
 
 
 =item
@@ -1129,10 +1024,12 @@ iterate_updators_end:
     null updators
 .end # sub "foreach-updator"
 
+
+
 =item
         'foreach-prerequisite'( target, visitor )
         
-    Visit each prerequisite of a specified target recursively.
+    Visit each prerequisite of a specified target (NOT recursively).
 =cut
 .sub "foreach-prerequisite" :anon :subid('foreach-prerequisite')
     .param pmc target
@@ -1210,6 +1107,7 @@ visit_the_rule_object:
     'foreach-prerequisite'( pattern_target, $P1 )
 .end # :subid('visit-pattern-target')
 .sub '' :anon :outer('visit-pattern-target') :subid('visit-pattern-prerequisite')
+    .param pmc target
     .param pmc prerequisite
     .param int is_orderonly
     
@@ -1222,22 +1120,24 @@ visit_the_rule_object:
     
     $S0 = pattern.'flatten'( prerequisite, stem )
     unless prerequisite == $S0 goto visit_the_flatten_prerequisite
-    ##say prerequisite
-    .tailcall visit(prerequisite, is_orderonly)
+    .tailcall visit(target, prerequisite, is_orderonly)
 
 visit_the_flatten_prerequisite:
+    .local pmc tar
     .local pmc pre
+    #$S1 = pattern.'flatten'( target, stem )
+    #tar = 'target'( $S1 )
+    find_lex tar, "$target"
     pre = 'target'( $S0 )
-    ##print prerequisite
-    ##print " -> "
-    ##say pre
-    .tailcall visit(pre, is_orderonly)
+    .tailcall visit(tar, pre, is_orderonly)
 .end # :subid('visit-pattern-prerequisite')
 .sub '' :anon :outer('visit-updator') :subid('visit-rule-object')
     .local pmc rule
     find_lex rule, "$rule"
     .local pmc visit
     find_lex visit, "$visitor"
+    .local pmc target
+    find_lex target, "$target"
     
     .local pmc prerequisites
     .local pmc prerequisite
@@ -1253,8 +1153,7 @@ visit_without_flattenning:
 iterate_prerequisites:
     unless it goto iterate_prerequisites_end
     shift prerequisite, it
-    ##say prerequisite
-    visit( prerequisite, 0 ) # '0' means not an 'order-only' prerequisite
+    visit( target, prerequisite, 0 ) # '0' means not an 'order-only' prerequisite
     goto iterate_prerequisites
 iterate_prerequisites_end:
 
@@ -1263,8 +1162,7 @@ iterate_prerequisites_end:
 iterate_orderonlys:
     unless it goto iterate_orderonlys_end
     shift prerequisite, it
-    ##say prerequisite
-    visit( prerequisite, 1 ) # '1' means an 'order-only' prerequisite
+    visit( target, prerequisite, 1 ) # '1' means an 'order-only' prerequisite
     goto iterate_orderonlys
 iterate_orderonlys_end:
     .return()
@@ -1282,8 +1180,7 @@ iterate_pattern_prerequisites:
     if prerequisite == $S0 goto visit_normal_prerequisite
     prerequisite = 'target'( $S0 )
 visit_normal_prerequisite:
-    ##say prerequisite
-    visit( prerequisite, 0 ) # '0' means not an 'order-only' prerequisite
+    visit( target, prerequisite, 0 ) # '0' means not an 'order-only' prerequisite
     goto iterate_prerequisites
 iterate_pattern_prerequisites_end:
 
@@ -1296,8 +1193,7 @@ iterate_pattern_orderonlys:
     if prerequisite == $S0 goto visit_normal_orderonly
     prerequisite = 'target'( $S0 )
 visit_normal_orderonly:
-    ##say prerequisite
-    visit( prerequisite, 1 ) # '1' means an 'order-only' prerequisite
+    visit( target, prerequisite, 1 ) # '1' means an 'order-only' prerequisite
     goto iterate_orderonlys
 iterate_pattern_orderonlys_end:
     
