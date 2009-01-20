@@ -27,12 +27,15 @@ pattern targets(the match-anything rule is excluded).
     .local pmc member
     .local pmc updators
     .local pmc target
+    .local pmc count_newer
 
     new member, 'String'
     new updators, 'ResizablePMCArray'
+    new count_newer, 'Integer'
     
     set object, aobject
     set member, ""
+    set count_newer, 0
     
     get_hll_global $P0, ['Target'], "split-archive-member"
     ($S1, $S2) = $P0( object )
@@ -47,6 +50,7 @@ init_target:
     setattribute target, 'object', aobject
     setattribute target, 'updators', updators
     setattribute target, 'member', member
+    setattribute target, 'count_newer', count_newer
     
 return_target:
     .return(target)
@@ -59,6 +63,7 @@ return_target:
     addattribute $P0, 'member'  ## for Archive target, indicates the member name
     addattribute $P0, 'updators'## Updators to update the object
     addattribute $P0, 'updated' ## 1/0, wether the object has been updated
+    addattribute $P0, 'count_newer' ## the number of newer prerequisites
 .end
 
 .sub "split-archive-member"
@@ -752,24 +757,11 @@ return:
 #     print target
 #     print "\n"
     
-    .local pmc count_newer
-    .local pmc count_updated
-    .local pmc count_actions
-    new count_newer,   'Integer'
-    new count_updated, 'Integer'
-    new count_actions, 'Integer'
-    set count_newer,   0
-    set count_updated, 0
-    set count_actions, 0
-    
+    .lex "$target", target
+
     ## If the target itself has been updated, than nothing should be done.
     $I0 = target.'updated'()
     if $I0 goto return_result
-    
-    .lex "$target", target
-    .lex "$count_newer",   count_newer
-    .lex "$count_updated", count_updated
-    .lex "$count_actions", count_actions
     
     .local int is_phony
     is_phony = target.'is_phony'()
@@ -783,10 +775,10 @@ return:
     $I0 = target.'exists'()
     if $I0 goto return_without_execution
     if is_phony goto return_without_execution ## escape phony target
-    ($I1, $I2, $I3) = 'update-target-through-pattern-targets'( target, 1 )
-    add count_updated, $I1
-    add count_newer,   $I2
-    add count_actions, $I3
+    'update-target-through-pattern-targets'( target, 1 )
+#     add count_updated, $I1
+#     add count_newer,   $I2
+#     add count_actions, $I3
     goto return_result
     
 do_normal_update:
@@ -798,11 +790,10 @@ do_normal_update:
     .const 'Sub' $P1 = 'update-prerequisite'
     capture_lex $P1
     'foreach-prerequisite'( target, $P1 )
-    print count_updated
-    print ", "
+    
+    .local pmc count_newer
+    getattribute count_newer, target, 'count_newer'
     print count_newer
-    print ", "
-    print count_actions
     print ";\t"
     print target
     print "\n"
@@ -813,13 +804,12 @@ do_update_target:
     updator = updators[-1]
 
     ## BS: Do NOT change the order of the following codes.
-    if count_updated > 0        goto execute_actions
+    if count_newer > 0          goto execute_actions
     if is_phony                 goto execute_actions
     if target_changetime == 0   goto execute_actions
-    if count_newer > 0          goto execute_actions
     
 return_without_execution:
-    .return(0, count_newer, 0)
+    .return(0)
     
 execute_actions:
     typeof $S0, updator
@@ -830,8 +820,7 @@ execute_actions:
     .lex "$pattern_target", updator
     .const 'Sub' $P1 = "update-by-pattern-target"
     capture_lex $P1
-    $P1() #( target, pattern_target )
-    goto return_result
+    .tailcall $P1()
     
 invoke_actions_on_rule_object:
     '!setup-automatic-variables'( target )
@@ -843,58 +832,48 @@ invoke_actions_on_rule_object:
     ## as GNU make does.
     unless $I1 == 0 goto check_execution_status
     if is_phony goto return_result  ## TODO: should mark 'updated' flag?
-    ($I1, $I2, $I3) = 'update-target-through-pattern-targets'( target, 0 )
-    add count_updated, $I1
-    add count_newer,   $I2
-    add count_actions, $I3
+    $I0 = 'update-target-through-pattern-targets'( target, 0 )
     goto return_result
 
 check_execution_status:
     if $I0 != 0 goto return_result
-    inc count_updated
-    inc count_newer ## if updated, it must be newer
-    add count_actions, $I1
     target.'updated'( 1 ) ## Make the target as updated
     
 return_result:
-    .return (count_updated, count_newer, count_actions)
+    .return (1)
 .end # sub "update-target"
 .sub '' :anon :outer('update-target') :subid('update-prerequisite')
     .param pmc target
     .param pmc prerequisite
     .param int is_orderonly
     
-    .local pmc count_newer
-    .local pmc count_updated
-    .local pmc count_actions # executed actions
-    find_lex count_newer,   "$count_newer"
-    find_lex count_updated, "$count_updated"
-    find_lex count_actions, "$count_actions"
-
     if is_orderonly goto do_update
     
     $I1 = target.'changetime'()
     $I2 = prerequisite.'changetime'()
     unless $I1 < $I2 goto do_update
-    count_newer   += 1
-
+    'add-newer'( target, 1 )
+    
 do_update:
     $I1 = 0
     $I2 = 0
     $I3 = 0
-    ($I1, $I2, $I3) = 'update-target'( prerequisite )
-    
-#     print "prerequisite: "
-#     print prerequisite
-#     print "-> "
-#     print target
-#     print "\n"
+    $I0 = 'update-target'( prerequisite )
+    'add-newer'( target, $I0 )
+
+    .local pmc count_newer
+    getattribute count_newer, target, 'count_newer'
+    print "prerequisite: "
+    print prerequisite
+    print "-> "
+    print target
+    print ", "
+    print count_newer
+    print "\n"
 
     if is_orderonly goto return_result
-    add count_updated, $I1
-    add count_newer,   $I2
-    add count_actions, $I3
-
+#     unless $I0 goto return_result
+#     'add-newer'( target, 1 )
 return_result:
     .return()
 .end # :subid('update-prerequisite')
@@ -911,41 +890,14 @@ return_result:
     stem = pattern.'match'( target )
     if stem == "" goto error_pattern_not_match
     
-#     print "pattern-target: "
-#     print pattern
-#     print ", "
-#     print stem
-#     print " -> "
-#     print target
-#     print "\n"
-    
     .lex "$stem", stem
     .lex "$pattern", pattern
     .const 'Sub' $P1 = 'update-prerequisite-of-pattern-target'
     capture_lex $P1
     'foreach-prerequisite'( pattern_target, $P1, stem )
-    
-    .local pmc rule
-    getattribute $P0, pattern_target, 'updators'
-    rule = $P0[-1]
-    
-    '!setup-automatic-variables%'( pattern_target, target, stem )
-    ## Returns: (command_state, action_count)
-    ($I0, $I1) = rule.'execute_actions'()
+
     '!clear-automatic-variables'()
-    
-    .local pmc count_newer
-    .local pmc count_updated
-    .local pmc count_actions # executed actions
-    find_lex count_newer,   "$count_newer"
-    find_lex count_updated, "$count_updated"
-    find_lex count_actions, "$count_actions"
-    
-    unless $I0 goto return_result
-    inc count_updated
-    inc count_newer ## if target updated, it must be newer!
-    add count_actions, $I1
-    
+
 return_result:
     .return()
     
@@ -965,30 +917,21 @@ error_pattern_not_match:
     .param pmc prerequisite
     .param int is_orderonly
 
-    .local pmc count_updated
-    .local pmc count_newer
-    .local pmc count_actions
-    find_lex count_updated, "$count_updated"
-    find_lex count_newer,   "$count_newer"
-    find_lex count_actions, "$count_actions"
-
     if is_orderonly goto do_update
     
     $I1 = target.'changetime'()
     $I2 = prerequisite.'changetime'()
     unless $I1 < $I2 goto do_update
-    count_newer   += 1
+    'add-newer'( target, 1 )
 
 do_update:
 #     print "flattened-prerequisite: "
 #     print prerequisite
 #     print "\n"
-    ($I1, $I2, $I3) = 'update-target'( prerequisite )
+    $I0 = 'update-target'( prerequisite )
+    'add-newer'( target, $I0 )
     
     if is_orderonly goto return_result
-    add count_updated, $I1
-    add count_newer,   $I2
-    add count_actions, $I3
 
 return_result:
     .return()
@@ -1169,7 +1112,10 @@ iterate_orderonlys_end:
 
 visit_with_flattenning:
     .local pmc stem
+    .local pmc tar
     find_lex stem, "$target_stem"
+    $S0 = pattern.'flatten'( target, stem )
+    tar = 'target'( $S0 )
 
     prerequisites = rule.'prerequisites'()
     new it, 'Iterator', prerequisites
@@ -1215,61 +1161,14 @@ do_visit:
     .return( target )
 .end
 
+.sub "add-newer" :anon
+    .param pmc target
+    .param int c
+    getattribute $P0, target, 'count_newer'
+    add $P0, c
+.end
 
-# =item
-# =cut
-# .sub "update-all-prerequisites" :anon
-#     .param pmc target
 
-#     .local int count_updated
-#     .local int count_actions
-#     .local int count_newer
-#     set count_updated, 0
-#     set count_actions, 0
-#     set count_newer,   0
-
-#     .local pmc updators
-#     .local pmc updator, updator_it
-    
-#     updators = target.'updators'()
-    
-# update_prerequisites_of_updators:
-#     new updator_it, 'Iterator', updators
-# update_prerequisites_of_updators__iterate:
-#     unless updator_it goto update_prerequisites_of_updators__iterate_end
-#     shift updator, updator_it
-
-#     ## Check the type of updator, it can be 'Rule' or 'Target'(target-pattern)
-#     typeof $S0, updator
-#     unless $S0 == 'Target' goto update_by_rule_object
-#     bsr update_target_by_target_pattern
-#     goto update_prerequisites_of_updators__iterate
-# update_by_rule_object:
-    
-#     ($I1, $I2, $I3) = updator.'update-prerequisites'( target )
-#     #unless 0 < $I3 goto update_prerequisites_of_updators__iterate
-#     add count_updated, $I1
-#     add count_newer,   $I2
-#     add count_actions, $I3
-#     goto update_prerequisites_of_updators__iterate
-# update_prerequisites_of_updators__iterate_end:
-#     ## TODO: the last rule's action will be executed?
-#     null updator_it
-# update_prerequisites_of_updators__done:
-
-#     .return (count_updated, count_newer, count_actions)
-
-# update_target_by_target_pattern:
-#     .local int matched
-#     set matched, 0
-#     ($I1, $I2, $I3, matched) = 'update-target-%'( updator, target, 1 )
-#     unless matched goto update_target_by_target_pattern_done
-#     add count_updated, $I1
-#     add count_newer,   $I2
-#     add count_actions, $I3
-# update_target_by_target_pattern_done:
-#     ret
-# .end # sub "update-all-prerequisites"
 
 =item
 =cut
