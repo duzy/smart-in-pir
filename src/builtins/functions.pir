@@ -352,8 +352,10 @@ iterate_dir_loop_end:
     unless $I0 goto iterate_dir
 
     set $S0, ""
+    if path=="." goto skip_current_dir
     concat $S0, path
     concat $S0, "/"
+skip_current_dir:
     concat $S0, d_name # append the item
     push result, $S0
     #unshift result, $S0 # keeps the order as of filesystem
