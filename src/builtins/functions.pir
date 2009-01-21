@@ -324,6 +324,8 @@ glob_a_single_pattern:
     curdir = 'libc::opendir'(path)
     ##unless curdir goto glob_a_single_pattern_done
     #say "TODO: (~wildcard)validate 'curdir'!"
+    get_addr $I0, curdir
+    unless $I0 goto glob_a_single_pattern_done
 
     .local string d_name
 iterate_dir:
