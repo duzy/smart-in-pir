@@ -1,7 +1,7 @@
 # -*- cperl -*-
 {
     my $expect = <<__END_EXPECT;
---------------------------------------------------
+-------------------------------------------------- uoo
 test-echo-off(uoo)
 echo test-echo-on"(uoo)"
 test-echo-on(uoo)
