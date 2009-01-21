@@ -765,7 +765,7 @@ return:
 
     ## If the target itself has been updated, than nothing should be done.
     $I0 = target.'updated'()
-    if $I0 goto return_result
+    if $I0 goto return_without_execution
     
     .local int is_phony
     is_phony = target.'is_phony'()
@@ -823,24 +823,28 @@ execute_actions:
     .tailcall update_by_pattern_target( target, updator )
     
 invoke_actions_on_rule_object:
+    .local int status
     '!setup-automatic-variables'( target )
     ## Returns: (command_state, action_count)
-    ($I0, $I1) = updator.'execute_actions'()
+    (status, $I1) = updator.'execute_actions'()
     '!clear-automatic-variables'()
+
+    $I0 = status != 0 ## set the result
     
     ## If no actions for the target, we should try to find a pattern
     ## as GNU make does.
-    unless $I1 == 0 goto check_execution_status
+    unless $I1 == 0 goto mark_updated_flag
+    
     if is_phony goto return_result  ## TODO: should mark 'updated' flag?
-    $I0 = 0
+    
+    $I0 = 0 # reset the result
     $P0 = 'find-pattern-target'( target )
     if null $P0 goto return_result
     .tailcall update_by_pattern_target( target, $P0 )
 
-check_execution_status:
-    #if $I0 != 0 goto return_result
-    #target.'updated'( 1 ) ## Make the target as updated
-    target.'updated'( $I0 ) ## Make the target as updated
+mark_updated_flag:
+    if status != 0 goto return_result
+    target.'updated'( 1 ) ## Make the target as updated
     
 return_result:
     .return ($I0)
@@ -898,15 +902,19 @@ return_result:
     .local pmc rule
     getattribute $P0, pattern_target, 'updators'
     rule = $P0[-1]
+
+    .local int state
     '!setup-automatic-variables%'( pattern_target, target, stem )
-    $I0 = rule.'execute_actions'()
+    (state, $I1) = rule.'execute_actions'()
     '!clear-automatic-variables'()
 
-    #target.'updated'( 1 )
-    target.'updated'( $I0 )
+    $I0 = state != 0 # set the result
+
+    if state != 0 goto return_result
+    target.'updated'( 1 )
 
 return_result:
-    .return(0)
+    .return($I0)
     
 error_pattern_not_match:
     $S0 = "smart: * Target '"
@@ -987,6 +995,7 @@ iterate_updators_end:
     .param pmc stem :optional # specified if 'target' is a pattern-target
 
     .local pmc pattern
+    .local pmc real_target
 
     if null stem goto handle_with_normal_target
 
@@ -996,20 +1005,18 @@ handle_with_pattern_target:
     ## Get the real name of the 'target' by flattenning itself.
     $S0 = pattern.'flatten'( target, stem )
     ## Convert into real target
-    .local pmc real_target
     real_target = 'target'( $S0 )
-    
-    target = real_target
     goto visit_updators
     
 handle_with_normal_target:
     null pattern
+    real_target = target
     goto visit_updators
     
 visit_updators:
     .lex "$target_pattern", pattern
     .lex "$target_stem", stem
-    .lex "$target", target
+    .lex "$target", real_target
     .lex "$visitor", visit
     .const 'Sub' $P1 = "visit-updator"
     capture_lex $P1
@@ -1209,94 +1216,4 @@ return_result:
     .return(pattern_target)
 .end # sub "find-pattern-target"
 
-
-# =item
-# =cut
-# .sub "update-target-through-pattern-targets" :anon
-#     .param pmc target
-#     .param int stop_if_no_match
-    
-#     .local int count_newer
-#     .local int count_updated
-#     .local int count_actions # executed actions
-#     .local int matched # if any pattern matched?
-#     set count_newer,    0
-#     set count_updated,  0
-#     set count_actions,  0
-#     set matched,        0
-
-#     ##############################################################
-#     ## If there is no updators binded with the 'target', we need to check out
-#     ## pattern targets and find a matched pattern, invoke updatation on it.
-#     ##############################################################
-# check_out_pattern_targets_for_updating:
-#     .local pmc patterns, pattern_it
-#     .local pmc pattern_target
-
-# try_static_patterns:
-# #     get_hll_global patterns, ['smart';'make'], "@<*%>"
-# #     if null patterns goto try_patterns
-# #     bsr update_by_patterns
-# #     if $I0 goto check_out_pattern_targets_for_updating__done
-
-# try_patterns:
-#     get_hll_global patterns, ['smart';'make'], "@<%>"
-#     if null patterns goto try_match_anything
-#     bsr update_by_patterns
-#     #if $I0 goto check_out_pattern_targets_for_updating__done
-#     goto check_out_pattern_targets_for_updating__done
-
-    
-# update_by_patterns:
-#     set $I0, 0
-#     new pattern_it, 'Iterator', patterns
-# check_out_pattern_targets_for_updating__iterate:
-#     unless pattern_it goto check_out_pattern_targets_for_updating__iterate_end
-#     shift pattern_target, pattern_it
-#     ($I1, $I2, $I3, matched) = 'update-target-%'( pattern_target, target )
-#     unless matched goto check_out_pattern_targets_for_updating__iterate
-#     add count_updated, $I1
-#     add count_newer,   $I2
-#     add count_actions, $I3
-#     target.'updated'( 1 )
-#     set $I0, 1
-#     goto check_out_pattern_targets_for_updating__done
-
-# check_out_pattern_targets_for_updating__iterate_end:
-#     null patterns
-#     null pattern_target
-#     ret
-
-    
-# try_match_anything:
-#     ## Here, we got not matched pattern, try match-anything
-#     get_hll_global pattern_target, ['smart';'make'], "$<%>"
-#     if null pattern_target goto report_error_if_file_not_existed
-    
-#     ($I1, $I2, $I3, matched) = 'update-target-%'( pattern_target, target )
-#     unless matched goto check_out_pattern_targets_for_updating__done
-#     add count_updated, $I1
-#     add count_newer,   $I2
-#     add count_actions, $I3
-#     target.'updated'( 1 )
-#     goto check_out_pattern_targets_for_updating__done
-
-# report_error_if_file_not_existed:
-#     #exists $I0, 
-# check_out_pattern_targets_for_updating__failed:
-#     unless stop_if_no_match goto check_out_pattern_targets_for_updating__done
-    
-#     $S0 = target
-#     $S1 = "smart: *** No rule to make target '"
-#     $S1 .= $S0
-#     $S1 .= "'. Stop.\n"
-#     printerr $S1
-#     exit EXIT_ERROR_NO_RULE
-    
-# check_out_pattern_targets_for_updating__done:
-#     null patterns
-#     null pattern_target
-
-#     .return (count_updated, count_newer, count_actions, matched)
-# .end # sub "update-target-through-pattern-targets"
 

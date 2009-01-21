@@ -41,7 +41,7 @@ a: c.d
 	@echo "check:(c.d):$@"
 
 .c.h:
-	@echo "check:(d.h, d.c):$@, $<"
+	@echo "check:(d.h, d.c, d):$@, $<, $*"
 
 %.c:
-	@echo "source: $@"
+	@echo "source: $@, stem=$*"
