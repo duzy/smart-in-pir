@@ -1230,7 +1230,23 @@ create_new_makefile_target:
     
 push_updator:
     if null updator goto return_result
+    
     getattribute $P0, target, 'updators'
+    elements $I0, $P0
+    unless 0 < $I0 goto just_push_it
+
+    ## New updator should always take the first position,
+    ## the previous updator at the beginning be moved behind.
+    ## 
+    ## NOTE that the actions of the first updator will be executed
+    ## while updating.
+    $P1 = $P0[0]
+    $P0[0] = updator
+    push $P0, $P1
+    
+    goto return_result
+    
+just_push_it:
     push $P0, updator ## bind the target with the updator
     
 return_result:

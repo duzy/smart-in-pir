@@ -805,7 +805,8 @@ do_normal_update:
     # print "\n"
     
     ## TODO: Only executes the last updator?
-    updator = updators[-1]
+    #updator = updators[-1]
+    updator = updators[0]
 
     ## BS: Do NOT change the order of the following codes.
     if count_newer > 0          goto execute_actions
@@ -941,7 +942,7 @@ error_pattern_not_match:
 
 do_update:
     $I0 = 'update-target'( prerequisite )
-    
+
     if is_orderonly goto return_result
 
     getattribute $P0, prerequisite, 'count_newer'
@@ -971,11 +972,12 @@ return_result:
     
     updators = target.'updators'()
     new updator_it, 'Iterator', updators
-    
+
 iterate_updators:
     unless updator_it goto iterate_updators_end
     shift updator, updator_it
     visit( updator )
+    goto iterate_updators
 iterate_updators_end:
     null updator
     null updator_it
