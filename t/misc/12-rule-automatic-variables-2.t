@@ -6,10 +6,10 @@
 
 #{}
 
-all: echo clean rm
+all: clean echo rm
 
 echo: trick1.txt trick2.txt trick3.txt | foo bar cat
-	@$@ "ok, [$?], [$^], [$|]"
+	@$@ "check:([trick1.txt trick2.txt trick3.txt], [foo bar cat]):[$?], [$|]"
 
 trick1.txt trick2.txt trick3.txt: t/foo t/foo t/foo
 	@echo "check:(.):$(@D)"
@@ -24,6 +24,9 @@ t/foo:
 
 %:
 	@echo "anything: $@"
+
+clean:
+	@rm -f {trick1,trick2,trick3}.txt
 
 rm:
 	@$@ -f {trick1,trick2,trick3}.txt

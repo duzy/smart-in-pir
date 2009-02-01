@@ -25,7 +25,7 @@
     push @result, "==========\n";
 
     # baz: c
-    system("echo c > c") == 0 or do {
+    system("echo > c") == 0 or do {
         push @result, "ERROR: can't execute 'echo c > c'";
         die "can't execute 'echo c > c': $!";
     };
@@ -34,7 +34,7 @@
     push @result, "==========\n";
 
     # c: trick2
-    system("sleep 1; echo trick2 > trick2") == 0 or do {
+    system("sleep 1; echo > trick2") == 0 or do {
         push @result, "ERROR: can't execute 'echo trick2 > c'";
         die "can't execute 'echo trick2 > c': $!";
     };
@@ -42,7 +42,7 @@
     push @result, @temp;
     push @result, "==========\n";
 
-    system("sleep 1; echo a > a") == 0 or do {
+    system("sleep 1; echo > a") == 0 or do {
         push @result, "ERROR: can't execute 'echo a > a'";
         die "can't execute 'echo a > a': $!";
     };
@@ -50,7 +50,7 @@
     push @result, @temp;
     push @result, "==========\n";
 
-    system("sleep 1; echo d > d") == 0 or do {
+    system("sleep 1; echo > d") == 0 or do {
         push @result, "ERROR: can't execute 'echo a > a'";
         die "can't execute 'echo a > a': $!";
     };
