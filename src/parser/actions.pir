@@ -297,7 +297,7 @@ no_number_one_target:
     exit EXIT_ERROR_NO_TARGETS
 .end
 
-.sub "!PACK-ARGS"
+.sub ":PACK"
     .param pmc args :slurpy
     .return (args)
 .end
@@ -1065,149 +1065,72 @@ action_pack_orderonly__done:
 
 .end # sub "!MAKE-RULE"
 
+.sub ":PHONY-RULE"
+    .param pmc items
+    
+    .local pmc array
+    get_hll_global array, ['smart';'make';'rule'], ".PHONY"
+    unless null array goto push_items
+    
+    array = new 'ResizableStringArray'
+    set_hll_global ['smart';'make';'rule'], ".PHONY", array
+    
+push_items:
+    
+#     $S0 = join ' ', items
+#     $P1 = '~expanded-items'( $S0 )
+#     $P2 = new 'Iterator', $P1
+# convert_items_into_array__iterate_items:
+#     unless $P2 goto convert_items_into_array__iterate_items_end
+#     $P1 = shift $P2
+#     push array, $P1
+#     goto convert_items_into_array__iterate_items
+# convert_items_into_array__iterate_items_end:
+# convert_items_into_array__done:
+    new $P1, 'Iterator', items 
+iterate_items:
+    unless $P1 goto iterate_items_end
+    shift $P0, $P1
+    push array, $P0
+    goto iterate_items
+iterate_items_end:
+
+.end # sub ":PHONY-RULE"
+
+.sub ":SUFFIXES-RULE"
+    .param pmc items
+    
+    .local pmc array
+    get_hll_global array, ['smart';'make';'rule'], ".SUFFIXES"
+    unless null array goto push_items
+    
+    array = new 'ResizableStringArray'
+    set_hll_global ['smart';'make';'rule'], ".SUFFIXES", array
+    
+push_items:
+    
+    new $P1, 'Iterator', items 
+iterate_items:
+    unless $P1 goto iterate_items_end
+    shift $P0, $P1
+    push array, $P0
+    goto iterate_items
+iterate_items_end:
+.end # sub ":SUFFIXES-RULE"
 
 =item
-"!UPDATE-SPECIAL-RULE"
+":SPECIAL-RULE"
 =cut
-.sub "!UPDATE-SPECIAL-RULE"
+.sub ":SPECIAL-RULE"
     .param string name
-    .param pmc items    :slurpy
+    .param pmc items
 
-check_if_PHONY:
-    unless name == ".PHONY" goto check_if_SUFFIXES
-    bsr update_special_PHONY
-    goto check_name_done
-check_if_SUFFIXES:
-    unless name == ".SUFFIXES" goto check_if_DEFAULT
-    bsr update_special_SUFFIXES
-    goto check_name_done
-check_if_DEFAULT:
-    unless name == ".DEFAULTS" goto check_if_PRECIOUS
-    bsr update_special_DEFAULTS
-    goto check_name_done
-check_if_PRECIOUS:
-    unless name == ".PRECIOUS" goto check_if_INTERMEDIATE
-    bsr update_special_PRECIOUS
-    goto check_name_done
-check_if_INTERMEDIATE:
-    unless name == ".INTERMEDIATE" goto check_if_SECONDARY
-    bsr update_special_INTERMEDIATE
-    goto check_name_done
-check_if_SECONDARY:
-    unless name == ".SECONDARY" goto check_if_SECONDEXPANSION
-    bsr update_special_SECONDARY
-    goto check_name_done
-check_if_SECONDEXPANSION:
-    unless name == ".SECONDEXPANSION" goto check_if_DELETE_ON_ERROR
-    bsr update_special_SECONDEXPANSION
-    goto check_name_done
-check_if_DELETE_ON_ERROR:
-    unless name == ".DELETE_ON_ERROR" goto check_if_IGNORE
-    bsr update_special_DELETE_ON_ERROR
-    goto check_name_done
-check_if_IGNORE:
-    unless name == ".IGNORE" goto check_if_LOW_RESOLUTION_TIME
-    bsr update_special_IGNORE
-    goto check_name_done
-check_if_LOW_RESOLUTION_TIME:
-    unless name == ".LOW_RESOLUTION_TIME" goto check_if_SILENT
-    bsr update_special_LOW_RESOLUTION_TIME
-    goto check_name_done
-check_if_SILENT:
-    unless name == ".SILENT" goto check_if_EXPORT_ALL_VARIABLES
-    bsr update_special_SILENT
-    goto check_name_done
-check_if_EXPORT_ALL_VARIABLES:
-    unless name == ".EXPORT_ALL_VARIABLES" goto check_if_NOTPARALLEL
-    bsr update_special_EXPORT_ALL_VARIABLES
-    goto check_name_done
-check_if_NOTPARALLEL:
-    unless name == ".NOTPARALLEL" goto check_name_done
-    bsr update_special_NOTPARALLEL
-    goto check_name_done
-check_name_done:
-
+    print "TODO: special rule '"
+    print name
+    print "'\n"
+    
     .return()
 
-    ######################
-    ## local routine: update_special_PHONY
-update_special_PHONY:
-    $S0 = ".PHONY"
-    bsr update_special_array_rule
-    ret
-
-    ######################
-    ## local routine: update_special_SUFFIXES
-update_special_SUFFIXES:
-    $S0 = ".SUFFIXES"
-    bsr update_special_array_rule
-    ret
-
-    ######################
-    ## local routine: update_special_DEFAULTS
-update_special_DEFAULTS:
-    say "TODO: .DEFAULTS rule..."
-    ret
-
-    ######################
-    ## local routine: update_special_PRECIOUS
-update_special_PRECIOUS:
-    say "TODO: .PRECIOUS rule..."
-    ret
-
-    ######################
-    ## local routine: update_special_INTERMEDIATE
-update_special_INTERMEDIATE:
-    say "TODO: .INTERMEDIATE rule..."
-    ret
-
-    ######################
-    ## local routine: update_special_SECONDARY
-update_special_SECONDARY:
-    say "TODO: .SECONDARY rule..."
-    ret
-
-    ######################
-    ## local routine: update_special_SECONDEXPANSION
-update_special_SECONDEXPANSION:
-    say "TODO: .SECONDEXPANSION rule..."
-    ret
-
-    ######################
-    ## local routine: update_special_DELETE_ON_ERROR
-update_special_DELETE_ON_ERROR:
-    say "TODO: .DELETE_ON_ERROR rule..."
-    ret
-
-    ######################
-    ## local routine: update_special_IGNORE
-update_special_IGNORE:
-    say "TODO: .IGNORE rule..."
-    ret
-
-    ######################
-    ## local routine: update_special_LOW_RESOLUTION_TIME
-update_special_LOW_RESOLUTION_TIME:
-    say "TODO: .LOW_RESOLUTION_TIME rule..."
-    ret
-
-    ######################
-    ## local routine: update_special_SILENT
-update_special_SILENT:
-    say "TODO: .SILENT rule..."
-    ret
-
-    ######################
-    ## local routine: update_special_EXPORT_ALL_VARIABLES
-update_special_EXPORT_ALL_VARIABLES:
-    say "TODO: .EXPORT_ALL_VARIABLES rule..."
-    ret
-
-    ######################
-    ## local routine: update_special_NOTPARALLEL
-update_special_NOTPARALLEL:
-    say "TODO: .NOTPARALLEL rule..."
-    ret
 
     ######################
     ## local routine: update_special_array_rule
@@ -1242,7 +1165,7 @@ convert_items_into_array__iterate_items_end:
 convert_items_into_array__done:
     ret
 
-.end # sub !UPDATE-SPECIAL-RULE
+.end # sub :SPECIAL-RULE
 
 
 .sub "!BIND-TARGETS-BY-EXPANDING-STRING"

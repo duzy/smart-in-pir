@@ -254,11 +254,11 @@ sub check_and_convert_suffix($str) {
 method make_rule($/) {
     our $?BLOCK;
     our $RULE_NUMBER;
-    $RULE_NUMBER := $RULE_NUMBER + 1;
-    if ( $<make_special_rule> ) {
+    if $<make_special_rule> {
         make $( $<make_special_rule> );
     }
     else {
+        $RULE_NUMBER := $RULE_NUMBER + 1;
         my $targets   := expanded( $<expanded_targets> );
         my $epre      := PAST::Compiler.compile( $($<expanded_prerequisites>) );
         my $prerequisites := $epre();
@@ -482,12 +482,21 @@ method smart_action($/) {
 }
 
 method make_special_rule($/) {
-    my $past := PAST::Op.new( :pasttype('call'),
-      :name('!UPDATE-SPECIAL-RULE') );
-    $past.push( PAST::Val.new( :value(~$<name>), :returns('String') ) );
+    my $name := ~$<name>;
+    my $past := PAST::Op.new( :pasttype('call'), :name(':SPECIAL-RULE') );
+#     for $<item> {
+#         $past.push( PAST::Val.new( :value(~$_), :returns('String') ) );
+#     }
+    my $items := PAST::Op.new( :pasttype('call'), :name(':PACK') );
     for $<item> {
-        $past.push( PAST::Val.new( :value(~$_), :returns('String') ) );
+        $items.push( PAST::Val.new( :value(~$_), :returns('String') ) );
     }
+    if $name eq '.PHONY'        { $past.name( ':PHONY-RULE' ); }
+    elsif $name eq '.SUFFIXES'  { $past.name( ':SUFFIXES-RULE' ); }
+    else {
+        $past.push( PAST::Val.new( :value($name), :returns('String') ) );
+    }
+    $past.push( $items );
     make $past;
 }
 

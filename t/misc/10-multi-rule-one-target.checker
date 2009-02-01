@@ -1,16 +1,16 @@
 # -*- cperl -*-
 {
     my $s = <<"____END_EXPECT";
-ok, a
-ok, b
-ok, c
-ok, e, command 1
-ok, e, command 2
-ok, d <- e, command 1
-ok, d <- e, command 2
+check(a):a
+check(b):b
+check(c):c
+check(e):e;command 1
+check(e):e;command 2
+check(d,e;command 1):d,e;command 1
+check(d,e;command 2):d,e;command 2
 foobar, invoked by foo
 todo: think about the the order of invocation of rules
-foo <- a b c d | bar
+check:(foo <- d a b c | bar):foo <- d a b c | bar
 ____END_EXPECT
     ;
     my @r;
