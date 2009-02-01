@@ -4,10 +4,10 @@
         'foobar',
         'foo',
         'bar',
-        'a',
-        'b',
-        'c',
-        'd',
+        'fa',
+        'fb',
+        'fc',
+        'fd',
         'baz',
         'echo',
         'trick',
@@ -24,8 +24,8 @@
     push @result, @temp;
     push @result, "==========\n";
 
-    # baz: c
-    system("echo > c") == 0 or do {
+    # baz: fc
+    system("echo > fc") == 0 or do {
         push @result, "ERROR: can't execute 'echo c > c'";
         die "can't execute 'echo c > c': $!";
     };
@@ -33,7 +33,7 @@
     push @result, @temp;
     push @result, "==========\n";
 
-    # c: trick2
+    # fc: trick2
     system("sleep 1; echo > trick2") == 0 or do {
         push @result, "ERROR: can't execute 'echo trick2 > c'";
         die "can't execute 'echo trick2 > c': $!";
@@ -42,7 +42,7 @@
     push @result, @temp;
     push @result, "==========\n";
 
-    system("sleep 1; echo > a") == 0 or do {
+    system("sleep 1; echo > fa") == 0 or do {
         push @result, "ERROR: can't execute 'echo a > a'";
         die "can't execute 'echo a > a': $!";
     };
@@ -50,7 +50,7 @@
     push @result, @temp;
     push @result, "==========\n";
 
-    system("sleep 1; echo > d") == 0 or do {
+    system("sleep 1; echo > fd") == 0 or do {
         push @result, "ERROR: can't execute 'echo a > a'";
         die "can't execute 'echo a > a': $!";
     };
@@ -66,7 +66,7 @@
     push @result, @temp;
     push @result, "==========\n";
 
-    system("sleep 1; touch a c d") == 0 or do {
+    system("sleep 1; touch fa fc fd") == 0 or do {
         push @result, "ERROR: can't execute 'touch a c d'";
         die "can't execute 'touch a c d': $!";
     };

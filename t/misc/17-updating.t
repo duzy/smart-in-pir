@@ -1,7 +1,7 @@
 # -*- mode: makefile -*-
 #
-# runner: 12-rule-automatic-variables
-# checker: 12-rule-automatic-variables
+# runner: 17-updating
+# checker: 17-updating
 #
 # #{
 #     $@    $%    $<    $?    $^    $+    $|    $*
@@ -119,10 +119,10 @@ foo: echo
 	@echo "ok, $@ => $^; first: $<"
 bar: baz ; @echo "ok, $@ => $^; first: $<"
 
-  a b c d : trick2
+  fa fb fc fd : trick2
 	@echo "ok, $@, $^"
 
-baz: a c d ; @echo "ok, $@ => $^; first: $<"
+baz: fa fc fd ; @echo "ok, $@ => $^; first: $<"
 
 echo: trick
 	@$@ "ok, you '$<' me, $^..."
