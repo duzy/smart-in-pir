@@ -1,0 +1,59 @@
+## -*- mode: Makefile -*-
+## $Id$
+
+CXX = g++
+CXXFLAGS = -Iinclude
+
+RM = rm
+RM_RF = $(RM) -rf
+
+V = debug
+
+OUT_DIR  = build/foo/$(V)
+OUT_BIN  = $(OUT_DIR)/bin
+OUT_OBJS = $(OUT_DIR)/objs
+OUT_DEPS = $(OUT_DIR)/deps
+
+SOURCES = $(wildcard src/*.cpp)
+
+OBJECT_PAT = $(OUT_OBJS)/%.o
+OBJECTS = $(SOURCES:%.cpp=$(OBJECT_PAT))
+DEPEND_PAT = $(OUT_DEPS)/%.d
+DEPENDS = $(SOURCES:%.cpp=$(DEPEND_PAT))
+
+TARGET = foobar
+
+#.DEFAULT_GOAL := $(TARGET)
+
+MKDIR_IF_NON = @[ -d $(@D) ] || mkdir -p $(@D)
+
+all: $(TARGET:%=$(OUT_BIN)/%)
+	@echo $(.DEFAULT_GOAL) done
+
+print-depends:
+	@echo $(DEPENDS)
+
+clean-depends:
+	@rm -vf $(DEPENDS)
+
+clean: clean-depends
+	$(RM_RF) $(TARGET:%=$(OUT_BIN)/%) $(OBJECTS)
+
+$(TARGET:%=$(OUT_BIN)/%): $(OBJECTS)
+	$(MKDIR_IF_NON)
+	$(CXX) $(LDFLAGS) $^ $(LOADLIBES) $() -o $@
+
+$(OBJECTS):$(OBJECT_PAT):%.cpp
+	$(MKDIR_IF_NON)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+$(DEPENDS):$(DEPEND_PAT):%.cpp
+	$(MKDIR_IF_NON)
+	@echo -n gen: $@ ...
+	@-$(CXX) -Iinclude -MM -MP -MF $@ -MT $(OUT_OBJS)/$*.o $<
+	@echo done
+
+include $(DEPENDS)
+
+
+
+
