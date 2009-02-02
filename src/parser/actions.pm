@@ -203,33 +203,36 @@ sub push_prerequisites( $past, $name, @prerequisites, $past_rule, $implicit ) {
                 $past_rule ) ) )
     );
     for @prerequisites {
-        my $pat := check_pattern($_);
-        if $implicit && $pat {
-            $past.push(
-                PAST::Op.new( :inline('    push %0, %1'),
-                  PAST::Var.new( :name($name), :scope('register') ),
-                  PAST::Op.new( :pasttype('call'), :name('new:Target'),
-                    PAST::Val.new( :value($_) ) ) )
-            );
-        }
-        else {
-            if check_wildcard( $_ ) {
-                $past.push(
-                    PAST::Op.new( :pasttype('call'), :name('!WILDCARD-PREREQUISITE'),
-                      PAST::Var.new( :name($name), :scope('register') ),
-                      PAST::Val.new( :value($_) ) )
-                  );
-            }
-            else {
+        my $prereq := ~$_;
+        if $prereq ne "" {
+            my $pat := check_pattern($prereq);
+            if $implicit && $pat {
                 $past.push(
                     PAST::Op.new( :inline('    push %0, %1'),
                       PAST::Var.new( :name($name), :scope('register') ),
-                      PAST::Op.new( :pasttype('call'), :name(':BIND-TARGET'),
-                        PAST::Val.new( :value($_) ) ) )
+                      PAST::Op.new( :pasttype('call'), :name('new:Target'),
+                        PAST::Val.new( :value($prereq) ) ) )
                   );
             }
-        }
-    }
+            else {
+                if check_wildcard( $prereq ) {
+                    $past.push(
+                        PAST::Op.new( :pasttype('call'), :name('!WILDCARD-PREREQUISITE'),
+                          PAST::Var.new( :name($name), :scope('register') ),
+                          PAST::Val.new( :value($prereq) ) )
+                      );
+                }
+                else {
+                    $past.push(
+                        PAST::Op.new( :inline('    push %0, %1'),
+                          PAST::Var.new( :name($name), :scope('register') ),
+                          PAST::Op.new( :pasttype('call'), :name(':TARGET'),
+                            PAST::Val.new( :value($prereq) ) ) )
+                      );
+                }
+            }
+        } # if $prereq ne ''
+    } # for
 }
 
 sub check_and_convert_suffix($str) {
@@ -294,7 +297,7 @@ method make_rule($/) {
                 $past.push(
                     PAST::Var.new( :name('static_target'), :scope('register'),
                       :viviself(
-                          PAST::Op.new( :pasttype('call'), :name(':BIND-TARGET'),
+                          PAST::Op.new( :pasttype('call'), :name(':TARGET'),
                             PAST::Val.new( :value($_) ),
                             PAST::Var.new( :name('pattern_target'), :scope('register') ) ) ) )
                 );
@@ -332,7 +335,7 @@ method make_rule($/) {
                         $/.panic("smart: * Mixed implicit and normal rules: '"~$_~"'");
                     }
                     $past.push( PAST::Op.new( :pasttype('call'),
-                      :name(':BIND-TARGET'),
+                      :name(':TARGET'),
                       PAST::Val.new( :value($_) ), $past_rule )
                     );
                 }

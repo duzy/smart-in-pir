@@ -19,7 +19,7 @@ rule TOP {
 
 token ws { <!ww> [ <comment> | \s+ ]* }
 token comment { <comment_block> | [ '#' \N* \n? ] }
-token comment_block { '#{' <-[ } ]>* '}' }
+token comment_block { '#{' [<!before '#}'>.]* '#}' }
 token ws_inline { <!ww> [ <comment_block> | <[ \ \t ]>* | [ '#' \N* ] ] }
 
 rule statement {
@@ -116,7 +116,7 @@ token make_rule {
          ## If static pattern rule, <expanded_prerequisites> represents
          ## static pattern target, in this case, the coninual match will be ':'
          <expanded_prerequisites>
-         [ ':' <.ws_inline> [\\\n<.ws_inline>]* <static_prereq_pattern> ]?
+         [ ':' <.ws_inline> [[\\\n<.ws_inline>]* <static_prereq_pattern>]? ]?
          [ '|' <.ws_inline> [\\\n<.ws_inline>]* <expanded_orderonly> ]?
        ]
        [
@@ -124,8 +124,9 @@ token make_rule {
             [<smart_action> | [<make_action> [ \n \t <make_action> ]*]]
           ]
          |[ <smart_action>
-            |[ [ \n <[ \ ]>* [ [ '#' \N* ] | <.comment_block> ] ]*
-               [ \n \t <make_action> ]*
+            |[
+               [ \n <[ \ ]>* [ [ '#' \N* ] | <.comment_block> ] ]*
+               [ \n [[\t <make_action>] | ['#' \N*]]]*
              ]
           ]
        ]

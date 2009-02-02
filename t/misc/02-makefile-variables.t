@@ -36,7 +36,7 @@ say 'check:>F(fff):', $(>F);
 say 'check:D(test):', ${D};
 say 'check:A B(pre-space and in-space...):', $(A B);
 say 'check:A  B("variable with in-space is ok"):', $(A  B);
-say 'check:A	B("variable with in-tab is ok"):', ${A	B} #{ separates with tab } ;
+say 'check:A	B("variable with in-tab is ok"):', ${A	B} #{ separates with tab #} ;
 say 'check:A($(A B)):', $(A);
 
 #say $(AAAA); # this should emit a error

@@ -799,13 +799,11 @@ do_normal_update:
     
     .local pmc count_newer
     getattribute count_newer, target, 'count_newer'
-    # print count_newer
-    # print "\t"
-    # print target
-    # print "\n"
     
-    ## TODO: Only executes the last updator?
-    #updator = updators[-1]
+    ## We should always use the first updator! The first updator is the last
+    ## defined in the smartfile, in order to be compatibile with GNU make,
+    ## all previous updator definition will be ignored. See ':BIND-TARGET' in
+    ## actions.pir for details.
     updator = updators[0]
 
     ## BS: Do NOT change the order of the following codes.
@@ -851,7 +849,11 @@ return_result:
     .return ($I0)
 
 error_not_rule_for_updating:
-    $S0 = "smart: * "
+    $S1 = target
+    $S0 = "smart: * No rule to make target '"
+    $S0 .= $S1
+    #$S0 .= "', needed by '"
+    $S0 .= "'. Stop.\n"
     printerr $S0
     exit EXIT_ERROR_NO_RULE
 .end # sub "update-target"

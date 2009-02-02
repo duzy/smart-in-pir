@@ -1216,7 +1216,7 @@ create_new_makefile_target:
 
 =item
 =cut
-.sub ":BIND-TARGET"
+.sub ":TARGET"
     .param string name
     .param pmc updator :optional
     .local pmc target
@@ -1251,7 +1251,7 @@ just_push_it:
     
 return_result:
     .return (target)
-.end # sub "!BIND-TARGET~"
+.end # sub ":TARGET"
 
 =item
 =cut

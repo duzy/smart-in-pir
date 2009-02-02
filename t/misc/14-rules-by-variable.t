@@ -22,4 +22,3 @@ foobar: $(T) $(A) $(B)
 head:
 	@echo "1..9"
 
-
