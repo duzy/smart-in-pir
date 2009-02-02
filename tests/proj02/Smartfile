@@ -43,3 +43,9 @@ $(BUILT_OBJECTS):$(BUILT_OBJECT_PAT):%.cpp
 #   say "hello";
 # }
 sa :; @echo "hello"
+
+#%:
+#	@echo $@
+
+include foo.inc
+

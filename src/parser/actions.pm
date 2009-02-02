@@ -40,8 +40,7 @@ method TOP($/, $key) {
             $past.push( PAST::Op.new( :pasttype('call'),
               :name('!SETUP-DEFAULT-GOAL'),
               PAST::Var.new( :name('goal'), :scope('register'), :isdecl(1),
-                :viviself( PAST::Op.new( :pasttype('call'),
-                  :name('!GET-TARGET'),
+                :viviself( PAST::Op.new( :pasttype('call'), :name(':TARGET'),
                   PAST::Val.new( :returns('String'), :value($numberOneTarget) ) ) )
               )
             )
@@ -535,7 +534,54 @@ method make_conditional_statement($/) {
 }
 
 method make_include_statement($/) {
-    make PAST::Op.new( :inline('print "TODO: include statement\n"'), :node($/) );
+    our $?BLOCK;
+    our $SMART_INCLUDE_NUMBER;
+    $SMART_INCLUDE_NUMBER := $SMART_INCLUDE_NUMBER + 1;
+
+    my $epre := PAST::Compiler.compile( $($<expanded_prerequisites>) );
+    my $prerequisites := $epre();
+    my @prerequisites;
+    @prerequisites := split_items( $prerequisites );
+
+    if 0 {
+        my $past := PAST::Block.new( :blocktype('declaration'), :node($/) );
+        $past.name('_smart_include_'~$SMART_INCLUDE_NUMBER);
+        if @prerequisites {
+            for @prerequisites {
+                my $prereq := ~$_;
+                if $prereq ne "" {
+                    my $tar := PAST::Var.new( :name('target'), :scope('register'),
+                      :viviself(
+                          PAST::Op.new( :pasttype('call'), :name(':TARGET'),
+                            PAST::Val.new(:value($prereq)) ) )
+                  );
+                    $past.push( $tar );
+                    $past.push(
+                        PAST::Op.new( :pasttype('callmethod'), :name('update'),
+                          PAST::Var.new( :name('target'), :scope('register') ) )
+                      );
+                }
+            }
+        }
+
+        $?BLOCK.push( $past );
+        make PAST::Op.new( :pasttype('call'), :name($past.name()) );
+    }
+    else {
+        my $includes := PAST::Stmts.new();
+        if @prerequisites {
+            for @prerequisites {
+                my $s := ~$_;
+                if $s ne "" {
+                    $includes.push(
+                        PAST::Op.new( :pasttype('call'), :name('include'),
+                          PAST::Val.new( :value($s), :returns('String') ) )
+                    );
+                }
+            }
+        }
+        make $includes;
+    }
 }
 
 method smart_builtin_statement($/) {

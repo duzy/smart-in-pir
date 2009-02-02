@@ -58,6 +58,7 @@ BUILTINS_PIR = \
   src/builtins/say.pir \
   src/builtins/expand.pir \
   src/builtins/functions.pir \
+  src/builtins/include.pir \
 
 # PMCS = smart
 # PMC_SOURCES = $(PMC_DIR)/smart.pmc

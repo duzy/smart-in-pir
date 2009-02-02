@@ -57,6 +57,7 @@ BUILTINS_PIR = \
   src/builtins/say.pir \
   src/builtins/expand.pir \
   src/builtins/functions.pir \
+  src/builtins/include.pir \
 
 # PMCS = smart
 # PMC_SOURCES = $(PMC_DIR)/smart.pmc
@@ -89,9 +90,11 @@ $(SMART_GROUP): $(PARROT) $(PMC_SOURCES)
 	cd $(PMC_DIR) && $(BUILD_DYNPMC) linklibs $(PMCS)
 	cd $(PMC_DIR) && $(BUILD_DYNPMC) copy --destination=$(PARROT_DYNEXT) $(PMCS)
 
+ifdef UPDATE_MAKEFILE
 # regenerate the Makefile
 Makefile: config/makefiles/root.in
 	cd $(BUILD_DIR) && $(RECONFIGURE) --step=gen::languages --languages=smart
+endif
 
 Makefile.def:
 	@echo -n "BUILD_DIR = " > $@ ; \

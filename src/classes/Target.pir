@@ -713,9 +713,9 @@ return_result:
     rule binded to the target.
 =cut
 .sub "update" :method
-    ($I1, $I2, $I3) = 'update-target'( self )
+    $I0 = 'update-target'( self )
     #'test'( self )
-    .return ($I1, $I2, $I3)
+    .return ($I0)
 .end
 
 .sub 'test' :anon
@@ -852,7 +852,9 @@ error_not_rule_for_updating:
     $S1 = target
     $S0 = "smart: * No rule to make target '"
     $S0 .= $S1
+    #$S1 = requestor
     #$S0 .= "', needed by '"
+    #$S0 .= $S1
     $S0 .= "'. Stop.\n"
     printerr $S0
     exit EXIT_ERROR_NO_RULE

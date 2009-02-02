@@ -59,6 +59,9 @@ object.
     $P0 = new 'Integer'
     $P0 = 0
     set_hll_global ['smart';'Grammar';'Actions'], '$SMART_ACTION_NUMBER', $P0
+    $P0 = new 'Integer'
+    $P0 = 0
+    set_hll_global ['smart';'Grammar';'Actions'], '$SMART_INCLUDE_NUMBER', $P0
 .end
 
 
@@ -225,8 +228,8 @@ end_loop_args:
 guess_smartfile:
     .local pmc filenames
     filenames = new 'ResizableStringArray'
-    push filenames, "Smartfile"
     push filenames, "smartfile"
+    push filenames, "Smartfile"
     push filenames, "GNUmakefile"
     push filenames, "makefile"
     push filenames, "Makefile"
@@ -265,6 +268,8 @@ no_smartfile_for_new_args:
     'import-environment-variables'()
 
     smart = compreg 'smart'
+    set_hll_global ['smart'], "$self", smart
+    
     arguments = "parse-command-line-arguments"( args )
 
 #     $S0 = <<'    ____end_database'

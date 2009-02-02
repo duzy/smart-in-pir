@@ -1276,10 +1276,11 @@ return_result:
     .return()
 .end # sub "!SETUP-DEFAULT-GOAL"
 
-=item
-=cut
-.sub "!GET-TARGET"
-    .param string name
-    get_hll_global $P0, ['smart';'make';'target'], name
-    .return($P0)
-.end # sub "!GET-TARGET"
+# =item
+# =cut
+# .sub "!GET-TARGET"
+#     .param string name
+#     get_hll_global $P0, ['smart';'make';'target'], name
+#     .return($P0)
+# .end # sub "!GET-TARGET"
+

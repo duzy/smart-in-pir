@@ -148,14 +148,14 @@ token expanded_orderonly {
     [<expanded_targets><.ws_inline>[\\\n<.ws_inline>]*]*
     {*}
 }
-token make_prerequisite {
-    [<make_variable_ref>|<-[(:;|\ \t\\\n$]>]+
-    ['('<-[)]>*')']?
-}
-token make_prerequisite_oo {
-    [<make_variable_ref>|<-[(:;|\ \t\\\n$]>]+
-    ['('<-[)]>*')']?
-}
+# token make_prerequisite {
+#     [<make_variable_ref>|<-[(:;|\ \t\\\n$]>]+
+#     ['('<-[)]>*')']?
+# }
+# token make_prerequisite_oo {
+#     [<make_variable_ref>|<-[(:;|\ \t\\\n$]>]+
+#     ['('<-[)]>*')']?
+# }
 token make_action {
     [[<!before \\\n><-[\n]>]+ [\\\n]?]*
 }
@@ -242,7 +242,7 @@ rule make_conditional_statement {
 }
 
 rule make_include_statement {
-    'include' \N+
+    'include' <.ws_inline> [\\\n<.ws_inline>]* <expanded_prerequisites>
     {*}
 }
 
