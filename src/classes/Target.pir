@@ -230,8 +230,10 @@ collect_prerequisites_of_updators__iterate:
 try_process_pattern_target:
     typeof $S0, updator
     if $S0 == 'Rule' goto process_rule_object
-    print "TODO: handle with pattern target: "
-    say updator
+    ##print "TODO: handle with pattern target: "
+    ##print target
+    ##print " <- "
+    ##say updator
     goto collect_prerequisites_of_updators__iterate
 
 process_rule_object:
