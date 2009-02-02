@@ -45,17 +45,20 @@ method TOP($/, $key) {
 	#@?BLOCKS.unshift( $?SMART );
     }
     else { # while leaving the block
-	my $past := PAST::Block.new( :blocktype('declaration'),
-          :pirflags(':anon'), :name("_smart_start") );
-	for $<statement> { $past.push( $( $_ ) ); }
+	my $start := PAST::Block.new( :blocktype('declaration'),
+          :pirflags(':anon'), :name("_start") );
+	for $<statement> { $start.push( $( $_ ) ); }
 
         our $?INCLUDE_LEVEL;
-        if $?INCLUDE_LEVEL == 0 { push_default_goal_updator( $past ); }
+        if $?INCLUDE_LEVEL == 0 { push_default_goal_updator( $start ); }
+
+        ## Avoid the return value.
+        $start.push( PAST::Stmts.new() );
 
         $?SMART.pirflags( ':main :anon' );
         #$?SMART.loadinit(); #.push();
         $?SMART.push( PAST::Var.new( :scope('parameter'), :name('@_'), :slurpy(1) ) );
-        $?SMART.push( PAST::Op.new( :pirop('tailcall'), $past ) );
+        $?SMART.push( PAST::Op.new( :pirop('tailcall'), $start ) );
         make $?SMART;
     }
 }
@@ -285,7 +288,7 @@ method make_rule($/) {
         my $orderonlys := expanded( $<expanded_orderonly> );
 
         my $past := PAST::Block.new( :blocktype('declaration'),
-          :pirflags(':anon'), :name('_smart_rule_'~$RULE_NUMBER), :node($/)
+          :pirflags(':anon'), :name('_rule_'~$RULE_NUMBER), :node($/)
         );
         $past.push( PAST::Var.new( :name('rule'), :scope('register'), :isdecl(1),
           :viviself( PAST::Op.new( :pasttype('call'), :name('new:Rule') ) ) )
@@ -492,7 +495,7 @@ method smart_action($/) {
     $SMART_ACTION_NUMBER := $SMART_ACTION_NUMBER + 1;
     my @ns := ( 'smart', 'action' );
     my $past := PAST::Block.new( :blocktype('declaration'), :pirflags(':anon'), :node($/) );
-    $past.name( "_smart_action_" ~ $SMART_ACTION_NUMBER );
+    $past.name( "_action_" ~ $SMART_ACTION_NUMBER );
     #$past.namespace( "smart::action" );
     $past.namespace( @ns );
     for $<smart_statement> { $past.push( $($_) ); }
@@ -559,7 +562,7 @@ method make_include_statement($/) {
 
     if 0 {
         my $past := PAST::Block.new( :blocktype('declaration'), :pirflags(':anon'), :node($/) );
-        $past.name('_smart_include_'~$SMART_INCLUDE_NUMBER);
+        $past.name('_include_'~$SMART_INCLUDE_NUMBER);
         if @prerequisites {
             for @prerequisites {
                 my $prereq := ~$_;

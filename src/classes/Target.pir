@@ -20,7 +20,7 @@ pattern targets(the match-anything rule is excluded).
 .namespace []
 .sub "new:Target"
     .param pmc aobject
-    
+
     if null aobject goto return_target
 
     .local string object
@@ -230,7 +230,8 @@ collect_prerequisites_of_updators__iterate:
 try_process_pattern_target:
     typeof $S0, updator
     if $S0 == 'Rule' goto process_rule_object
-    say "TODO: handle pattern target"
+    print "TODO: handle with pattern target: "
+    say updator
     goto collect_prerequisites_of_updators__iterate
 
 process_rule_object:
@@ -713,8 +714,8 @@ return_result:
     rule binded to the target.
 =cut
 .sub "update" :method
-    $I0 = 'update-target'( self )
     #'test'( self )
+    $I0 = 'update-target'( self )
     .return ($I0)
 .end
 
@@ -1080,6 +1081,11 @@ visit_the_rule_object:
     find_lex visit, "$visitor"
     .local pmc stem
     find_lex stem, "$stem"
+
+    unless stem == "" goto try_flatten
+    .return()
+
+try_flatten:
     
     $S0 = pattern.'flatten'( prerequisite, stem )
     unless prerequisite == $S0 goto visit_the_flatten_prerequisite
@@ -1175,6 +1181,13 @@ iterate_pattern_orderonlys_end:
     .local pmc target
     get_hll_global target, ['smart';'make';'target'], name
     unless null target goto do_visit
+
+    # ## TODO: It's an error?
+    # $S0 = "smart: * No target '"
+    # $S0 .= name
+    # $S0 .= "'. Die.\n"
+    # die $S0
+
     target = 'new:Target'( name ) ## Make a new target and store it.
     set_hll_global ['smart';'make';'target'], name, target
 do_visit:

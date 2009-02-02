@@ -21,7 +21,7 @@ include -- Include another Smartfile.
     .local pmc target
     #target = 'new:Target'( name ) ## create a new target
     target = ':TARGET'( name )
-    
+
     $I0 = target.'exists'()
     if $I0 goto do_include
     $I0 = target.'update'()

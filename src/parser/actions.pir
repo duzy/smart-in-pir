@@ -937,7 +937,7 @@ create_new_makefile_target:
     .param string name
     .param pmc updator :optional
     .local pmc target
-    
+
     get_hll_global target, ['smart';'make';'target'], name
     
     unless null target goto push_updator
