@@ -35,7 +35,10 @@ do_include:
     #get_hll_global smart, ['smart'], "$self"
     smart = compreg 'smart'
 
+    get_hll_global $P0, ['smart';'Grammar';'Actions'], '$?INCLUDE_LEVEL'
+    inc $P0
     smart.'evalfiles'( target )
+    dec $P0
 
     .return()
 

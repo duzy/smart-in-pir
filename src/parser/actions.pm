@@ -35,24 +35,25 @@ method TOP($/, $key) {
 	    $past.push( $( $_ ) );
         }
 
-        our $numberOneTarget;
-        if $numberOneTarget {
-            $past.push( PAST::Op.new( :pasttype('call'),
-              :name('!SETUP-DEFAULT-GOAL'),
-              PAST::Var.new( :name('goal'), :scope('register'), :isdecl(1),
-                :viviself( PAST::Op.new( :pasttype('call'), :name(':TARGET'),
-                  PAST::Val.new( :returns('String'), :value($numberOneTarget) ) ) )
-              )
-            )
-          );
+        our $?INCLUDE_LEVEL;
+        if $?INCLUDE_LEVEL == 0 {
+            our $numberOneTarget;
+            if $numberOneTarget {
+                $past.push( PAST::Op.new( :pasttype('call'),
+                  :name('!SETUP-DEFAULT-GOAL'),
+                  PAST::Var.new( :name('goal'), :scope('register'), :isdecl(1),
+                    :viviself( PAST::Op.new( :pasttype('call'), :name(':TARGET'),
+                      PAST::Val.new( :returns('String'), :value($numberOneTarget) ) ) )
+                )
+                )
+              );
+            }
+            # push last op to the block to active target updating
+            $past.push( PAST::Op.new( :name('!UPDATE-GOALS'),
+              :pasttype('call'),
+              :node( $/ )
+            ) );
         }
-
-        # push last op to the block to active target updating
-        $past.push( PAST::Op.new( :name('!UPDATE-GOALS'),
-          :pasttype('call'),
-          :node( $/ )
-        ) );
-
         make $past;
     }
 }

@@ -62,6 +62,9 @@ object.
     $P0 = new 'Integer'
     $P0 = 0
     set_hll_global ['smart';'Grammar';'Actions'], '$SMART_INCLUDE_NUMBER', $P0
+    $P0 = new 'Integer'
+    $P0 = 0
+    set_hll_global ['smart';'Grammar';'Actions'], '$?INCLUDE_LEVEL', $P0
 .end
 
 

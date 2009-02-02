@@ -2,5 +2,7 @@
 
 say "test: include ok";
 
-FOO = hello
+FOO = includee
 
+#foo:
+#	@echo "check:(hello):$(FOO)"

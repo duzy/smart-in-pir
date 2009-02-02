@@ -40,10 +40,9 @@ $(BUILT_OBJECTS):$(BUILT_OBJECT_PAT):%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 include foo.inc
-#FOO = hello
 
-say $(FOO);
-say $(TARGET);
+say "check:(includee):", $(FOO);
+say "check:(foobar):", $(TARGET);
 
 # sa: ; {
 #   say "hello";
@@ -51,7 +50,7 @@ say $(TARGET);
 sa :; @echo "$(FOO)"
 
 foo:
-	@echo "check:(hello):$(FOO)"
+	@echo "check:(includee):$(FOO)"
 
 #%:
 #	@echo $@
