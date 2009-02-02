@@ -46,13 +46,15 @@ method TOP($/, $key) {
     }
     else { # while leaving the block
 	my $past := PAST::Block.new( :blocktype('declaration'),
-          :name("_smart_start") );
+          :pirflags(':anon'), :name("_smart_start") );
 	for $<statement> { $past.push( $( $_ ) ); }
 
         our $?INCLUDE_LEVEL;
         if $?INCLUDE_LEVEL == 0 { push_default_goal_updator( $past ); }
 
-        $?SMART.pirflags( ':main' );
+        $?SMART.pirflags( ':main :anon' );
+        #$?SMART.loadinit(); #.push();
+        $?SMART.push( PAST::Var.new( :scope('parameter'), :name('@_'), :slurpy(1) ) );
         $?SMART.push( PAST::Op.new( :pirop('tailcall'), $past ) );
         make $?SMART;
     }
@@ -283,7 +285,7 @@ method make_rule($/) {
         my $orderonlys := expanded( $<expanded_orderonly> );
 
         my $past := PAST::Block.new( :blocktype('declaration'),
-          :name('_smart_rule_'~$RULE_NUMBER), :node($/)
+          :pirflags(':anon'), :name('_smart_rule_'~$RULE_NUMBER), :node($/)
         );
         $past.push( PAST::Var.new( :name('rule'), :scope('register'), :isdecl(1),
           :viviself( PAST::Op.new( :pasttype('call'), :name('new:Rule') ) ) )
@@ -401,7 +403,7 @@ method expandable($/) {
         $name := ~$name~$s;
     }
     my $v := ~$<lp>~$name~$<rp>;
-    my $past := PAST::Block.new(
+    my $past := PAST::Block.new( :pirflags(':anon'),
         :blocktype('declaration'), :name('__expand_name'),
         PAST::Op.new( :pasttype('call'), :name('expand'), :node($/),
           :returns('String'),
@@ -426,7 +428,7 @@ method expandable_text($/) {
         my $suf := ~$<suf>;
     }
     if !$name { $name := ~$/; }
-    my $past := PAST::Block.new(
+    my $past := PAST::Block.new( :pirflags(':anon'),
         :blocktype('declaration'), :name('__expandable_text'),
         PAST::Val.new( :value( ~$name ) )
     );
@@ -447,7 +449,8 @@ method expanded_targets($/, $key) {
         }
         if $<suf> { $text := ~$text~$<suf>; }
     }
-    make PAST::Block.new( :blocktype('declaration'), :name('__expanded_targets'),
+    make PAST::Block.new( :blocktype('declaration'), :pirflags(':anon'),
+      :name('__expanded_targets'),
       PAST::Val.new( :value( ~$text ) ) );
 }
 
@@ -459,7 +462,8 @@ sub make_targets_block($/, $name) {
         if $str { $str := ~$str~' '~$s; }
         else { $str := ~$s; }
     }
-    return PAST::Block.new( :blocktype('declaration'), :name($name), :node($/),
+    return PAST::Block.new( :blocktype('declaration'), :pirflags(':anon'),
+      :name($name), :node($/),
       PAST::Val.new( :value( ~$str ) ) );
 }
 
@@ -487,7 +491,7 @@ method smart_action($/) {
     our $SMART_ACTION_NUMBER;
     $SMART_ACTION_NUMBER := $SMART_ACTION_NUMBER + 1;
     my @ns := ( 'smart', 'action' );
-    my $past := PAST::Block.new( :blocktype('declaration'), :node($/) );
+    my $past := PAST::Block.new( :blocktype('declaration'), :pirflags(':anon'), :node($/) );
     $past.name( "_smart_action_" ~ $SMART_ACTION_NUMBER );
     #$past.namespace( "smart::action" );
     $past.namespace( @ns );
@@ -554,7 +558,7 @@ method make_include_statement($/) {
     @prerequisites := split_items( $prerequisites );
 
     if 0 {
-        my $past := PAST::Block.new( :blocktype('declaration'), :node($/) );
+        my $past := PAST::Block.new( :blocktype('declaration'), :pirflags(':anon'), :node($/) );
         $past.name('_smart_include_'~$SMART_INCLUDE_NUMBER);
         if @prerequisites {
             for @prerequisites {
