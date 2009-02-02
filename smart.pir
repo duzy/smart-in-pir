@@ -268,7 +268,7 @@ no_smartfile_for_new_args:
     'import-environment-variables'()
 
     smart = compreg 'smart'
-    set_hll_global ['smart'], "$self", smart
+    #set_hll_global ['smart'], "$self", smart
     
     arguments = "parse-command-line-arguments"( args )
 

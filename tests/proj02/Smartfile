@@ -25,7 +25,7 @@ TARGET = foobar
 
 MKDIR_IF_NON = @[ -d $(@D) ] || mkdir -p $(@D)
 
-all: $(TARGET:%=$(OUT_BIN)/%)
+all: $(TARGET:%=$(OUT_BIN)/%) foo
 	@echo $(.DEFAULT_GOAL) done
 
 clean:
@@ -39,13 +39,21 @@ $(BUILT_OBJECTS):$(BUILT_OBJECT_PAT):%.cpp
 	$(MKDIR_IF_NON)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+include foo.inc
+#FOO = hello
+
+say $(FOO);
+say $(TARGET);
+
 # sa: ; {
 #   say "hello";
 # }
-sa :; @echo "hello"
+sa :; @echo "$(FOO)"
+
+foo:
+	@echo "check:(hello):$(FOO)"
 
 #%:
 #	@echo $@
 
-include foo.inc
 

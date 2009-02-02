@@ -2,3 +2,5 @@
 
 say "test: include ok";
 
+FOO = hello
+

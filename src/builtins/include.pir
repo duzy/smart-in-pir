@@ -32,7 +32,8 @@ include -- Include another Smartfile.
 
 do_include:
     .local pmc smart
-    get_hll_global smart, ['smart'], "$self"
+    #get_hll_global smart, ['smart'], "$self"
+    smart = compreg 'smart'
 
     smart.'evalfiles'( target )
 

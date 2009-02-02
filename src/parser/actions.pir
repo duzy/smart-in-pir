@@ -205,7 +205,7 @@ set_value:
 
 =item
 =cut
-.sub "!GET-VARIABLE"
+.sub ":VARIABLE"
     .param string name
     .local pmc var
     get_hll_global var, ['smart';'make';'variable'], name

@@ -132,23 +132,38 @@ method make_variable_ref($/) {
         $name := ~$<make_variable_ref2><name>;
     }
     $name := expand( $name );
-    my $var := PAST::Var.new( :name($name),
-      :scope('package'),
-      :namespace('smart::makefile::variable'),
-      #:scope('lexical'),
-      :viviself('Undef'),
-      :lvalue(0),
-      :node($/)
-    );
-    my $binder := PAST::Op.new( :pasttype('call'),
-      :name('!GET-VARIABLE'),
-      :returns('Variable') );
-    $binder.push( PAST::Val.new( :value($var.name()), :returns('String') ) );
 
-    make PAST::Op.new( $var, $binder,
-                       :pasttype('bind'),
-                       :name('bind-makefile-variable-variable'),
-                   );
+    if 0 {
+        my $var := PAST::Var.new( #:name($name),
+            #:scope('package'),
+            #:namespace('smart::make::variable'),
+            :scope('register'),
+              :viviself('Undef'),
+              :lvalue(0),
+              :node($/)
+        );
+        my $binder := PAST::Op.new( :pasttype('call'),
+          :name('!GET-VARIABLE'),
+          :returns('Variable') );
+        $binder.push( PAST::Val.new( :value($name), :returns('String') ) );
+        make PAST::Op.new( $var, $binder,
+                           :pasttype('bind'),
+                           :name('bind-makefile-variable-variable'),
+                       );
+    }
+    else {
+#         my $var := PAST::Var.new( #:name($name),
+#           :scope('register'),
+#           :viviself( PAST::Op.new( :pasttype('call'), :name(':VARIABLE'),
+#             PAST::Val.new(:value($name), :returns('String')) )
+#           ),
+#           :lvalue(0),
+#           :node($/)
+#         );
+#         make $var;
+        make PAST::Op.new( :pasttype('call'), :name(':VARIABLE'),
+          PAST::Val.new(:value($name), :returns('String')) );
+    }
 }
 
 sub expanded($arr) {
@@ -290,15 +305,11 @@ method make_rule($/) {
                       PAST::Val.new( :value($target_pattern) ),
                       $past_rule ) ) ) )
             );
-            $past.push( PAST::Var.new( :name('static_target'), :scope('register'),
-              :isdecl(1) ) );
             for @targets { ## the @targets are static targets here
                 $past.push(
-                    PAST::Var.new( :name('static_target'), :scope('register'),
-                      :viviself(
-                          PAST::Op.new( :pasttype('call'), :name(':TARGET'),
-                            PAST::Val.new( :value($_) ),
-                            PAST::Var.new( :name('pattern_target'), :scope('register') ) ) ) )
+                    PAST::Op.new( :pasttype('call'), :name(':TARGET'),
+                      PAST::Val.new( :value($_) ),
+                      PAST::Var.new( :name('pattern_target'), :scope('register') ) )
                 );
             }
 
@@ -554,12 +565,12 @@ method make_include_statement($/) {
                       :viviself(
                           PAST::Op.new( :pasttype('call'), :name(':TARGET'),
                             PAST::Val.new(:value($prereq)) ) )
-                  );
+                    );
                     $past.push( $tar );
                     $past.push(
                         PAST::Op.new( :pasttype('callmethod'), :name('update'),
                           PAST::Var.new( :name('target'), :scope('register') ) )
-                      );
+                    );
                 }
             }
         }
