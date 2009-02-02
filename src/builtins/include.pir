@@ -38,20 +38,19 @@ do_include:
     get_hll_global $P0, ['smart';'Grammar';'Actions'], '$?INCLUDE_LEVEL'
     inc $P0
     
-    $S0 = target
-    stat $I0, $S0, 1
-    open $P1, $S0
-    read $S1, $P1, $I0
-    close $P1
-    null $P1
-    $S1 = smart.'compile'( $S1, 'target'=>'pir' )
-
-    $S0 = target
-    concat $S0, ".pir"
-    open $P1, $S0, "w"
-    print $P1, $S1
-    close $P1
-    null $P1
+    # $S0 = target
+    # stat $I0, $S0, 1
+    # open $P1, $S0
+    # read $S1, $P1, $I0
+    # close $P1
+    # null $P1
+    # $S1 = smart.'compile'( $S1, 'target'=>'pir' )
+    # $S0 = target
+    # concat $S0, ".pir"
+    # open $P1, $S0, "w"
+    # print $P1, $S1
+    # close $P1
+    # null $P1
     
     smart.'evalfiles'( target )
     dec $P0
