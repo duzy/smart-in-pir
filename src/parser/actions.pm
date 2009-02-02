@@ -18,43 +18,43 @@ value of the comment is passed as the second argument to the method.
 
 class smart::Grammar::Actions;
 
+sub push_default_goal_updator( $past ) {
+    our $numberOneTarget;
+    if $numberOneTarget {
+        $past.push( PAST::Op.new( :pasttype('call'),
+          :name(':DEFAULT-GOAL'),
+          PAST::Var.new( :name('goal'), :scope('register'), :isdecl(1),
+            :viviself( PAST::Op.new( :pasttype('call'), :name(':TARGET'),
+              PAST::Val.new( :returns('String'), :value($numberOneTarget) ) ) )
+        )
+        )
+      );
+    }
+    # push last op to the block to active target updating
+    $past.push( PAST::Op.new( :pasttype('call'), :name('!UPDATE-GOALS') ) );
+}
+
 method TOP($/, $key) {
-    our $?BLOCK;
-    our @?BLOCK;
+    our $?SMART;
+    our @?BLOCKS;
     our @VAR_SWITCHES;
 
     if $key eq 'enter' {
-	$?BLOCK := PAST::Block.new( :blocktype('declaration'), :node( $/ ),
-          :name("_smart")
-        );
-	@?BLOCK.unshift( $?BLOCK );
+	$?SMART := PAST::Block.new( :blocktype('declaration'), :name("_smart"),
+          :node( $/ ) );
+	#@?BLOCKS.unshift( $?SMART );
     }
     else { # while leaving the block
-	my $past := @?BLOCK.shift();
-	for $<statement> {
-	    $past.push( $( $_ ) );
-        }
+	my $past := PAST::Block.new( :blocktype('declaration'),
+          :name("_smart_start") );
+	for $<statement> { $past.push( $( $_ ) ); }
 
         our $?INCLUDE_LEVEL;
-        if $?INCLUDE_LEVEL == 0 {
-            our $numberOneTarget;
-            if $numberOneTarget {
-                $past.push( PAST::Op.new( :pasttype('call'),
-                  :name('!SETUP-DEFAULT-GOAL'),
-                  PAST::Var.new( :name('goal'), :scope('register'), :isdecl(1),
-                    :viviself( PAST::Op.new( :pasttype('call'), :name(':TARGET'),
-                      PAST::Val.new( :returns('String'), :value($numberOneTarget) ) ) )
-                )
-                )
-              );
-            }
-            # push last op to the block to active target updating
-            $past.push( PAST::Op.new( :name('!UPDATE-GOALS'),
-              :pasttype('call'),
-              :node( $/ )
-            ) );
-        }
-        make $past;
+        if $?INCLUDE_LEVEL == 0 { push_default_goal_updator( $past ); }
+
+        $?SMART.pirflags( ':main' );
+        $?SMART.push( PAST::Op.new( :pirop('tailcall'), $past ) );
+        make $?SMART;
     }
 }
 
@@ -68,7 +68,7 @@ method smart_statement( $/, $key ) {
     make $( $/{$key} );
 }
 
-method empty_smart_statement($/) { make PAST::Op.new( :pirop('noop') ); }
+method empty_smart_statement($/) { make PAST::Stmts.new(); }
 
 method make_variable_declaration($/) {
     our $VAR_ON;
@@ -111,10 +111,10 @@ method make_variable_declaration($/) {
         declare_variable( $name, $sign, $value, $<override> );
         }
 
-        make PAST::Op.new( :pirop("noop") );
+        make PAST::Stmts.new();
     }
     else {
-        make PAST::Op.new( :pirop("noop") );
+        make PAST::Stmts.new();
     }
 }
 
@@ -270,7 +270,7 @@ sub check_and_convert_suffix($str) {
   static-targets : target-pattern : prereq-pattern | orderonlys
 =cut
 method make_rule($/) {
-    our $?BLOCK;
+    our $?SMART;
     our $RULE_NUMBER;
     if $<make_special_rule> {
         make $( $<make_special_rule> );
@@ -389,7 +389,7 @@ method make_rule($/) {
 
         $past.push( $past_rule );
 
-        $?BLOCK.push( $past );
+        $?SMART.push( $past );
         make PAST::Op.new( :pasttype('call'), :name($past.name()) );
     }
 }
@@ -515,7 +515,7 @@ method make_special_rule($/) {
 }
 
 method make_conditional_statement($/) {
-    #our $?BLOCK;
+    #our $?SMART;
     my $stat := ~$<csta>;
     my $arg1 := expand( ~$<arg1> );
     my $arg2 := expand( ~$<arg2> );
@@ -523,20 +523,18 @@ method make_conditional_statement($/) {
         := (( $stat eq 'ifeq' ) && ( $arg1 eq $arg2 ))
         || (( $stat eq 'ifneq') && ( $arg1 ne $arg2 ))
         ;
-    if $cond == -1 {
-        make PAST::Op.new( :pirop("noop") );
-    }
+    if $cond == -1 { make PAST::Stmts.new(); }
     else {
         my $stmts := PAST::Stmts.new();
         if $cond {
             for $<if_stat> {
-                #$?BLOCK.push( $( $_ ) );
+                #$?SMART.push( $( $_ ) );
                 $stmts.push( $( $_ ) );
             }
         }
         else {
             for $<else_stat> {
-                #$?BLOCK.push( $( $_ ) );
+                #$?SMART.push( $( $_ ) );
                 $stmts.push( $( $_ ) );
             }
         }
@@ -546,7 +544,7 @@ method make_conditional_statement($/) {
 }
 
 method make_include_statement($/) {
-    our $?BLOCK;
+    our $?SMART;
     our $SMART_INCLUDE_NUMBER;
     $SMART_INCLUDE_NUMBER := $SMART_INCLUDE_NUMBER + 1;
 
@@ -576,7 +574,7 @@ method make_include_statement($/) {
             }
         }
 
-        $?BLOCK.push( $past );
+        $?SMART.push( $past );
         make PAST::Op.new( :pasttype('call'), :name($past.name()) );
     }
     else {

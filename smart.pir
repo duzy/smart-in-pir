@@ -47,7 +47,7 @@ object.
 
 
     $P0 = new 'ResizablePMCArray'
-    set_hll_global ['smart';'Grammar';'Actions'], '@?BLOCK', $P0
+    set_hll_global ['smart';'Grammar';'Actions'], '@?BLOCKS', $P0
     $P0 = new 'ResizablePMCArray'
     set_hll_global ['smart';'Grammar';'Actions'], '@VAR_SWITCHES', $P0
     $P0 = new 'Integer'

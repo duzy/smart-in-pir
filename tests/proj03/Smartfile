@@ -34,7 +34,7 @@ print-depends:
 	@echo $(DEPENDS)
 
 clean-depends:
-	@rm -vf $(DEPENDS)
+	$(RM_RF) $(DEPENDS)
 
 clean: clean-depends
 	$(RM_RF) $(TARGET:%=$(OUT_BIN)/%) $(OBJECTS)
@@ -49,7 +49,7 @@ $(OBJECTS):$(OBJECT_PAT):%.cpp
 $(DEPENDS):$(DEPEND_PAT):%.cpp
 	$(MKDIR_IF_NON)
 	@echo -n gen: $@ ...
-	@-$(CXX) -Iinclude -MM -MP -MF $@ -MT $(OUT_OBJS)/$*.o $<
+	@$(CXX) -Iinclude -MM -MP -MF $@ -MT $(OUT_OBJS)/$*.o $<
 	@echo done
 
 include $(DEPENDS)
