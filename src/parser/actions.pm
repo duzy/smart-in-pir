@@ -55,6 +55,20 @@ method TOP($/, $key) {
         ## Avoid the return value.
         $start.push( PAST::Stmts.new() );
 
+        ## Launch smart while load_bytecode the file
+	my $auto := PAST::Block.new( :blocktype('declaration'),
+          :pirflags(':load :anon'),
+          PAST::Op.new(
+              :inline(
+                  '    .include "interpinfo.pasm"',
+                  '    $P0 = interpinfo .INTERPINFO_CURRENT_SUB',
+                  '    $P0 = $P0."get_outer"()',
+                  '    $P0()',
+              )
+          )
+        );
+        $?SMART.push( $auto );
+
         $?SMART.pirflags( ':main :anon' );
         #$?SMART.loadinit(); #.push();
         $?SMART.push( PAST::Var.new( :scope('parameter'), :name('@_'), :slurpy(1) ) );

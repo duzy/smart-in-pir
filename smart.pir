@@ -182,7 +182,16 @@ check_arg_5: ## --target=xxx
     $S0 = substr arg, $I0, $I1
     push new_args, arg
     goto check_arg_end
-check_arg_6: ##
+check_arg_6: ## --compile/-c
+    if arg == "-c" goto check_arg_6__mark_compiling
+    if arg == "--compile" goto check_arg_6__mark_compiling
+    goto check_arg_7
+check_arg_6__mark_compiling:
+    $P0 = new 'Integer'
+    $P0 = 1
+    set_hll_global ['smart'], "$--compile", $P0
+    goto check_arg_end
+check_arg_7: ##
 check_arg_else:
     $S0 = substr arg, 0, 1
     if $S0 == "-" goto check_arg_unknown_flag
@@ -248,9 +257,16 @@ iterate_filenames_end:
 
 done:
     if smartfile == "" goto no_smartfile_for_new_args
+
+    ## Save smartfile
+    new $P0, 'String'
+    assign $P0, smartfile
+    set_hll_global ['smart'], "$smartfile", $P0
+    null $P0
+    
     push new_args, smartfile
-    ##no_smartfile_for_new_args:
     .return (new_args)
+    
 no_smartfile_for_new_args:
     $S0 = "smart: No targets specified and no Smartfile found. Stop.\n"
     printerr $S0
@@ -269,20 +285,38 @@ no_smartfile_for_new_args:
 
     'load-make-database'()
     'import-environment-variables'()
+    arguments = 'parse-command-line-arguments'( args )
 
-    smart = compreg 'smart'
-    #set_hll_global ['smart'], "$self", smart
+    .local string smartfile
+    get_hll_global $P0, ['smart'], "$smartfile"
+    set smartfile, $P0
     
-    arguments = "parse-command-line-arguments"( args )
+    set $S0, smartfile
+    concat $S0, ".pbc"
+    stat $I0, $S0, 0
+    if $I0 goto execute_parrot
+    
+    set $S0, smartfile
+    concat $S0, ".pir"
+    stat $I0, $S0, 0
+    if $I0 goto execute_parrot
 
-#     $S0 = <<'    ____end_database'
-# RM = rm -f
-#     ____end_database
-    #smart.'eval'( $S0 )
-    #$P0 = smart.'compile'( $S0 )
-    #$P0()
-    
+    goto execute_smart
+
+execute_parrot:
+    .local string filename
+    find_charset $I0, "ascii"
+    trans_charset filename, $S0, $I0
+    load_bytecode filename
+    .return()
+
+execute_smart:
+    compreg smart, 'smart'
+    'compile_if_updated'( smart, smartfile, "target"=>"pir" )
     $P1 = smart.'command_line'( arguments )
+    #smart.'evalfiles'( smartfile )
+    #goto execute
+    .return()
 .end
 
 .include "gen/gen_builtins.pir"
