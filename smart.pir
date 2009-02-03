@@ -290,18 +290,21 @@ no_smartfile_for_new_args:
     .local string smartfile
     get_hll_global $P0, ['smart'], "$smartfile"
     set smartfile, $P0
+
+    stat $I1, smartfile, .STAT_CHANGETIME
     
     set $S0, smartfile
     concat $S0, ".pbc"
     stat $I0, $S0, 0
-    if $I0 goto execute_parrot
-    
+    unless $I0 goto check_pir
+    if $I0 < $I1 goto execute_smart
+
+check_pir:
     set $S0, smartfile
     concat $S0, ".pir"
     stat $I0, $S0, 0
-    if $I0 goto execute_parrot
-
-    goto execute_smart
+    unless $I0 goto execute_smart
+    if $I0 < $I1 goto execute_smart
 
 execute_parrot:
     .local string filename

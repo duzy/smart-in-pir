@@ -44,6 +44,10 @@ do_compile:
     close $P1
     null $P1
 
+    print "smart: compiling "
+    print $S0
+    print "..."
+    
     $S1 = smart.'compile'( $S1, 'target'=>type )
     #$S1 = smart.'compile'( $S1, options )
     null smart
@@ -52,6 +56,8 @@ do_compile:
     print $P1, $S1
     close $P1
     null $P1
+
+    print "done\n"
 
 return_result:
     .return($S1)
@@ -65,8 +71,8 @@ return_result:
     #target = 'new:Target'( name ) ## create a new target
     target = ':TARGET'( name )
 
-    $I0 = target.'exists'()
-    if $I0 goto do_include
+    #$I0 = target.'exists'()
+    #if $I0 goto do_include
     $I0 = target.'update'()
     #if $I0 goto do_include
     #.return($I0)
@@ -86,10 +92,11 @@ do_include:
     set $S0, filename
     concat $S0, ".pbc"
     stat $I0, $S0, .STAT_EXISTS
-    unless $I0 goto eval_smart
+    unless $I0 goto check_pir
     stat $I0, $S0, .STAT_CHANGETIME
     if $I0 < $I1 goto eval_smart
-    
+
+check_pir:
     set $S0, filename
     concat $S0, ".pir"
     stat $I0, $S0, .STAT_EXISTS
