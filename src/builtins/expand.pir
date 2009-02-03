@@ -422,7 +422,10 @@ check_and_handle_callable_variable__check_24:
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_25:
     unless $S0 == "shell"       goto check_and_handle_callable_variable__check_26
-    bsr handle_callable_variable__shell
+    #bsr handle_callable_variable__shell
+    $I2 = $I1 - n
+    $S1 = substr str, n, $I2
+    $S1 = 'shell'( $S1 ) # shell
     goto check_and_handle_callable_variable__check_done
 check_and_handle_callable_variable__check_26:
     unless $S0 == "origin"      goto check_and_handle_callable_variable__check_27

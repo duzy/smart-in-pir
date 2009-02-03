@@ -393,6 +393,27 @@ glob_a_single_pattern_done:
 .end # sub "warning"
 
 .sub "shell"
+    .param string commands
+    .local pmc p
+    assign $S0, ""
+    open p, commands, "rp"
+    unless p goto error_cannot_open
+    
+reading:
+    read $S1, p, 1
+    concat $S0, $S1
+    if p goto reading
+    
+    close p
+    null p
+    .return($S0)
+    
+error_cannot_open:
+    $S1 = "smart: Can't pipe command '"
+    $S1 .= commands
+    $S1 .= "'\n"
+    printerr $S1
+    .return($S0)
 .end # sub "shell"
 
 .sub "origin"
