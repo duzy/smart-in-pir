@@ -93,12 +93,17 @@ $(SMART_GROUP): $(PARROT) $(PMC_SOURCES)
 ifdef UPDATE_MAKEFILE
 # regenerate the Makefile
 Makefile: config/makefiles/root.in
-	cd $(BUILD_DIR) && $(RECONFIGURE) --step=gen::languages --languages=smart
+	@(([ -d $(BUILD_DIR) && -f $(BUILD_DIR) ] && cd $(BUILD_DIR)) || cd ../..) && \
+	$(RECONFIGURE) --step=gen::languages --languages=smart
 endif
 
 Makefile.def:
-	@echo -n "BUILD_DIR = " > $@ ; \
-	pwd >> $@
+	@file=`pwd`/$@; \
+check() { [ -d $$1 ] && [ -f $$1/parrot ]; }; \
+s()	{ check $$1 && cd $$1 && echo `pwd` >> $$file; }; \
+hi()	{ echo -n "tell me where is parrot: "; }; \
+ask()	{ hi && read D && (s $$D || ask); }; \
+echo -n "BUILD_DIR = " > $$file && ( s ../.. || ask )
 
 # This is a listing of all targets, that are meant to be called by users
 help:
