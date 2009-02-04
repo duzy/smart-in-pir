@@ -95,25 +95,29 @@ return_result:
     $S0 = self.'command'()
     $S0 = 'expand'( $S0 )
     command = $S0
-    
-check_command_1:
-    substr $S1, command, 0, 1
-check_command_1_:
-    echo_on = $S1 != "@"
-    if echo_on goto check_command_2_
-    $I0 = length command
-    $I0 -= 1
-    substr command, command, 1, $I0
-    
-check_command_2:
-    substr $S1, command, 0, 1
-check_command_2_:
-    ignore_error = $S1 == "-"
-    unless ignore_error goto execute_the_command
-    $I0 = length command
-    $I0 -= 1
-    substr command, command, 1, $I0
 
+    echo_on = 1
+    ignore_error = 0
+    
+check_command:
+    substr $S1, command, 0, 1
+check_command_1:
+    unless $S1 == "@" goto check_command_2
+    echo_on = 0
+    goto unshift_command
+check_command_2:
+    unless $S1 == "-" goto check_command_3
+    ignore_error = 1
+    goto unshift_command
+check_command_3:
+    goto execute_the_command
+    
+unshift_command:
+    $I0 = length command
+    $I0 -= 1
+    substr command, command, 1, $I0
+    goto check_command
+    
 execute_the_command:
     
     unless echo_on goto no_echo

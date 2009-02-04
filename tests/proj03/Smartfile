@@ -48,9 +48,9 @@ $(OBJECTS):$(OBJECT_PAT):%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 $(DEPENDS):$(DEPEND_PAT):%.cpp
 	$(MKDIR_IF_NON)
-	@echo -n gen: $@ ...
-	@-$(CXX) -Iinclude -MM -MP -MF $@ -MT $(OUT_OBJS)/$*.o $<
-	@echo done
+	-@-echo -n gen: $@ ...
+	@-@$(CXX) -Iinclude -MM -MP -MF $@ -MT $(OUT_OBJS)/$*.o $<
+	@@--echo done
 
 include $(DEPENDS)
 
