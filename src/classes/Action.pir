@@ -96,16 +96,24 @@ return_result:
     $S0 = 'expand'( $S0 )
     command = $S0
     
+check_command_1:
     substr $S1, command, 0, 1
-    echo_on      = $S1 != "@"
-    ignore_error = $S1 != "-"
-    $I0 = and echo_on, ignore_error
-    if $I0 goto execute_the_command
+check_command_1_:
+    echo_on = $S1 != "@"
+    if echo_on goto check_command_2_
     $I0 = length command
     $I0 -= 1
-    substr $S1, command, 1, $I0
-    command = $S1
+    substr command, command, 1, $I0
     
+check_command_2:
+    substr $S1, command, 0, 1
+check_command_2_:
+    ignore_error = $S1 == "-"
+    unless ignore_error goto execute_the_command
+    $I0 = length command
+    $I0 -= 1
+    substr command, command, 1, $I0
+
 execute_the_command:
     
     unless echo_on goto no_echo
