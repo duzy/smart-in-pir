@@ -24,7 +24,8 @@ say "check:(8):", $var;
 $var = 100 - $var;
 say "check:(92):", $var;
 
+$var = new Target( "abc" );
 
-
-
+$var.object = "attr";
+say "check:(attr):", $var.object;
 
