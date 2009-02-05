@@ -646,17 +646,26 @@ method smart_builtin_function($/) {
 }
 
 method smart_assignment($/) {
-    my $lhs := $( $<smart_variable> );
-    my $rhs := $( $<expression> );
     our @?BLOCKS;
     my $?BLOCK := @?BLOCKS[0];
-    my $name := $lhs.name();
-    my $sym := $?BLOCK.symbol( $name );
+    my $lhs := $( $<smart_variable> );
+    my $rhs := $( $<expression> );
+    my $sym := $?BLOCK.symbol( $lhs.name() );
     if !$sym {
-        $?BLOCK.symbol( $name, :scope('lexical') );
+        $?BLOCK.symbol( $lhs.name(), :scope('lexical') );
         $lhs.isdecl(1);
         $lhs.viviself( $rhs );
-        make PAST::Op.new( :pasttype('bind'), $lhs, $rhs );
+        #make PAST::Op.new( :pasttype('bind'), $lhs, $rhs );
+        make PAST::Stmts.new(
+            PAST::Op.new( :pasttype('bind'),
+              PAST::Var.new( :name($lhs.name()), :scope('register'),
+                :viviself(
+                    PAST::Op.new( :inline('    find_lex %r, "%0"'), $lhs.name() )
+                )
+              ),
+              $rhs
+            ),
+        );
     }
     else {
         #make PAST::Op.new( :inline("    %0 = %1"), $lhs, $rhs );

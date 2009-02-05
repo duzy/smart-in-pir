@@ -261,7 +261,10 @@ rule smart_variable_declarator {
 }
 
 token smart_variable {
-    '$' $<name>=[<identifier>]
+    '$'
+    [
+      | $<name>=[<identifier>]          #= 
+    ]
     {*}
 }
 
