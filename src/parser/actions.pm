@@ -645,31 +645,40 @@ method smart_builtin_function($/) {
     make $past;
 }
 
+sub lexical_name_to_register_name($name) {
+    my $ret;
+    PIR q< find_lex $P0, "$name" >;
+    PIR q< $P1 = clone $P0 >;
+    PIR q< $S1 = $P1 >;
+    PIR q< substr $S1, 0, 1, "_" >;
+    PIR q< $P1 = $S1 >;
+    PIR q< store_lex "$ret", $P1 >;
+    return $ret;
+}
+
 method smart_assignment($/) {
     our @?BLOCKS;
     my $?BLOCK := @?BLOCKS[0];
     my $lhs := $( $<smart_variable> );
     my $rhs := $( $<expression> );
+    my $name := lexical_name_to_register_name($lhs.name());
     my $sym := $?BLOCK.symbol( $lhs.name() );
     if !$sym {
         $?BLOCK.symbol( $lhs.name(), :scope('lexical') );
         $lhs.isdecl(1);
-        $lhs.viviself( $rhs );
-        #make PAST::Op.new( :pasttype('bind'), $lhs, $rhs );
-        make PAST::Stmts.new(
-            PAST::Op.new( :pasttype('bind'),
-              PAST::Var.new( :name($lhs.name()), :scope('register'),
-                :viviself(
-                    PAST::Op.new( :inline('    find_lex %r, "%0"'), $lhs.name() )
-                )
-              ),
-              $rhs
-            ),
+        #$lhs.viviself( $rhs );
+        $lhs.viviself(
+            PAST::Var.new( :name($name), :scope('register'), :isdecl(1),
+              :viviself( $rhs ) )
         );
+        #make PAST::Op.new( :pasttype('bind'), $lhs, $rhs );
+        make $lhs;
     }
     else {
-        #make PAST::Op.new( :inline("    %0 = %1"), $lhs, $rhs );
-        make PAST::Op.new( :pasttype('bind'), $lhs, $rhs );
+        #make PAST::Op.new( :pasttype('bind'), $lhs, $rhs );
+        make PAST::Op.new( :inline("    %0 = %1"),
+          PAST::Var.new( :name($name), :scope('register') ), $rhs
+        );
     }
 }
 
@@ -682,8 +691,20 @@ method smart_variable_declarator($/) {
 }
 
 method smart_variable($/) {
-    #make PAST::Op.new( :inline("print 'variable: '\nsay %0"), ~$/ );
-    make PAST::Var.new( :name(~$/), :scope('lexical') );
+    our @?BLOCKS;
+    my $?BLOCK := @?BLOCKS[0];
+    my $var := PAST::Var.new( :scope('register'),
+      :name(lexical_name_to_register_name(~$/)) );
+    if $?BLOCK.symbol(~$/) {
+        make $var;
+    }
+    else {
+        $var.isdecl(1);
+        $var.viviself( 'Undef' );
+        make PAST::Var.new( :name(~$/), :scope('lexical'),
+          :viviself( $var )
+        );
+    }
 }
 
 method smart_method($/) {
