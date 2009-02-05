@@ -29,3 +29,5 @@ $var = new Target( "abc" );
 $var.object = "attr";
 say "check:(attr):", $var.object;
 
+$bar.foo = 123;
+say $bar.foo;

@@ -748,7 +748,7 @@ method assignable($/) {
                 $?BLOCK.symbol( $attr.name(), :scope('register') );
                 $attr.isdecl(1);
                 $attr.viviself(
-                    PAST::Op.new( :pasttype( 'methodcall' ), :name( $id ),
+                    PAST::Op.new( :pasttype( 'callmethod' ), :name( $id ),
                       PAST::Var.new( :scope('register'),
                         :name( lexical_to_register($var.name()) ) )
                     )
