@@ -645,40 +645,49 @@ method smart_builtin_function($/) {
     make $past;
 }
 
-sub lexical_name_to_register_name($name) {
+sub lexical_to_register($name) {
     my $ret;
+    my $sigil;
     PIR q< find_lex $P0, "$name" >;
     PIR q< $P1 = clone $P0 >;
-    PIR q< $S1 = $P1 >;
-    PIR q< substr $S1, 0, 1, "_" >;
-    PIR q< $P1 = $S1 >;
+    PIR q< $S0 = $P1 >;
+    PIR q< substr $S1, $S0, 0, 1 >;
+
+    PIR q< unless $S1 == "$" goto check_sigil_2 >;
+    PIR q< substr $S0, 0, 1, "s_" >;
+    PIR q< goto check_sigil_done >;
+
+    PIR q< check_sigil_2: >;
+    PIR q< unless $S1 == "@" goto check_sigil_3 >;
+    PIR q< substr $S0, 0, 1, "a_" >;
+    PIR q< goto check_sigil_done >;
+
+    PIR q< check_sigil_3: >;
+    PIR q< unless $S1 == "%" goto check_sigil_done >;
+    PIR q< substr $S0, 0, 1, "h_" >;
+
+    PIR q< check_sigil_done: >;
+    PIR q< $P1 = $S0 >;
     PIR q< store_lex "$ret", $P1 >;
     return $ret;
 }
 
 method smart_assignment($/) {
-    our @?BLOCKS;
-    my $?BLOCK := @?BLOCKS[0];
-    my $lhs := $( $<smart_variable> );
+    my $var := $( $<smart_variable> );
     my $rhs := $( $<expression> );
-    my $name := lexical_name_to_register_name($lhs.name());
-    my $sym := $?BLOCK.symbol( $lhs.name() );
-    if !$sym {
-        $?BLOCK.symbol( $lhs.name(), :scope('lexical') );
-        $lhs.isdecl(1);
-        #$lhs.viviself( $rhs );
-        $lhs.viviself(
-            PAST::Var.new( :name($name), :scope('register'), :isdecl(1),
-              :viviself( $rhs ) )
+
+    if $var.scope() eq 'lexical' {
+        $var.viviself(
+            PAST::Var.new( :name( lexical_to_register($var.name()) ),
+              :scope('register'), :isdecl(1), :viviself( $rhs ) )
         );
-        #make PAST::Op.new( :pasttype('bind'), $lhs, $rhs );
-        make $lhs;
+        make $var;
+    }
+    elsif $var.scope() eq 'register' {
+        make PAST::Op.new( :inline("    %0 = %1"), $var, $rhs );
     }
     else {
-        #make PAST::Op.new( :pasttype('bind'), $lhs, $rhs );
-        make PAST::Op.new( :inline("    %0 = %1"),
-          PAST::Var.new( :name($name), :scope('register') ), $rhs
-        );
+        $/.panic( "Unsupported variable scope: "~$var.scope() );
     }
 }
 
@@ -691,19 +700,21 @@ method smart_variable_declarator($/) {
 }
 
 method smart_variable($/) {
+    my $name := ~$/;
+    my $var := PAST::Var.new( :name( lexical_to_register($name) ),
+      :scope('register') );
+
     our @?BLOCKS;
     my $?BLOCK := @?BLOCKS[0];
-    my $var := PAST::Var.new( :scope('register'),
-      :name(lexical_name_to_register_name(~$/)) );
-    if $?BLOCK.symbol(~$/) {
-        make $var;
-    }
-    else {
+    if !$?BLOCK.symbol( $name ) {
+        $?BLOCK.symbol( $name, :scope( 'lexical' ) );
         $var.isdecl(1);
         $var.viviself( 'Undef' );
-        make PAST::Var.new( :name(~$/), :scope('lexical'),
-          :viviself( $var )
-        );
+        make PAST::Var.new( :name( $name ), :scope( 'lexical' ), :isdecl( 1 ),
+          :viviself( $var ) );
+    }
+    else {
+        make $var;
     }
 }
 
