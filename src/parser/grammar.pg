@@ -23,22 +23,17 @@ token comment_block { '#{' [<!before '#}'>.]* '#}' }
 token ws_inline { <!ww> [ <comment_block> | <[ \ \t ]>* | [ '#' \N* ] ] }
 
 rule statement {
-    | <smart_statement> {*}                     #= smart_statement
-    | <make_variable_declaration> {*}           #= make_variable_declaration
-    | <make_rule> {*}                           #= make_rule
-    | <make_conditional_statement> {*}          #= make_conditional_statement
-    | <make_include_statement> {*}              #= make_include_statement
-}
-
-rule smart_statement {
-    | <empty_smart_statement> {*}               #= empty_smart_statement
+    | <.ws> ';'                                 # empty statement
+    | <smart_variable_declarator>               #= smart_variable_declarator
+    | <smart_assignment> ';' {*}                #= smart_assignment
+    | <smart_method> ';' {*}                    #= smart_method
     | <smart_builtin_statement> {*}		#= smart_builtin_statement
     | <smart_builtin_function> {*}              #= smart_builtin_function
+    | <make_macro> {*}                          #= make_macro
+    | <make_rule> {*}                           #= make_rule
 }
 
-token empty_smart_statement { <.ws> ';' {*} }
-
-token make_variable_declaration {
+token make_macro {
     [ $<override>=['override'] <.ws> ]?
     [
       |[ $<sign>=['define'] <[ \ \t ]>+ <.ws_inline>
@@ -53,32 +48,6 @@ token make_variable_declaration {
        ]
     ] {*}
 }
-#token make_variable {
-#    <-[ : = # \ \t \n ]> <-[ : = # + ? \n ]>*
-#    {{
-#      $S0 = match.'text'()
-#      $I0 = length $S0
-#      $I1 = $I0 - 1
-#      loop:
-#      unless 0 <= $I1 goto end
-#      $S1 = substr $S0, $I1, 1
-#      if $S1 != ' ' goto loop_end
-#      dec $I1
-#      goto loop
-#      loop_end:
-#      if $I0 <= 0 goto end
-#      $I2 = match.'from'()
-#      $I2 = $I2 + $I1
-#      match.'to'( $I2 )
-#      end:
-#            
-#      #print "var: "
-#      #print " '"
-#      #$S0 = match.'text'()
-#      #print $S0
-#      #print "'\n"
-#    }}
-#}
 
 token expandable {
     [
@@ -149,11 +118,11 @@ token expanded_orderonly {
     {*}
 }
 # token make_prerequisite {
-#     [<make_variable_ref>|<-[(:;|\ \t\\\n$]>]+
+#     [<make_macro_expandsion>|<-[(:;|\ \t\\\n$]>]+
 #     ['('<-[)]>*')']?
 # }
 # token make_prerequisite_oo {
-#     [<make_variable_ref>|<-[(:;|\ \t\\\n$]>]+
+#     [<make_macro_expandsion>|<-[(:;|\ \t\\\n$]>]+
 #     ['('<-[)]>*')']?
 # }
 token make_action {
@@ -192,9 +161,9 @@ rule make_conditional_statement {
     $<csta>=['ifeq'|'ifneq']
     [
       |[ '('
-         $<arg1>=[[<-[,)$]>|<.make_variable_ref>]*]
+         $<arg1>=[[<-[,)$]>|<.make_macro_expandsion>]*]
          ','
-         $<arg2>=[[<-[)$]>|<.make_variable_ref>]*]
+         $<arg2>=[[<-[)$]>|<.make_macro_expandsion>]*]
          ')'
        ]
       |[ | \' $<arg1>=[<-[ ' ]>*] \' <[ \ \t ]>*
@@ -247,27 +216,77 @@ rule make_include_statement {
 }
 
 rule smart_builtin_statement {
-    $<name>=['say']
+#    $<name>=['say']
+    $<name>=[<identifier>]
     <expression> [ ',' <expression> ]*
     [ ';' || <.panic: 'smart: * Unterminated statement'> ]
     {*}
 }
 
 rule smart_builtin_function {
-    $<name>=['expand'|'subst'|'patsubst'|'strip'|'origin'|'match']
+    $<name>=[<identifier>]
     '('
     <expression> [ ',' <expression> ]*
-#    [ ';' || <.panic: 'smart: * Unterminated function'> ]
     ')'
     {*}
+}
+
+rule smart_assignment {
+    <smart_variable> '=' <expression>
+    {*}
+#     {{
+#     $S0 = match.'text'()
+#     print "smart_assignment: "
+#     say $S0
+#     }}
+}
+
+rule smart_method {
+    [
+      |<smart_variable>
+      |<make_macro_expandsion>
+    ]
+    '.'
+    $<name>=[<identifier>]
+    [ '(' <smart_parameters> ')'  ]?
+    {*}
+}
+
+rule smart_variable_declarator {
+    'my' <smart_variable>
+    [
+    '=' <expression>
+    ]?
+    {*}
+}
+
+token smart_variable {
+    '$' $<name>=[<identifier>]
+    {*}
+}
+
+rule smart_new_operator {
+    'new' <identifier> '(' <expression> ')'
+#     {{
+#     $S0 = match.'text'()
+#     print "smart_new_operator: "
+#     say $S0
+#     }}
+}
+
+token identifier {
+    <.ident>
+#    [[A..Za..z]+]
 }
 
 ##  terms
 token term {
     | <value> {*}                               #= value
-    | <make_variable_method_call> {*}           #= make_variable_method_call
-    | <make_variable_ref> {*}                   #= make_variable_ref
+    | <smart_variable> {*}                      #= smart_variable
     | <smart_builtin_function> {*}              #= smart_builtin_function
+    | <smart_new_operator> {*}                  #= smart_new_operator
+    | <smart_method> {*}                        #= smart_method
+    | <make_macro_expandsion> {*}               #= make_macro_expandsion
 }
 
 rule value {
@@ -282,32 +301,36 @@ rule quote {
     {*}
 }
 
-rule make_variable_method_call {
-    <make_variable_ref> '.' <ident>
-        '(' [ <expression> [ ',' <expression> ]* ]?
-        [ ')' || <.panic: "smart: * Require an ')' to terminate parameter list"> ]
-    {*}
+# rule make_variable_method_call {
+#     <make_macro_expandsion> '.' <identifier>
+#         '(' <smart_parameters>
+#         [ ')' || <.panic: "smart: * Require an ')' to terminate parameter list"> ]
+#     {*}
+# }
+
+rule smart_parameters {
+    [ <expression> [ ',' <expression> ]* ]?
 }
 
-token make_variable_ref {
+token make_macro_expandsion {
     [
-     | <make_variable_ref1>
-     | <make_variable_ref2>
+     | <make_macro_expandsion1>
+     | <make_macro_expandsion2>
     ]
     {*}
 #    {{
-#    $S0 = match.text()
+#    $S0 = match.'text'()
 #    say $S0
 #    }}
 }
-token make_variable_ref1 {
+token make_macro_expandsion1 {
     '$'
-    [ '(' $<name>=[[<!before ')'><-[\n:=#$]>|<.make_variable_ref>]+]
+    [ '(' $<name>=[[<!before ')'><-[\n:=#$]>|<.make_macro_expandsion>]+]
     [ ')' || <.panic: "smart: * Make variable referencing expects ')'"> ]]
 }
-token make_variable_ref2 {
+token make_macro_expandsion2 {
     '$'
-    [ '{' $<name>=[[<!before '}'><-[\n:=#$]>|<.make_variable_ref>]+]
+    [ '{' $<name>=[[<!before '}'><-[\n:=#$]>|<.make_macro_expandsion>]+]
     [ '}' || <.panic: "smart: * Make variable referencing expects '}'"> ]]
 }
 

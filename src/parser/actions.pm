@@ -42,7 +42,7 @@ method TOP($/, $key) {
     if $key eq 'enter' {
 	$?SMART := PAST::Block.new( :blocktype('declaration'), :name("_smart"),
           :node( $/ ) );
-	#@?BLOCKS.unshift( $?SMART );
+	@?BLOCKS.unshift( $?SMART );
     }
     else { # while leaving the block
 	my $start := PAST::Block.new( :blocktype('declaration'),
@@ -57,7 +57,7 @@ method TOP($/, $key) {
 
         ## Launch smart while load_bytecode the file
 	my $auto := PAST::Block.new( :blocktype('declaration'),
-          :pirflags(':load :anon'),
+          :pirflags(':load'),
           PAST::Op.new(
               :inline(
                   '    .include "interpinfo.pasm"',
@@ -70,7 +70,13 @@ method TOP($/, $key) {
         $?SMART.push( $auto );
 
         $?SMART.pirflags( ':main :anon' );
-        #$?SMART.loadinit(); #.push();
+        $?SMART.loadinit().push(
+            PAST::Op.new( :inline('    $P0 = compreg "smart"',
+                                  '    unless null $P0 goto have_smart',
+                                  '    load_bytecode "smart.pbc"',
+                                  '  have_smart:')
+            )
+        );
         $?SMART.push( PAST::Var.new( :scope('parameter'), :name('@_'), :slurpy(1) ) );
         $?SMART.push( PAST::Op.new( :pirop('tailcall'), $start ) );
         make $?SMART;
@@ -617,6 +623,9 @@ method make_include_statement($/) {
 
 method smart_builtin_statement($/) {
     my $name := ~$<name>;
+#     PIR q< find_lex $P0, "$name" >;
+#     PIR q< print "statement: " >;
+#     PIR q< say $P0 >;
     my $past := PAST::Op.new( :name($name), :pasttype('call'), :node( $/ ) );
     for $<expression> {
         $past.push( $( $_ ) );
@@ -626,11 +635,54 @@ method smart_builtin_statement($/) {
 
 method smart_builtin_function($/) {
     my $name := ~$<name>;
+    PIR q< find_lex $P0, "$name" >;
+    PIR q< print "function: " >;
+    PIR q< say $P0 >;
     my $past := PAST::Op.new( :name($name), :pasttype('call'), :node( $/ ) );
     for $<expression> {
         $past.push( $( $_ ) );
     }
     make $past;
+}
+
+method smart_assignment($/) {
+    my $lhs := $( $<smart_variable> );
+    my $rhs := $( $<expression> );
+    our @?BLOCKS;
+    my $?BLOCK := @?BLOCKS[0];
+    my $name := $lhs.name();
+    my $sym := $?BLOCK.symbol( $name );
+    if !$sym {
+        $?BLOCK.symbol( $name, :scope('lexical') );
+        $lhs.isdecl(1);
+        $lhs.viviself( $rhs );
+        make PAST::Op.new( :pasttype('bind'), $lhs, $rhs );
+    }
+    else {
+        #make PAST::Op.new( :inline("    %0 = %1"), $lhs, $rhs );
+        make PAST::Op.new( :pasttype('bind'), $lhs, $rhs );
+    }
+}
+
+method smart_variable_declarator($/) {
+    my $v := 'Undef';
+    if $<expression> {
+    }
+    make PAST::Var.new( :name(~$/), :scope('lexical'), :isdecl(1),
+      :viviself( $v ) );
+}
+
+method smart_variable($/) {
+    #make PAST::Op.new( :inline("print 'variable: '\nsay %0"), ~$/ );
+    make PAST::Var.new( :name(~$/), :scope('lexical') );
+}
+
+method smart_method($/) {
+    make PAST::Op.new( :inline("print 'method: '\nsay %0"), ~$/ );
+}
+
+method smart_parameters($/) {
+    make PAST::Op.new( :inline("print 'parameters: '\nsay %0"), ~$/ );
 }
 
 ##  expression:
@@ -679,7 +731,8 @@ method quote($/) {
     make PAST::Val.new( :value( $($<string_literal>) ), :node($/) );
 }
 
-
+# method identifier($/) {
+# }
 
 # Local Variables:
 #   mode: cperl

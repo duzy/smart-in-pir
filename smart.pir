@@ -329,6 +329,7 @@ execute_smart:
 .include "src/parser/actions.pir"
 .include "src/classes/all.pir"
 .include "src/database.pir"
+.include "src/builtins/oper.pir"
 
 =back
 

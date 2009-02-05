@@ -54,6 +54,3 @@ $(DEPENDS):$(DEPEND_PAT):%.cpp
 
 include $(DEPENDS)
 
-
-
-

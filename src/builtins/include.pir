@@ -25,8 +25,8 @@ include -- Include another Smartfile.
     unless $I0 goto return_result
 
     .local string type
-    #type = "pir"
-    type = "pbc"
+    type = "pir"
+    #type = "pbc"
 
     set $S0, smartfile
     concat $S0, "."
