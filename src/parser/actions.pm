@@ -95,6 +95,7 @@ method statement( $/, $key ) {
 
 method macro($/) {
     our $VAR_ON;
+    my $past := PAST::Stmts.new();
     if ( $VAR_ON ) {
         my $name;
         my $sign;
@@ -131,14 +132,18 @@ method macro($/) {
         $e(); ## declare variables at compile time
         }
         else {
-        declare_variable( $name, $sign, $value, $<override> );
+            our $?SMART;
+            #declare_variable( $name, $sign, $value, $<override> );
+            my $override := 0;
+            if $<override> { $override := 1; }
+            $?SMART.loadinit().push(
+                PAST::Op.new( :pasttype('call'), :name('declare_variable'),
+                  $name, $sign, $value, $override
+                )
+            );
         }
-
-        make PAST::Stmts.new();
     }
-    else {
-        make PAST::Stmts.new();
-    }
+    make $past;
 }
 
 # method make_variable_method_call($/) {
