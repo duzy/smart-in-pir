@@ -24,10 +24,8 @@ token ws_inline { <!ww> [ <comment_block> | <[ \ \t ]>* | [ '#' \N* ] ] }
 
 rule statement {
     | <.ws> ';'                                 # empty statement
-#    | <smart_variable_declarator>               #= smart_variable_declarator
-#    | <smart_assignment> ';' {*}                #= smart_assignment
-#    | <smart_method> ';' {*}                    #= smart_method
     | <on_assignable> ';' {*}                   #= on_assignable
+    | <smart_method_call> ';' {*}               #= smart_method_call
     | <smart_builtin_statement> {*}		#= smart_builtin_statement
     | <smart_builtin_function> ';' {*}          #= smart_builtin_function
     | <smart_macro> {*}                         #= smart_macro
@@ -231,7 +229,7 @@ rule on_assignable {
     <assignable>
     [
       | <?before '='> <smart_assignment> {*}    #= assignment
-      | <?before '.'> <smart_method> {*}        #= method
+      | <?before '.'> <dotty> <arguments>? {*}   #= method
     ]
 }
 
@@ -248,11 +246,10 @@ rule smart_assignment {
 ##      $var[0].attribute
 ##      $var.attribute.method()
 ##      $var.method().method()
-rule smart_method {
-    [
-      | <dotty> {*}
-      | '->' <identifier> {*}
-    ]
+rule smart_method_call {
+    <smart_variable>
+    <dotty> <arguments>
+    {*}
 }
 
 ## All entities which could be assigned with a value and represents a value,
@@ -269,7 +266,7 @@ rule smart_method {
 ##      $var.substr( 0, 1 ) = 'value';
 ##      $var[0] = 'value';
 ##      $var<name> = 'value';
-token assignable {
+rule assignable {
     [
       | <smart_variable>
       | <smart_macro_expandsion>
@@ -277,6 +274,7 @@ token assignable {
     [
       <dotty>
     ]?
+    <arguments>?
     {*}
 }
 
@@ -288,7 +286,7 @@ token assignable {
 ##      $obj.attribute = 'value';
 ##      $obj.method( 'arg' );
 rule dotty {
-    '.' <identifier> ['(' <parameters> ')']?
+    '.' <identifier>
     {*}
 }
 
@@ -315,7 +313,6 @@ rule smart_new_operator {
 
 token identifier {
     <.ident>
-#    [[A..Za..z]+]
 }
 
 ##  terms
@@ -345,6 +342,10 @@ rule quote {
 #         [ ')' || <.panic: "smart: * Require an ')' to terminate parameter list"> ]
 #     {*}
 # }
+
+rule arguments {
+    '(' <parameters> ')'
+}
 
 rule parameters {
     [ <expression> [ ',' <expression> ]* ]?

@@ -743,7 +743,7 @@ method on_assignable($/, $key) {
     }
     elsif $key eq 'method' {
         my $vars := $( $<assignable> );
-        my $meth := $( $<smart_method> );
+        my $meth := $( $<dotty> );
         $meth.push( $vars[0] );
         make $meth;
     }
@@ -756,8 +756,11 @@ method smart_assignment($/) {
     make $( $<expression> );
 }
 
-method smart_method($/) {
-    make $( $<dotty> );
+method smart_method_call($/) {
+    my $var := $( $<smart_variable> );
+    my $meth := $( $<dotty> );
+    $meth.push( $var );
+    make $meth;
 }
 
 method assignable($/) {
