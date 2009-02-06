@@ -466,3 +466,116 @@ return_origin_string:
 .sub "value"
 .end
 
+##################################################
+
+=item
+
+Define macro.
+
+=cut
+.sub "macro"
+    .param string name
+    .param string sign
+    .param string value
+    .param int override
+    
+    .local pmc var
+    .local int existed
+    
+    existed = 1
+    get_hll_global var, ['smart';'make';'variable'], name
+    
+    unless null var goto makefile_variable_exists
+    existed = 0
+    $S0 = ""
+    $I0 = MAKEFILE_VARIABLE_ORIGIN_file
+    var = 'new:Variable'( name, $S0, $I0 )
+    ## Store new makefile variable as a HLL global symbol
+    set_hll_global ['smart';'make';'variable'], name, var
+    
+makefile_variable_exists:
+    
+    $I0 = var.'origin'()
+    
+check_origin__command_line:
+    unless $I0==MAKEFILE_VARIABLE_ORIGIN_command_line goto check_origin__environment
+    unless override goto done
+    $P0 = new 'Integer'
+    $P0 = MAKEFILE_VARIABLE_ORIGIN_override
+    setattribute var, 'origin', $P0
+    goto do_update_variable
+    
+check_origin__environment:
+    unless $I0==MAKEFILE_VARIABLE_ORIGIN_environment goto do_update_variable
+    get_hll_global $P0, ['smart'], "$-e" # the '-e' option on the command line
+    if null $P0 goto check_origin__environment__origin_file
+    $I1 = $P0
+    unless $I1  goto check_origin__environment__origin_file
+    if override goto check_origin__environment__origin_override
+    $P0 = new 'Integer'
+    $P0 = MAKEFILE_VARIABLE_ORIGIN_environment_override
+    setattribute var, 'origin', $P0
+    goto done # the environment variables overrides the file ones
+check_origin__environment__origin_override:
+    $P0 = new 'Integer'
+    $P0 = MAKEFILE_VARIABLE_ORIGIN_override
+    setattribute var, 'origin', $P0
+    goto do_update_variable
+check_origin__environment__origin_file:
+    $P0 = new 'Integer'
+    $P0 = MAKEFILE_VARIABLE_ORIGIN_file
+    setattribute var, 'origin', $P0
+    goto do_update_variable
+    
+do_update_variable:
+    
+#     if null items goto done
+#     $S0 = typeof items
+#     if $S0 == "Undef" goto done
+#     if sign == "" goto done
+    
+#     .local pmc iter
+    
+#     $S0 = ""
+#     iter = new 'Iterator', items
+#     unless iter goto iterate_items_end
+# iterate_items:
+#     $S1 = shift iter
+#     concat $S0, $S1
+#     unless iter goto iterate_items_end
+#     concat $S0, " "
+#     goto iterate_items
+# iterate_items_end:
+    if null value goto done
+    $S0 = value
+    
+    if $S0  == ""   goto done
+    if sign == "="  goto set_value
+    if sign == ":=" goto assign_with_expansion
+    if sign == "+=" goto append_value
+    $I0 = sign == "?="
+    $I0 = and $I0, existed
+    if $I0 goto done
+    
+assign_with_expansion:
+    $S0 = 'expand'( $S0 )
+    goto set_value
+    
+append_value:
+    $S1 = var.'value'()
+    if $S1 == "" goto do_append
+    concat $S1, " "
+do_append:
+    concat $S1, $S0
+    $S0 = $S1
+    goto set_value
+    
+set_value:
+    $P0 = new 'String'
+    $P0 = $S0
+    setattribute var, 'value', $P0
+    
+done:
+    .return (var)
+.end # sub "macro"
+

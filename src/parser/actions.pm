@@ -70,7 +70,7 @@ method TOP($/, $key) {
         $?SMART.push( $auto );
 
         $?SMART.pirflags( ':main :anon' );
-        $?SMART.loadinit().push(
+        $?SMART.loadinit().unshift(
             PAST::Op.new( :inline('    $P0 = compreg "smart"',
                                   '    unless null $P0 goto have_smart',
                                   '    load_bytecode "smart.pbc"',
@@ -137,7 +137,7 @@ method macro($/) {
             my $override := 0;
             if $<override> { $override := 1; }
             $?SMART.loadinit().push(
-                PAST::Op.new( :pasttype('call'), :name('declare_variable'),
+                PAST::Op.new( :pasttype('call'), :name('macro'),
                   $name, $sign, $value, $override
                 )
             );
