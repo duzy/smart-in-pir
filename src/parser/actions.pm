@@ -610,20 +610,20 @@ method include($/) {
     }
 }
 
-method builtin_statement($/) {
-    my $name := ~$<name>;
-    my $past := PAST::Op.new( :name($name), :pasttype('call'), :node( $/ ) );
-    for $<expression> {
-        $past.push( $( $_ ) );
-    }
-    make $past;
-}
+# method builtin_statement($/) {
+#     my $name := ~$<name>;
+#     my $past := PAST::Op.new( :name($name), :pasttype('call'), :node( $/ ) );
+#     for $<expression> {
+#         $past.push( $( $_ ) );
+#     }
+#     make $past;
+# }
 
 method function_call($/) {
     my $name := ~$<name>;
-    PIR q< find_lex $P0, "$name" >;
-    PIR q< print "function: " >;
-    PIR q< say $P0 >;
+#     PIR q< find_lex $P0, "$name" >;
+#     PIR q< print "function: " >;
+#     PIR q< say $P0 >;
     my $past := PAST::Op.new( :name($name), :pasttype('call'), :node( $/ ) );
     if $<arguments> {
         my $args := $( $<arguments> );

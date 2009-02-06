@@ -207,18 +207,18 @@ token include {
     {*}
 }
 
-rule builtin_statement {
-    $<name>=[<identifier>]
-    <expression> [ ',' <expression> ]*
-    [ ';' || <.panic: 'smart: * Unterminated statement'> ]
-    {*}
-}
+# rule builtin_statement {
+#     $<name>=[<identifier>]
+#     <expression> [ ',' <expression> ]*
+#     [ ';' || <.panic: 'smart: * Unterminated statement'> ]
+#     {*}
+# }
 
 rule function_call {
     $<name>=[<identifier>]
     [
-      | <arguments> ## ( x, y, z )
-      | <parameters> ##  x, y, z
+      | <arguments>  ## fun( x, y, z )
+      | <parameters> ## call x, y, z
     ]
     {*}
 }
