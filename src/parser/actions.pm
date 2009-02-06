@@ -89,13 +89,11 @@ method statement($/, $key) {
     make $( $/{$key} );
 }
 
-method smart_statement( $/, $key ) {
+method statement( $/, $key ) {
     make $( $/{$key} );
 }
 
-method empty_smart_statement($/) { make PAST::Stmts.new(); }
-
-method smart_macro($/) {
+method macro($/) {
     our $VAR_ON;
     if ( $VAR_ON ) {
         my $name;
@@ -143,19 +141,19 @@ method smart_macro($/) {
     }
 }
 
-method make_variable_method_call($/) {
-    my $past := PAST::Op.new( $( $<make_variable_ref> ),
-        :name( ~$<ident> ), :pasttype( 'callmethod' ) );
-    for $<expression> { $past.push( $( $_ ) ); }
-    make $past;
-}
-method make_variable_ref($/) {
+# method make_variable_method_call($/) {
+#     my $past := PAST::Op.new( $( $<macro_reference> ),
+#         :name( ~$<ident> ), :pasttype( 'callmethod' ) );
+#     for $<expression> { $past.push( $( $_ ) ); }
+#     make $past;
+# }
+method macro_reference($/) {
     my $name;
-    if $<make_variable_ref1> {
-        $name := ~$<make_variable_ref1><name>;
+    if $<macro_reference1> {
+        $name := ~$<macro_reference1><name>;
     }
-    elsif $<make_variable_ref2> {
-        $name := ~$<make_variable_ref2><name>;
+    elsif $<macro_reference2> {
+        $name := ~$<macro_reference2><name>;
     }
     $name := expand( $name );
 
@@ -178,15 +176,6 @@ method make_variable_ref($/) {
                        );
     }
     else {
-#         my $var := PAST::Var.new( #:name($name),
-#           :scope('register'),
-#           :viviself( PAST::Op.new( :pasttype('call'), :name(':VARIABLE'),
-#             PAST::Val.new(:value($name), :returns('String')) )
-#           ),
-#           :lvalue(0),
-#           :node($/)
-#         );
-#         make $var;
         make PAST::Op.new( :pasttype('call'), :name(':VARIABLE'),
           PAST::Val.new(:value($name), :returns('String')) );
     }
@@ -294,7 +283,7 @@ sub check_and_convert_suffix($str) {
   targets : prerequsites | orderonlys
   static-targets : target-pattern : prereq-pattern | orderonlys
 =cut
-method smart_rule($/) {
+method rule($/) {
     our $?SMART;
     our $RULE_NUMBER;
     if $<make_special_rule> {
@@ -393,11 +382,11 @@ method smart_rule($/) {
               PAST::Op.new( :pasttype('callmethod'), :name('actions'), $past_rule ) ) )
         );
 
-        if $<smart_action> {
+        if $<action> {
             $past.push( PAST::Op.new( :inline('    push %0, %1'),
               PAST::Var.new( :name('actions'), :scope('register') ),
               PAST::Op.new( :pasttype('call'), :name('new:Action'),
-                $( $<smart_action> ),
+                $( $<action> ),
                 PAST::Val.new( :value(1) ) ) )
             );
         }
@@ -510,15 +499,15 @@ method expanded_orderonly($/) {
     make $past;
 }
 
-method smart_action($/) {
-    our $SMART_ACTION_NUMBER;
-    $SMART_ACTION_NUMBER := $SMART_ACTION_NUMBER + 1;
+method action($/) {
+    our $ACTION_NUMBER;
+    $ACTION_NUMBER := $ACTION_NUMBER + 1;
     my @ns := ( 'smart', 'action' );
     my $past := PAST::Block.new( :blocktype('declaration'), :pirflags(':anon'), :node($/) );
-    $past.name( "_action_" ~ $SMART_ACTION_NUMBER );
+    $past.name( "_action_" ~ $ACTION_NUMBER );
     #$past.namespace( "smart::action" );
     $past.namespace( @ns );
-    for $<smart_statement> { $past.push( $($_) ); }
+    for $<statement> { $past.push( $($_) ); }
     make $past;
 }
 
@@ -570,10 +559,10 @@ method make_conditional_statement($/) {
     }
 }
 
-method smart_include($/) {
+method include($/) {
     our $?SMART;
-    our $SMART_INCLUDE_NUMBER;
-    $SMART_INCLUDE_NUMBER := $SMART_INCLUDE_NUMBER + 1;
+    our $INCLUDE_NUMBER;
+    $INCLUDE_NUMBER := $INCLUDE_NUMBER + 1;
 
     my $epre := PAST::Compiler.compile( $($<expanded_prerequisites>) );
     my $prerequisites := $epre();
@@ -582,7 +571,7 @@ method smart_include($/) {
 
     if 0 {
         my $past := PAST::Block.new( :blocktype('declaration'), :pirflags(':anon'), :node($/) );
-        $past.name('_include_'~$SMART_INCLUDE_NUMBER);
+        $past.name('_include_'~$INCLUDE_NUMBER);
         if @prerequisites {
             for @prerequisites {
                 my $prereq := ~$_;
@@ -621,11 +610,8 @@ method smart_include($/) {
     }
 }
 
-method smart_builtin_statement($/) {
+method builtin_statement($/) {
     my $name := ~$<name>;
-#     PIR q< find_lex $P0, "$name" >;
-#     PIR q< print "statement: " >;
-#     PIR q< say $P0 >;
     my $past := PAST::Op.new( :name($name), :pasttype('call'), :node( $/ ) );
     for $<expression> {
         $past.push( $( $_ ) );
@@ -633,7 +619,7 @@ method smart_builtin_statement($/) {
     make $past;
 }
 
-method smart_builtin_function($/) {
+method builtin_function($/) {
     my $name := ~$<name>;
     PIR q< find_lex $P0, "$name" >;
     PIR q< print "function: " >;
@@ -645,7 +631,7 @@ method smart_builtin_function($/) {
     make $past;
 }
 
-method smart_new_operator($/) {
+method new_operator($/) {
     #make PAST::Op.new( :inline("print 'new: '\nsay %0\n%r='new'"), ~$/ );
     my $type := ~$<identifier>;
     my $past := PAST::Var.new( :scope('register'), :returns($type),
@@ -684,7 +670,7 @@ sub lexical_to_register($name) {
 
 sub create_assignment($/) {
     my $vars := $( $/<assignable> );
-    my $rhs  := $( $/<smart_assignment> );
+    my $rhs  := $( $/<assignment> );
     my $var  := $vars[0];
     my $attr := $vars[1];
     my $past := PAST::Stmts.new();
@@ -752,12 +738,12 @@ method on_assignable($/, $key) {
     }
 }
 
-method smart_assignment($/) {
+method assignment($/) {
     make $( $<expression> );
 }
 
-method smart_method_call($/) {
-    my $var := $( $<smart_variable> );
+method method_call($/) {
+    my $var := $( $<variable> );
     my $meth := $( $<dotty> );
     $meth.push( $var );
     make $meth;
@@ -766,7 +752,7 @@ method smart_method_call($/) {
 method assignable($/) {
     our @?BLOCKS;
     my $?BLOCK := @?BLOCKS[0];
-    my $var := $( $<smart_variable> );
+    my $var := $( $<variable> );
     my $past := PAST::Stmts.new();
 
     $past.push( $var );
@@ -833,7 +819,7 @@ method dotty($/) {
     }
 }
 
-method smart_variable_declarator($/) {
+method variable_declarator($/) {
     my $v := 'Undef';
     if $<expression> {
     }
@@ -841,7 +827,7 @@ method smart_variable_declarator($/) {
       :viviself( $v ) );
 }
 
-method smart_variable($/) {
+method variable($/) {
     my $name := ~$/;
     my $sigil := ~$<sigil>;
 

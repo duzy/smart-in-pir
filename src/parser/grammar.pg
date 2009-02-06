@@ -25,14 +25,15 @@ token ws_inline { <!ww> [ <comment_block> | <[ \ \t ]>* | [ '#' \N* ] ] }
 rule statement {
     | <.ws> ';'                                 # empty statement
     | <on_assignable> ';' {*}                   #= on_assignable
-    | <smart_method_call> ';' {*}               #= smart_method_call
-    | <smart_builtin_statement> {*}		#= smart_builtin_statement
-    | <smart_builtin_function> ';' {*}          #= smart_builtin_function
-    | <smart_macro> {*}                         #= smart_macro
-    | <smart_rule> {*}                          #= smart_rule
+    | <method_call> ';' {*}                     #= method_call
+    | <builtin_statement> {*}                   #= builtin_statement
+    | <builtin_function> ';' {*}                #= builtin_function
+    | <macro> {*}                               #= macro
+    | <rule> {*}                                #= rule
+    | <include> {*}                             #= include
 }
 
-token smart_macro {
+token macro {
     [ $<override>=['override'] <.ws> ]?
     [
       |[ $<sign>=['define'] <[ \ \t ]>+ <.ws_inline>
@@ -65,7 +66,6 @@ token expandable_text {
     ]
     {*}
 }
-
 token expanded_targets {
     |[ $<pre>=[[<!before [':']><-[\\\n$\ \t:;|]>]*]
        <expandable>
@@ -75,7 +75,7 @@ token expanded_targets {
     | <expandable> {*}                                  #= pure
 }
 
-token smart_rule {
+token rule {
     |[ <make_special_rule> ] {*}
     |[ <.ws_inline>
        [<expanded_targets><.ws_inline>[\\\n<.ws_inline>]*]+
@@ -89,9 +89,9 @@ token smart_rule {
        ]
        [
          |[ ';' <.ws_inline>
-            [<smart_action> | [<make_action> [ \n \t <make_action> ]*]]
+            [<action> | [<make_action> [ \n \t <make_action> ]*]]
           ]
-         |[ <smart_action>
+         |[ <action>
             |[
                [ \n <[ \ ]>* [ [ '#' \N* ] | <.comment_block> ] ]*
                [ \n [[\t <make_action>] | ['#' \N*]]]*
@@ -119,9 +119,9 @@ token expanded_orderonly {
 token make_action {
     [[<!before \\\n><-[\n]>]+ [\\\n]?]*
 }
-rule smart_action {
+rule action {
     '{'
-    <smart_statement>*
+    <statement>*
     '}'
     {*}
 }
@@ -152,9 +152,9 @@ rule make_conditional_statement {
     $<csta>=['ifeq'|'ifneq']
     [
       |[ '('
-         $<arg1>=[[<-[,)$]>|<.smart_macro_expandsion>]*]
+         $<arg1>=[[<-[,)$]>|<.macro_reference>]*]
          ','
-         $<arg2>=[[<-[)$]>|<.smart_macro_expandsion>]*]
+         $<arg2>=[[<-[)$]>|<.macro_reference>]*]
          ')'
        ]
       |[ | \' $<arg1>=[<-[ ' ]>*] \' <[ \ \t ]>*
@@ -201,19 +201,19 @@ rule make_conditional_statement {
     {*}
 }
 
-rule smart_include {
+rule include {
     'include' <.ws_inline> [\\\n<.ws_inline>]* <expanded_prerequisites>
     {*}
 }
 
-rule smart_builtin_statement {
+rule builtin_statement {
     $<name>=[<identifier>]
     <expression> [ ',' <expression> ]*
     [ ';' || <.panic: 'smart: * Unterminated statement'> ]
     {*}
 }
 
-rule smart_builtin_function {
+rule builtin_function {
     $<name>=[<identifier>]
     '('
     <expression> [ ',' <expression> ]*
@@ -228,12 +228,12 @@ rule smart_builtin_function {
 rule on_assignable {
     <assignable>
     [
-      | <?before '='> <smart_assignment> {*}    #= assignment
+      | <?before '='> <assignment> {*}    #= assignment
       | <?before '.'> <dotty> <arguments>? {*}   #= method
     ]
 }
 
-rule smart_assignment {
+rule assignment {
     '='
     <expression>
     {*}
@@ -246,8 +246,8 @@ rule smart_assignment {
 ##      $var[0].attribute
 ##      $var.attribute.method()
 ##      $var.method().method()
-rule smart_method_call {
-    <smart_variable>
+rule method_call {
+    <variable>
     <dotty> <arguments>
     {*}
 }
@@ -268,8 +268,8 @@ rule smart_method_call {
 ##      $var<name> = 'value';
 rule assignable {
     [
-      | <smart_variable>
-      | <smart_macro_expandsion>
+      | <variable>
+#      | <macro_reference>
     ]
     [
       <dotty>
@@ -290,15 +290,15 @@ rule dotty {
     {*}
 }
 
-rule smart_variable_declarator {
-    'my' <smart_variable>
+rule variable_declarator {
+    'my' <variable>
     [
     '=' <expression>
     ]?
     {*}
 }
 
-token smart_variable {
+token variable {
     $<sigil>=['$']
     [
       | <identifier>
@@ -306,7 +306,7 @@ token smart_variable {
     {*}
 }
 
-rule smart_new_operator {
+rule new_operator {
     'new' <identifier> ['(' <parameters> ')']?
     {*}
 }
@@ -319,14 +319,14 @@ token identifier {
 token term {
     | <value> {*}                               #= value
     | <assignable> {*}                          #= assignable
-    | <smart_builtin_function> {*}              #= smart_builtin_function
-    | <smart_new_operator> {*}                  #= smart_new_operator
-    | <smart_macro_expandsion> {*}              #= smart_macro_expandsion
+    | <builtin_function> {*}                    #= builtin_function
+    | <new_operator> {*}                        #= new_operator
+    | <macro_reference> {*}                    #= macro_reference
 }
 
 rule value {
-    | <integer> {*}                              #= integer
-    | <quote> {*}                                #= quote
+    | <integer> {*}                             #= integer
+    | <quote> {*}                               #= quote
 }
 
 rule integer { \d+ {*} }
@@ -337,7 +337,7 @@ rule quote {
 }
 
 # rule make_variable_method_call {
-#     <smart_macro_expandsion> '.' <identifier>
+#     <macro_reference> '.' <identifier>
 #         '(' <parameters>
 #         [ ')' || <.panic: "smart: * Require an ')' to terminate parameter list"> ]
 #     {*}
@@ -351,10 +351,10 @@ rule parameters {
     [ <expression> [ ',' <expression> ]* ]?
 }
 
-token smart_macro_expandsion {
+token macro_reference {
     [
-     | <smart_macro_expandsion1>
-     | <smart_macro_expandsion2>
+     | <macro_reference1>
+     | <macro_reference2>
     ]
     {*}
 #    {{
@@ -362,15 +362,15 @@ token smart_macro_expandsion {
 #    say $S0
 #    }}
 }
-token smart_macro_expandsion1 {
+token macro_reference1 {
     '$'
-    [ '(' $<name>=[[<!before ')'><-[\n:=#$]>|<.smart_macro_expandsion>]+]
-    [ ')' || <.panic: "smart: * Make variable referencing expects ')'"> ]]
+    [ '(' $<name>=[[<!before ')'><-[\n:=#$]>|<.macro_reference>]+]
+    [ ')' || <.panic: "smart: * Macro referencing expects ')'"> ]]
 }
-token smart_macro_expandsion2 {
+token macro_reference2 {
     '$'
-    [ '{' $<name>=[[<!before '}'><-[\n:=#$]>|<.smart_macro_expandsion>]+]
-    [ '}' || <.panic: "smart: * Make variable referencing expects '}'"> ]]
+    [ '{' $<name>=[[<!before '}'><-[\n:=#$]>|<.macro_reference>]+]
+    [ '}' || <.panic: "smart: * Macro referencing expects '}'"> ]]
 }
 
 
