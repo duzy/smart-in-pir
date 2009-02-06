@@ -690,12 +690,13 @@ method smart_assignment($/) {
     my $past := PAST::Stmts.new();
 
     if $var.scope() eq 'lexical' { # declare new variable
+        $past.push( $var );
+
         my $name := lexical_to_register($var.name());
         my $attr := $vars[1];
         if $attr {
             ## attribute assignment: $var.attr = "value";
-            $var.viviself( $attr );
-            $past.push( $var );
+            if $attr.isdecl() { $past.push( $attr ); }
             $past.push( PAST::Op.new( :inline('    %0 = %1'),
               PAST::Var.new( :name( $attr.name() ), :scope('register') ),
               $rhs ) );
@@ -706,17 +707,14 @@ method smart_assignment($/) {
                 PAST::Var.new( :name( $name ), :scope('register'),
                   :isdecl(1), :viviself( $rhs ) )
             );
-            $past.push( $var );
         }
     }
     elsif $var.scope() eq 'register' {
         my $attr := $vars[1];
         if $attr {
             ## attribute assignment: $var.attr = "value";
-            if $attr.isdecl() {
-                $attr.isdecl(1);
-                $past.push( $attr );
-            }
+            if $attr.isdecl() { $past.push( $attr ); }
+
             $past.push( PAST::Op.new( :inline('    %0 = %1'),
               PAST::Var.new( :name( $attr.name() ), :scope('register') ),
               $rhs ) );
@@ -737,7 +735,14 @@ method assignable($/) {
     my $?BLOCK := @?BLOCKS[0];
     my $var := $( $<smart_variable> );
     my $past := PAST::Stmts.new();
-    if $var.scope() eq 'lexical' { # declare new variable with a lexical name
+
+    $past.push( $var );
+
+    if $var.scope() eq 'lexical' {
+        ## A lexical variable is binded with a register variable by converting
+        ## lexical name using lexical_to_register(). This binding(PIR '.lex')
+        ## will be applied only once, at initializing, so if the scope() is
+        ## 'lexical' we ensure that it's declaring the variable.
         if $<dotty> {
             ## attribute: $var.id => $attr;
             my $id := ~$<dotty>[0]<identifier>;
@@ -746,43 +751,36 @@ method assignable($/) {
 
             if !$?BLOCK.symbol( $attr.name() ) {
                 $?BLOCK.symbol( $attr.name(), :scope('register') );
-                $attr.isdecl(1);
-                $attr.viviself(
-                    PAST::Op.new( :pasttype( 'callmethod' ), :name( $id ),
-                      PAST::Var.new( :scope('register'),
-                        :name( lexical_to_register($var.name()) ) )
-                    )
+                my $get_attr := PAST::Op.new( :pasttype( 'callmethod' ), :name( $id ),
+                  PAST::Var.new( :scope('register'),
+                    :name( lexical_to_register($var.name()) ) )
                 );
+                $attr.isdecl(1);
+                $attr.viviself( $get_attr );
             }
-            $var.viviself( $attr );
-            $past.push( $var );
+
             $past.push( $attr );
-        }
-        else {
-            ## normal variable: $var;
-            $past.push( $var );
         }
     }
     elsif $var.scope() eq 'register' {
+        ## If the scope() of the smart-variable is 'register', we ensure that it's
+        ## been declared previously and binded to a lexical name(using '.lex').
         if $<dotty> {
             ## attribute: $var.id => $attr;
             my $id := ~$<dotty>[0]<identifier>;
             my $attr := PAST::Var.new( :name( $var.name()~"_"~$id ),
               :scope('register'),
             );
+
             if !$?BLOCK.symbol( $attr.name() ) {
                 $?BLOCK.symbol( $attr.name(), :scope('register') );
+                my $get_attr := PAST::Op.new( :pasttype( 'callmethod' ),
+                  :name( $id ), $var );
                 $attr.isdecl(1);
-                $attr.viviself(
-                    PAST::Op.new( :pasttype( 'callmethod' ), :name( $id ),
-                      $var )
-                );
+                $attr.viviself( $get_attr );
             }
-            $past.push( $var );
+
             $past.push( $attr );
-        }
-        else {
-            $past.push( $var );
         }
     }
     else {
@@ -809,6 +807,9 @@ method smart_variable_declarator($/) {
 method smart_variable($/) {
     my $name := ~$/;
     my $sigil := ~$<sigil>;
+
+    ## We will always represent a smart-variable using register variable,
+    ## binding it with the lexical name '$name' at declaration.
     my $var := PAST::Var.new( :scope('register') );
 
     if $sigil eq '$' { #'
@@ -819,10 +820,15 @@ method smart_variable($/) {
     my $?BLOCK := @?BLOCKS[0];
     if !$?BLOCK.symbol( $name ) {
         $?BLOCK.symbol( $name, :scope( 'lexical' ) );
+
+        ## Initialize the $var as a declaration to 'Undef'.
         $var.isdecl(1);
         $var.viviself( 'Undef' );
-        make PAST::Var.new( :name( $name ), :scope( 'lexical' ), :isdecl( 1 ),
-          :viviself( $var ) );
+
+        ## Binding it with the lexical name.
+        my $lex := PAST::Var.new( :name( $name ), :scope( 'lexical' ),
+          :isdecl( 1 ), :viviself( $var ) );
+        make $lex;
     }
     else {
         make $var;
