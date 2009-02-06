@@ -24,11 +24,12 @@ token ws_inline { <!ww> [ <comment_block> | <[ \ \t ]>* | [ '#' \N* ] ] }
 
 rule statement {
     | <.ws> ';'                                 # empty statement
-    | <smart_variable_declarator>               #= smart_variable_declarator
-    | <smart_assignment> ';' {*}                #= smart_assignment
-    | <smart_method> ';' {*}                    #= smart_method
+#    | <smart_variable_declarator>               #= smart_variable_declarator
+#    | <smart_assignment> ';' {*}                #= smart_assignment
+#    | <smart_method> ';' {*}                    #= smart_method
+    | <on_assignable> ';' {*}                   #= on_assignable
     | <smart_builtin_statement> {*}		#= smart_builtin_statement
-    | <smart_builtin_function> {*}              #= smart_builtin_function
+    | <smart_builtin_function> ';' {*}          #= smart_builtin_function
     | <smart_macro> {*}                         #= smart_macro
     | <smart_rule> {*}                          #= smart_rule
 }
@@ -117,14 +118,6 @@ token expanded_orderonly {
     [<expanded_targets><.ws_inline>[\\\n<.ws_inline>]*]*
     {*}
 }
-# token make_prerequisite {
-#     [<smart_macro_expandsion>|<-[(:;|\ \t\\\n$]>]+
-#     ['('<-[)]>*')']?
-# }
-# token make_prerequisite_oo {
-#     [<smart_macro_expandsion>|<-[(:;|\ \t\\\n$]>]+
-#     ['('<-[)]>*')']?
-# }
 token make_action {
     [[<!before \\\n><-[\n]>]+ [\\\n]?]*
 }
@@ -210,13 +203,12 @@ rule make_conditional_statement {
     {*}
 }
 
-rule make_include_statement {
+rule smart_include {
     'include' <.ws_inline> [\\\n<.ws_inline>]* <expanded_prerequisites>
     {*}
 }
 
 rule smart_builtin_statement {
-#    $<name>=['say']
     $<name>=[<identifier>]
     <expression> [ ',' <expression> ]*
     [ ';' || <.panic: 'smart: * Unterminated statement'> ]
@@ -231,35 +223,72 @@ rule smart_builtin_function {
     {*}
 }
 
-rule smart_assignment {
+## <assignable> = xxx
+## <assignable>.xxx()
+## Synopsis:
+##      
+rule on_assignable {
     <assignable>
+    [
+      | <?before '='> <smart_assignment> {*}    #= assignment
+      | <?before '.'> <smart_method> {*}        #= method
+    ]
+}
+
+rule smart_assignment {
     '='
     <expression>
     {*}
 }
 
+## Synopsis:
+##      $obj.method()
+##      $obj.attribute
+##      $var[0].method()
+##      $var[0].attribute
+##      $var.attribute.method()
+##      $var.method().method()
+rule smart_method {
+    [
+      | <dotty> {*}
+      | '->' <identifier> {*}
+    ]
+}
+
 ## All entities which could be assigned with a value and represents a value,
 ## such variable, attribute, indexed array element, etc.
+## Synopsis:
+##      $var
+##      $var.attribute
+##      $var.method( arg )
+##      $var[0]
+##      $var<name>
+## Examples:
+##      $var = 'value';
+##      $var.attribute = 'value';
+##      $var.substr( 0, 1 ) = 'value';
+##      $var[0] = 'value';
+##      $var<name> = 'value';
 token assignable {
-    <smart_variable>
+    [
+      | <smart_variable>
+      | <smart_macro_expandsion>
+    ]
     [
       <dotty>
     ]?
     {*}
 }
 
-token dotty {
+## Synopsis:
+##      .attribute
+##      .method( xxx )
+## Examples:
+##      $obj = new SomeType;
+##      $obj.attribute = 'value';
+##      $obj.method( 'arg' );
+rule dotty {
     '.' <identifier> ['(' <parameters> ')']?
-#    {*}
-}
-
-rule smart_method {
-    [
-      | <smart_variable>
-      | <smart_macro_expandsion>
-    ]
-    <dotty>
-    [ '(' <parameters> ')'  ]?
     {*}
 }
 
@@ -292,11 +321,9 @@ token identifier {
 ##  terms
 token term {
     | <value> {*}                               #= value
-#    | <smart_variable> {*}                      #= smart_variable
     | <assignable> {*}                          #= assignable
     | <smart_builtin_function> {*}              #= smart_builtin_function
     | <smart_new_operator> {*}                  #= smart_new_operator
-    | <smart_method> {*}                        #= smart_method
     | <smart_macro_expandsion> {*}              #= smart_macro_expandsion
 }
 

@@ -95,7 +95,7 @@ method smart_statement( $/, $key ) {
 
 method empty_smart_statement($/) { make PAST::Stmts.new(); }
 
-method make_variable_declaration($/) {
+method smart_macro($/) {
     our $VAR_ON;
     if ( $VAR_ON ) {
         my $name;
@@ -294,7 +294,7 @@ sub check_and_convert_suffix($str) {
   targets : prerequsites | orderonlys
   static-targets : target-pattern : prereq-pattern | orderonlys
 =cut
-method make_rule($/) {
+method smart_rule($/) {
     our $?SMART;
     our $RULE_NUMBER;
     if $<make_special_rule> {
@@ -570,7 +570,7 @@ method make_conditional_statement($/) {
     }
 }
 
-method make_include_statement($/) {
+method smart_include($/) {
     our $?SMART;
     our $SMART_INCLUDE_NUMBER;
     $SMART_INCLUDE_NUMBER := $SMART_INCLUDE_NUMBER + 1;
@@ -682,35 +682,42 @@ sub lexical_to_register($name) {
     return $ret;
 }
 
-method smart_assignment($/) {
-    my $vars := $( $<assignable> );
-    my $var := $vars[0];
-    my $rhs := $( $<expression> );
-
+sub create_assignment($/) {
+    my $vars := $( $/<assignable> );
+    my $rhs  := $( $/<smart_assignment> );
+    my $var  := $vars[0];
+    my $attr := $vars[1];
     my $past := PAST::Stmts.new();
 
-    if $var.scope() eq 'lexical' { # declare new variable
+#     my $s := $var.scope();
+#     my $n := $var.name();
+#     PIR q< find_lex $P0, "$s" >;
+#     PIR q< find_lex $P1, "$n" >;
+#     PIR q< print $P0 >;
+#     PIR q< print ": " >;
+#     PIR q< say $P1 >;
+
+    my $scope := $var.scope();
+    if $scope eq 'lexical' { # declare new variable
         $past.push( $var );
 
-        my $name := lexical_to_register($var.name());
-        my $attr := $vars[1];
         if $attr {
             ## attribute assignment: $var.attr = "value";
             if $attr.isdecl() { $past.push( $attr ); }
             $past.push( PAST::Op.new( :inline('    %0 = %1'),
               PAST::Var.new( :name( $attr.name() ), :scope('register') ),
-              $rhs ) );
+              $rhs )
+            );
         }
         else {
             ## normal variable assignment: $var = "value";
             $var.viviself(
-                PAST::Var.new( :name( $name ), :scope('register'),
-                  :isdecl(1), :viviself( $rhs ) )
+                PAST::Var.new( :name( lexical_to_register($var.name()) ),
+                  :scope('register'), :isdecl(1), :viviself( $rhs ) )
             );
         }
     }
-    elsif $var.scope() eq 'register' {
-        my $attr := $vars[1];
+    elsif $scope eq 'register' {
         if $attr {
             ## attribute assignment: $var.attr = "value";
             if $attr.isdecl() { $past.push( $attr ); }
@@ -724,10 +731,33 @@ method smart_assignment($/) {
         }
     }
     else {
-        $/.panic( "Unsupported variable scope: "~$var.scope() );
+        $/.panic( "smart: *** Unsupported variable scope: "~$scope );
     }
 
-    make $past;
+    return $past;
+}
+
+method on_assignable($/, $key) {
+    if $key eq 'assignment' {
+        make create_assignment( $/ );
+    }
+    elsif $key eq 'method' {
+        my $vars := $( $<assignable> );
+        my $meth := $( $<smart_method> );
+        $meth.push( $vars[0] );
+        make $meth;
+    }
+    else {
+        $/.panic("smart: *** Unsupported operation on assignable.");
+    }
+}
+
+method smart_assignment($/) {
+    make $( $<expression> );
+}
+
+method smart_method($/) {
+    make $( $<dotty> );
 }
 
 method assignable($/) {
@@ -745,16 +775,15 @@ method assignable($/) {
         ## 'lexical' we ensure that it's declaring the variable.
         if $<dotty> {
             ## attribute: $var.id => $attr;
-            my $id := ~$<dotty>[0]<identifier>;
+            my $get_attr := $( $<dotty>[0] );
             my $attr := PAST::Var.new( :scope('register'),
-              :name( lexical_to_register($var.name())~"_"~$id ) );
+              :name( lexical_to_register($var.name())~"_"~$get_attr.name() ) );
 
             if !$?BLOCK.symbol( $attr.name() ) {
                 $?BLOCK.symbol( $attr.name(), :scope('register') );
-                my $get_attr := PAST::Op.new( :pasttype( 'callmethod' ), :name( $id ),
-                  PAST::Var.new( :scope('register'),
-                    :name( lexical_to_register($var.name()) ) )
-                );
+                $get_attr.push( PAST::Var.new( :scope('register'),
+                  :name( lexical_to_register($var.name()) ) ) );
+
                 $attr.isdecl(1);
                 $attr.viviself( $get_attr );
             }
@@ -767,15 +796,14 @@ method assignable($/) {
         ## been declared previously and binded to a lexical name(using '.lex').
         if $<dotty> {
             ## attribute: $var.id => $attr;
-            my $id := ~$<dotty>[0]<identifier>;
-            my $attr := PAST::Var.new( :name( $var.name()~"_"~$id ),
+            my $get_attr := $( $<dotty>[0] );
+            my $attr := PAST::Var.new( :name( $var.name()~"_"~$get_attr.name() ),
               :scope('register'),
             );
 
             if !$?BLOCK.symbol( $attr.name() ) {
                 $?BLOCK.symbol( $attr.name(), :scope('register') );
-                my $get_attr := PAST::Op.new( :pasttype( 'callmethod' ),
-                  :name( $id ), $var );
+                $get_attr.push( $var );
                 $attr.isdecl(1);
                 $attr.viviself( $get_attr );
             }
@@ -791,8 +819,14 @@ method assignable($/) {
 
 method dotty($/) {
     if $<parameters> {
+        my $meth := PAST::Op.new( :pasttype( 'callmethod' ),
+          :name( $<identifier> ) );
+        make $meth;
     }
     else {
+        my $attr := PAST::Op.new( :pasttype( 'callmethod' ),
+          :name( $<identifier> ) );
+        make $attr;
     }
 }
 
@@ -833,10 +867,6 @@ method smart_variable($/) {
     else {
         make $var;
     }
-}
-
-method smart_method($/) {
-    make PAST::Op.new( :inline("print 'method: '\nsay %0"), ~$/ );
 }
 
 method parameters($/) {
