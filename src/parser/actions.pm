@@ -162,28 +162,43 @@ method macro_reference($/) {
     }
     $name := expand( $name );
 
-    if 0 {
-        my $var := PAST::Var.new( #:name($name),
-            #:scope('package'),
-            #:namespace('smart::make::variable'),
-            :scope('register'),
-              :viviself('Undef'),
-              :lvalue(0),
-              :node($/)
-        );
-        my $binder := PAST::Op.new( :pasttype('call'),
-          :name('!GET-VARIABLE'),
-          :returns('Variable') );
-        $binder.push( PAST::Val.new( :value($name), :returns('String') ) );
-        make PAST::Op.new( $var, $binder,
-                           :pasttype('bind'),
-                           :name('bind-makefile-variable-variable'),
-                       );
+    # if 0 {
+    #     my $var := PAST::Var.new( #:name($name),
+    #         #:scope('package'),
+    #         #:namespace('smart::make::variable'),
+    #         :scope('register'),
+    #           :viviself('Undef'),
+    #           :lvalue(0),
+    #           :node($/)
+    #     );
+    #     my $binder := PAST::Op.new( :pasttype('call'),
+    #       :name('!GET-VARIABLE'),
+    #       :returns('Variable') );
+    #     $binder.push( PAST::Val.new( :value($name), :returns('String') ) );
+    #     make PAST::Op.new( $var, $binder,
+    #                        :pasttype('bind'),
+    #                        :name('bind-makefile-variable-variable'),
+    #                    );
+    # }
+    # else {
+    #     make PAST::Op.new( :pasttype('call'), :name(':VARIABLE'),
+    #       PAST::Val.new(:value($name), :returns('String')) );
+    # }
+    my $vname := "m_"~$name;
+    my $var := PAST::Var.new( :scope('register'), :name($vname) );
+
+    our @?BLOCKS;
+    my $?BLOCK := @?BLOCKS[0];
+    if !$?BLOCK.symbol( $vname ) {
+        $?BLOCK.symbol( $vname, :scope('register'), :type('macro') );
+
+        my $get_macro := PAST::Op.new( :pasttype('call'), :name('macro'),
+          $name );
+
+        $var.isdecl(1);
+        $var.viviself( $get_macro );
     }
-    else {
-        make PAST::Op.new( :pasttype('call'), :name(':VARIABLE'),
-          PAST::Val.new(:value($name), :returns('String')) );
-    }
+    make $var;
 }
 
 sub expanded($arr) {
@@ -615,15 +630,6 @@ method include($/) {
     }
 }
 
-# method builtin_statement($/) {
-#     my $name := ~$<name>;
-#     my $past := PAST::Op.new( :name($name), :pasttype('call'), :node( $/ ) );
-#     for $<expression> {
-#         $past.push( $( $_ ) );
-#     }
-#     make $past;
-# }
-
 method function_call($/) {
     my $name := ~$<name>;
     my $past := PAST::Op.new( :name($name), :pasttype('call'), :node( $/ ) );
@@ -750,18 +756,19 @@ method assignment($/) {
 }
 
 method method_call($/) {
-    my $var := $( $<variable> );
+    my $var;
+    if $<variable> { $var := $( $<variable> ); }
+    elsif $<macro_reference> { $var := $( $<macro_reference> ); }
+
     my $meth := $( $<dotty> );
     $meth.push( $var );
     make $meth;
 }
 
-method assignable($/) {
+sub create_assignable_on_variable($/, $past) {
     our @?BLOCKS;
     my $?BLOCK := @?BLOCKS[0];
-    my $var := $( $<variable> );
-    my $past := PAST::Stmts.new();
-
+    my $var := $( $/<variable> );
     $past.push( $var );
 
     if $var.scope() eq 'lexical' {
@@ -769,14 +776,15 @@ method assignable($/) {
         ## lexical name using lexical_to_register(). This binding(PIR '.lex')
         ## will be applied only once, at initializing, so if the scope() is
         ## 'lexical' we ensure that it's declaring the variable.
-        if $<dotty> {
+        if $/<dotty> {
             ## attribute: $var.id => $attr;
-            my $get_attr := $( $<dotty>[0] );
+            my $get_attr := $( $/<dotty>[0] );
             my $attr := PAST::Var.new( :scope('register'),
               :name( lexical_to_register($var.name())~"_"~$get_attr.name() ) );
 
             if !$?BLOCK.symbol( $attr.name() ) {
-                $?BLOCK.symbol( $attr.name(), :scope('register') );
+                $?BLOCK.symbol( $attr.name(), :scope('register'),
+                                :type('variable.attribute') );
                 $get_attr.push( PAST::Var.new( :scope('register'),
                   :name( lexical_to_register($var.name()) ) ) );
 
@@ -790,40 +798,75 @@ method assignable($/) {
     elsif $var.scope() eq 'register' {
         ## If the scope() of the smart-variable is 'register', we ensure that it's
         ## been declared previously and binded to a lexical name(using '.lex').
-        if $<dotty> {
+        if $/<dotty> {
             ## attribute: $var.id => $attr;
-            my $get_attr := $( $<dotty>[0] );
-            my $attr := PAST::Var.new( :name( $var.name()~"_"~$get_attr.name() ),
-              :scope('register'),
+            my $get_attr := $( $/<dotty>[0] );
+            my $attr := PAST::Var.new(
+                :name( ~$var.name()~"_"~$get_attr.name() ),
+                :scope('register'),
             );
+            $past.push( $attr );
 
             if !$?BLOCK.symbol( $attr.name() ) {
-                $?BLOCK.symbol( $attr.name(), :scope('register') );
+                $?BLOCK.symbol( $attr.name(), :scope('register'),
+                                :type('variable.attribute') );
                 $get_attr.push( $var );
                 $attr.isdecl(1);
                 $attr.viviself( $get_attr );
             }
-
-            $past.push( $attr );
         }
     }
     else {
         $/.panic( "smart: *** Unsupported variable scope: "~$var.scope() );
     }
+    return $past;
+}
+
+sub create_assignable_on_macro_reference($/, $past) {
+    our @?BLOCKS;
+    my $?BLOCK := @?BLOCKS[0];
+    my $var := $( $/<macro_reference> );
+    $past.push( $var );
+    if $/<dotty> {
+        my $get_attr := $( $/<dotty>[0] );
+        my $attr := PAST::Var.new(
+            :name( ~$var.name()~"_"~$get_attr.name() ),
+            :scope('register'),
+        );
+        $past.push( $attr );
+
+        if !$?BLOCK.symbol( $attr.name() ) {
+            $?BLOCK.symbol( $attr.name(), :scope('register'),
+                            :type('macro.attribute') );
+            $get_attr.push( $var );
+            $attr.isdecl( 1 );
+            $attr.viviself( $get_attr );
+        }
+        else {
+            my $s := $?BLOCK.symbol( $attr.name() );
+            PIR q< find_lex $P0, "$s" >;
+            PIR q< $P1 = $P0['type'] >;
+            PIR q< say $P1 >;
+        }
+    }
+    return $past;
+}
+
+method assignable($/) {
+    my $past := PAST::Stmts.new();
+    if $<variable> {
+        create_assignable_on_variable($/, $past);
+    }
+    elsif $<macro_reference> {
+        create_assignable_on_macro_reference($/, $past);
+    }
     make $past;
 }
 
 method dotty($/) {
-    if $<parameters> {
-        my $meth := PAST::Op.new( :pasttype( 'callmethod' ),
-          :name( $<identifier> ) );
-        make $meth;
-    }
-    else {
-        my $attr := PAST::Op.new( :pasttype( 'callmethod' ),
-          :name( $<identifier> ) );
-        make $attr;
-    }
+    my $meth := PAST::Op.new( :pasttype( 'callmethod' ),
+      :name( $<identifier> ) );
+    make $meth;
 }
 
 method variable_declarator($/) {
@@ -849,7 +892,7 @@ method variable($/) {
     our @?BLOCKS;
     my $?BLOCK := @?BLOCKS[0];
     if !$?BLOCK.symbol( $name ) {
-        $?BLOCK.symbol( $name, :scope( 'lexical' ) );
+        $?BLOCK.symbol( $name, :scope('lexical'), :type('variable') );
 
         ## Initialize the $var as a declaration to 'Undef'.
         $var.isdecl(1);

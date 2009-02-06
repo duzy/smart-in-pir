@@ -473,7 +473,7 @@ return_origin_string:
 Define macro.
 
 =cut
-.sub "macro"
+.sub "macro" :multi(_,_,_,_)
     .param string name
     .param string sign
     .param string value
@@ -579,3 +579,9 @@ done:
     .return (var)
 .end # sub "macro"
 
+.sub "macro" :multi(_)
+    .param string name
+    .local pmc var
+    get_hll_global var, ['smart';'make';'variable'], name
+    .return(var)
+.end # sub "macro"

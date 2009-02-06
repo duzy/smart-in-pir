@@ -29,3 +29,12 @@ $var = new Target; #( "abc" );
 $var.object = "attr";
 say "check:(attr):", $var.object;
 
+VAR = macro
+say $(VAR);
+#$(VAR).name = 'abc';
+#$(VAR).name();
+say $(VAR).name;
+say $(VAR).name;
+say $(VAR).name;
+say $(VAR).name;
+
