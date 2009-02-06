@@ -619,14 +619,20 @@ method builtin_statement($/) {
     make $past;
 }
 
-method builtin_function($/) {
+method function_call($/) {
     my $name := ~$<name>;
     PIR q< find_lex $P0, "$name" >;
     PIR q< print "function: " >;
     PIR q< say $P0 >;
     my $past := PAST::Op.new( :name($name), :pasttype('call'), :node( $/ ) );
-    for $<expression> {
-        $past.push( $( $_ ) );
+    if $<arguments> {
+        my $args := $( $<arguments> );
+        #for @( $args ) { $past.push( $($_) ); }
+        $past.push( $args );
+    }
+    elsif $<parameters> {
+        my $args := $( $<parameters> );
+        $past.push( $args );
     }
     make $past;
 }
@@ -858,8 +864,16 @@ method variable($/) {
     }
 }
 
+method arguments($/) {
+    make $( $<parameters> );
+}
+
 method parameters($/) {
-    make PAST::Op.new( :inline("print 'parameters: '\nsay %0"), ~$/ );
+    my $past := PAST::Stmts.new();
+    for $<expression> {
+        $past.push( $($_) );
+    }
+    make $past;
 }
 
 ##  expression:

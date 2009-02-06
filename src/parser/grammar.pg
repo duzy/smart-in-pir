@@ -26,11 +26,11 @@ rule statement {
     | <.ws> ';'                                 # empty statement
     | <on_assignable> ';' {*}                   #= on_assignable
     | <method_call> ';' {*}                     #= method_call
-    | <builtin_statement> {*}                   #= builtin_statement
-    | <builtin_function> ';' {*}                #= builtin_function
+#    | <builtin_statement> {*}                   #= builtin_statement
+    | <function_call> ';' {*}                   #= function_call
     | <macro> {*}                               #= macro
     | <rule> {*}                                #= rule
-    | <include> {*}                             #= include
+    | <include> ';'? {*}                        #= include
 }
 
 token macro {
@@ -201,8 +201,9 @@ rule make_conditional_statement {
     {*}
 }
 
-rule include {
+token include {
     'include' <.ws_inline> [\\\n<.ws_inline>]* <expanded_prerequisites>
+    [ '\n' | $ ]
     {*}
 }
 
@@ -213,11 +214,12 @@ rule builtin_statement {
     {*}
 }
 
-rule builtin_function {
+rule function_call {
     $<name>=[<identifier>]
-    '('
-    <expression> [ ',' <expression> ]*
-    ')'
+    [
+      | <arguments> ## ( x, y, z )
+      | <parameters> ##  x, y, z
+    ]
     {*}
 }
 
@@ -319,9 +321,9 @@ token identifier {
 token term {
     | <value> {*}                               #= value
     | <assignable> {*}                          #= assignable
-    | <builtin_function> {*}                    #= builtin_function
+    | <function_call> {*}                       #= function_call
     | <new_operator> {*}                        #= new_operator
-    | <macro_reference> {*}                    #= macro_reference
+    | <macro_reference> {*}                     #= macro_reference
 }
 
 rule value {
@@ -345,10 +347,12 @@ rule quote {
 
 rule arguments {
     '(' <parameters> ')'
+    {*}
 }
 
 rule parameters {
     [ <expression> [ ',' <expression> ]* ]?
+    {*}
 }
 
 token macro_reference {
