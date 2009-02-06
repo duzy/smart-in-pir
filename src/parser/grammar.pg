@@ -321,8 +321,8 @@ token identifier {
 token term {
     | <value> {*}                               #= value
     | <assignable> {*}                          #= assignable
-    | <function_call> {*}                       #= function_call
     | <new_operator> {*}                        #= new_operator
+    | <function_call> {*}                       #= function_call
     | <macro_reference> {*}                     #= macro_reference
 }
 

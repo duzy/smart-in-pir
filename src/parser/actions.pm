@@ -626,18 +626,14 @@ method include($/) {
 
 method function_call($/) {
     my $name := ~$<name>;
-#     PIR q< find_lex $P0, "$name" >;
-#     PIR q< print "function: " >;
-#     PIR q< say $P0 >;
     my $past := PAST::Op.new( :name($name), :pasttype('call'), :node( $/ ) );
     if $<arguments> {
         my $args := $( $<arguments> );
-        #for @( $args ) { $past.push( $($_) ); }
-        $past.push( $args );
+        for @( $args ) { $past.push( $_ ); }
     }
     elsif $<parameters> {
         my $args := $( $<parameters> );
-        $past.push( $args );
+        for @( $args ) { $past.push( $_ ); }
     }
     make $past;
 }

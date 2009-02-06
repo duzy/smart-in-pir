@@ -1,7 +1,7 @@
 # -*- Makefile -*-
 
 $var = "variable";
-say "check:(variable):", $var;
+say( "check:(variable):", $var );
 
 $var = 100;
 say "check:(100):", $var;
@@ -24,9 +24,8 @@ say "check:(8):", $var;
 $var = 100 - $var;
 say "check:(92):", $var;
 
-$var = new Target( "abc" );
+$var = new Target; #( "abc" );
 
 $var.object = "attr";
 say "check:(attr):", $var.object;
-
 
