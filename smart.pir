@@ -89,9 +89,9 @@ END_USAGE
     set_hll_global ['smart';'make';'variable'], name, $P0
 .end # sub "override-variable-on-command-line"
 
-=item <"import-environment-variables"()>
+=item <"!import-environment-variables"()>
 =cut
-.sub "import-environment-variables" :anon
+.sub "!import-environment-variables" #:anon
     .local pmc env, it
     .local string name, value
     env = new 'Env'
@@ -104,7 +104,7 @@ iterate_env:
     set_hll_global ['smart';'make';'variable'], name, $P0
     goto iterate_env
 iterate_env_end:
-.end # sub "import-environment-variables"
+.end # sub "!import-environment-variables"
 
 =item
 =cut
@@ -283,8 +283,8 @@ no_smartfile_for_new_args:
     .local pmc smart
     .local pmc arguments
 
-    'load-make-database'()
-    'import-environment-variables'()
+    #'!load-database'()
+    #'!import-environment-variables'()
     arguments = 'parse-command-line-arguments'( args )
 
     .local string smartfile

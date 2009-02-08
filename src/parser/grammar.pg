@@ -27,12 +27,12 @@ rule statement {
     | <on_assignable> ';' {*}                   #= on_assignable
     | <method_call> ';' {*}                     #= method_call
     | <function_call> ';' {*}                   #= function_call
-    | <macro> {*}                               #= macro
+    | <macro_declaration> {*}                   #= macro_declaration
     | <rule> {*}                                #= rule
     | <include> ';'? {*}                        #= include
 }
 
-token macro {
+token macro_declaration {
     [ $<override>=['override'] <.ws> ]?
     [
       |[ $<sign>=['define'] <[ \ \t ]>+ <.ws_inline>
@@ -65,6 +65,7 @@ token expandable_text {
     ]
     {*}
 }
+
 token expanded_targets {
     |[ $<pre>=[[<!before [':']><-[\\\n$\ \t:;|]>]*]
        <expandable>

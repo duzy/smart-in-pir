@@ -26,7 +26,7 @@ sub push_default_goal_updator( $past ) {
           PAST::Var.new( :name('goal'), :scope('register'), :isdecl(1),
             :viviself( PAST::Op.new( :pasttype('call'), :name(':TARGET'),
               PAST::Val.new( :returns('String'), :value($numberOneTarget) ) ) )
-        )
+          )
         )
       );
     }
@@ -41,7 +41,18 @@ method TOP($/, $key) {
 
     if $key eq 'enter' {
 	$?SMART := PAST::Block.new( :blocktype('declaration'), :name("_smart"),
-          :node( $/ ) );
+          :node( $/ ), :pirflags( ':main :anon' ) );
+
+        my $loadinit := PAST::Stmts.new(
+            PAST::Op.new( :pasttype('call'),
+              :name('!load-database'),
+            ),
+            PAST::Op.new( :pasttype('call'),
+              :name('!import-environment-variables'),
+            )
+        );
+        $?SMART.loadinit().push( $loadinit );
+
 	@?BLOCKS.unshift( $?SMART );
     }
     else { # while leaving the block
@@ -69,7 +80,6 @@ method TOP($/, $key) {
         );
         $?SMART.push( $auto );
 
-        $?SMART.pirflags( ':main :anon' );
         $?SMART.loadinit().unshift(
             PAST::Op.new( :inline('    $P0 = compreg "smart"',
                                   '    unless null $P0 goto have_smart',
@@ -93,65 +103,44 @@ method statement( $/, $key ) {
     make $( $/{$key} );
 }
 
-method macro($/) {
-    our $VAR_ON;
+method macro_declaration($/) {
     my $past := PAST::Stmts.new();
+    our $VAR_ON;
     if ( $VAR_ON ) {
         my $name;
         my $sign;
         my $value := "";
-        #my @items;
+
         ## declare variable at parse stage
         $name := expand(strip(~$<name>));
         $sign := ~$<sign>;
         if ( $sign eq 'define' ) {
             $value := ~$<value>;
-            #$value := chop( $value );
-            #@items.push( $value );
         }
         else {
-            #for $<item> { @items.push( ~$_ ); }
-            #@items := $<item>;
             for $<item> {
                 if $value { $value := ~$value~" "~$_; }
                 else { $value := ~$_; }
             }
         }
 
-        if 0 {
-        my $name_pre := 'vardecl:';
-        if    $<override>   { $name_pre := 'varover:';    }
-        my $past := PAST::Op.new( :pasttype('call'), :name($name_pre~'='),
-          PAST::Val.new( :value($name),         :returns('String') ),
-          PAST::Val.new( :value($value),        :returns('String') )
+        my $override := 0;
+        if $<override> { $override := 1; }
+
+        my $macro := PAST::Op.new( :pasttype('call'), :name('macro'),
+          $name, $sign, $value, $override
         );
-        if    $sign eq ':=' { $past.name($name_pre~':='); }
-        elsif $sign eq '?=' { $past.name($name_pre~'?='); }
-        elsif $sign eq '+=' { $past.name($name_pre~'+='); }
-        my $e := PAST::Compiler.compile( $past );
-        $e(); ## declare variables at compile time
-        }
-        else {
-            our $?SMART;
-            #declare_variable( $name, $sign, $value, $<override> );
-            my $override := 0;
-            if $<override> { $override := 1; }
-            $?SMART.loadinit().push(
-                PAST::Op.new( :pasttype('call'), :name('macro'),
-                  $name, $sign, $value, $override
-                )
-            );
-        }
+
+        my $e := PAST::Compiler.compile( $macro );
+        $e(); # Declare the variable at compile-time, so that the
+              # named-macros(named-variables) could be on their way.
+
+        our $?SMART;
+        $?SMART.loadinit().push( $macro );
     }
     make $past;
 }
 
-# method make_variable_method_call($/) {
-#     my $past := PAST::Op.new( $( $<macro_reference> ),
-#         :name( ~$<ident> ), :pasttype( 'callmethod' ) );
-#     for $<expression> { $past.push( $( $_ ) ); }
-#     make $past;
-# }
 method macro_reference($/) {
     my $name;
     if $<macro_reference1> {
@@ -162,28 +151,6 @@ method macro_reference($/) {
     }
     $name := expand( $name );
 
-    # if 0 {
-    #     my $var := PAST::Var.new( #:name($name),
-    #         #:scope('package'),
-    #         #:namespace('smart::make::variable'),
-    #         :scope('register'),
-    #           :viviself('Undef'),
-    #           :lvalue(0),
-    #           :node($/)
-    #     );
-    #     my $binder := PAST::Op.new( :pasttype('call'),
-    #       :name('!GET-VARIABLE'),
-    #       :returns('Variable') );
-    #     $binder.push( PAST::Val.new( :value($name), :returns('String') ) );
-    #     make PAST::Op.new( $var, $binder,
-    #                        :pasttype('bind'),
-    #                        :name('bind-makefile-variable-variable'),
-    #                    );
-    # }
-    # else {
-    #     make PAST::Op.new( :pasttype('call'), :name(':VARIABLE'),
-    #       PAST::Val.new(:value($name), :returns('String')) );
-    # }
     my $vname := "m_"~$name;
     my $var := PAST::Var.new( :scope('register'), :name($vname) );
 
@@ -198,6 +165,7 @@ method macro_reference($/) {
         $var.isdecl(1);
         $var.viviself( $get_macro );
     }
+
     make $var;
 }
 

@@ -17,7 +17,7 @@
     .return($P0)
 .end
 
-.sub "load-make-database"
+.sub "!load-database"
     'default-make-variable'( "CWEAVE",          "cweave" )
     'default-make-variable'( "RM",              "rm -f" )
     'default-make-variable'( "CO",              "co" )
@@ -87,4 +87,4 @@
     'default-make-variable'( "LINK.f",          "$(FC) $(FFLAGS) $(LDFLAGS) $(TARGET_ARCH)" )
     #'default-make-rule'()
     .return()
-.end # .sub "load-make-database"
+.end # .sub "!load-database"
