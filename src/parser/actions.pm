@@ -204,11 +204,11 @@ method macro_reference($/) {
     $var.isdecl(1);
     $var.viviself( $get_macro );
 
-    our @?BLOCKS;
-    my $block := @?BLOCKS[0];
-    my $sym_name := '$('~$name~')';
-    $block.symbol( $sym_name, :scope('register'), :type('macro'),
-                   :vname( $var.name() ) );
+#     our @?BLOCKS;
+#     my $block := @?BLOCKS[0];
+#     my $sym_name := '$('~$name~')';
+#     $block.symbol( $sym_name, :scope('register'), :type('macro'),
+#                    :vname( $var.name() ) );
 
     make $var;
 }

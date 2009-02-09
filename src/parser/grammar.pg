@@ -316,8 +316,8 @@ token identifier {
 ##  terms
 token term {
     | <value> {*}                               #= value
-#    | <assignable> {*}                          #= assignable
-    | <variable> {*}                            #= variable
+    | <assignable> {*}                          #= assignable
+#    | <variable> {*}                            #= variable
     | <macro_reference> {*}                     #= macro_reference
     | <new_operator> {*}                        #= new_operator
     | <function_call> {*}                       #= function_call
