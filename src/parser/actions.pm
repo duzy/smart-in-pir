@@ -155,7 +155,7 @@ method macro_reference($/) {
 
     our @?BLOCKS;
     my $block := @?BLOCKS[0];
-    my $sym := $block.symbol( 'm_'~$name );
+    my $sym := $block.symbol( '$('~$name~')' );
     if $sym && $sym<vname> && $sym<type> eq 'macro' && $sym<scope> eq 'register' {
         my $sym_type := $sym<type>;
         if $sym_type ne 'macro' {
@@ -907,7 +907,11 @@ method arguments($/) {
 method parameters($/) {
     my $stmts := PAST::Stmts.new();
     for $<expression> {
-        $stmts.push( $($_) );
+        my $exp := $($_);
+#         if $exp.isa('PAST::Var') {
+#             $/.panic( "var" );
+#         }
+        $stmts.push( $exp );
     }
     make $stmts;
 }

@@ -44,8 +44,9 @@ object.
     
     $P1.'commandline_banner'("Smart Make for Parrot VM\n")
     $P1.'commandline_prompt'("smart> ")
+.end
 
-
+.sub "reset-global-variables"
     $P0 = new 'ResizablePMCArray'
     set_hll_global ['smart';'Grammar';'Actions'], '@?BLOCKS', $P0
     $P0 = new 'ResizablePMCArray'
@@ -74,8 +75,7 @@ object.
 #     $P0 = new 'Integer'
 #     $P0 = 0
 #     set_hll_global ['smart';'Grammar';'Actions'], '$ATTRIBUTE_NUM', $P0
-.end
-
+.end # sub "reset-global-variables"
 
 =item
 =cut
@@ -324,7 +324,11 @@ execute_parrot:
 
 execute_smart:
     compreg smart, 'smart'
+    
+    "reset-global-variables"()
     'compile_if_updated'( smart, smartfile, "target"=>"pir" )
+    
+    "reset-global-variables"()
     $P1 = smart.'command_line'( arguments )
     #smart.'evalfiles'( smartfile )
     #goto execute
