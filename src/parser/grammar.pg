@@ -316,7 +316,8 @@ token identifier {
 ##  terms
 token term {
     | <value> {*}                               #= value
-    | <assignable> {*}                          #= assignable
+#    | <assignable> {*}                          #= assignable
+    | <variable> {*}                            #= variable
     | <macro_reference> {*}                     #= macro_reference
     | <new_operator> {*}                        #= new_operator
     | <function_call> {*}                       #= function_call
@@ -335,13 +336,6 @@ rule quote {
     {*}
 }
 
-# rule make_variable_method_call {
-#     <macro_reference> '.' <identifier>
-#         '(' <parameters>
-#         [ ')' || <.panic: "smart: * Require an ')' to terminate parameter list"> ]
-#     {*}
-# }
-
 rule arguments {
     '(' <parameters> ')'
     {*}
@@ -353,23 +347,23 @@ rule parameters {
 }
 
 token macro_reference {
+    '$'
     [
      | <macro_reference1>
      | <macro_reference2>
     ]
     {*}
-#    {{
-#    $S0 = match.'text'()
-#    say $S0
-#    }}
+#     {{
+#       $S0 = match.'text'()
+#       print "macro: "
+#       say $S0
+#     }}
 }
 token macro_reference1 {
-    '$'
     [ '(' $<name>=[[<!before ')'><-[\n:=#$]>|<.macro_reference>]+]
     [ ')' || <.panic: "smart: * Macro referencing expects ')'"> ]]
 }
 token macro_reference2 {
-    '$'
     [ '{' $<name>=[[<!before '}'><-[\n:=#$]>|<.macro_reference>]+]
     [ '}' || <.panic: "smart: * Macro referencing expects '}'"> ]]
 }

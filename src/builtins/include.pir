@@ -47,10 +47,17 @@ do_compile:
     print "smart: compiling "
     print $S0
     print "..."
-    
+
+    .local pmc comp
+    get_hll_global comp, ['smart';'Grammar';'Actions'], '$COMPILING_STAGE'
+    comp = 1
+
     $S1 = smart.'compile'( $S1, 'target'=>type )
     #$S1 = smart.'compile'( $S1, options )
     null smart
+
+    comp = 0
+    null comp
 
     open $P1, $S0, "w"
     print $P1, $S1

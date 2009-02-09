@@ -135,19 +135,24 @@ method macro_declaration($/) {
         $e(); # Declare the variable at compile-time, so that the
               # named-macros(named-variables) could be on their way.
 
-        our $?SMART;
-        $?SMART.loadinit().push( $macro );
+        our $COMPILING_STAGE;
+        if $COMPILING_STAGE {
+            our $?SMART;
+            $?SMART.loadinit().push( $macro );
+        }
     }
     make $past;
 }
 
-method macro_reference($/) {
+sub create_macro_reference($/) {
+    #$/.panic( "\ndump calling stack:" );
+
     my $name;
-    if $<macro_reference1> {
-        $name := ~$<macro_reference1><name>;
+    if $/<macro_reference1> {
+        $name := ~$/<macro_reference1><name>;
     }
-    elsif $<macro_reference2> {
-        $name := ~$<macro_reference2><name>;
+    elsif $/<macro_reference2> {
+        $name := ~$/<macro_reference2><name>;
     }
     $name := expand( $name );
 
@@ -155,12 +160,9 @@ method macro_reference($/) {
 
     our @?BLOCKS;
     my $block := @?BLOCKS[0];
-    my $sym := $block.symbol( '$('~$name~')' );
+    my $sym_name := '$('~$name~')';
+    my $sym := $block.symbol( $sym_name );
     if $sym && $sym<vname> && $sym<type> eq 'macro' && $sym<scope> eq 'register' {
-        my $sym_type := $sym<type>;
-        if $sym_type ne 'macro' {
-            $/.panic("Conflict variable names: '"~$sym_type~"'(expects macro).");
-        }
         $var.name( $sym<vname> );
     }
     else {
@@ -173,9 +175,40 @@ method macro_reference($/) {
         $var.isdecl(1);
         $var.viviself( $get_macro );
 
-        $block.symbol( 'm_'~$name, :scope('register'), :type('macro'),
+        $block.symbol( $sym_name, :scope('register'), :type('macro'),
                        :vname( $var.name() ) );
     }
+
+    make $var;
+}
+
+method macro_reference($/) {
+    #make create_macro_reference( $/ );
+    my $name;
+    if $/<macro_reference1> {
+        $name := ~$/<macro_reference1><name>;
+    }
+    elsif $/<macro_reference2> {
+        $name := ~$/<macro_reference2><name>;
+    }
+    $name := expand( $name );
+
+    my $var := PAST::Var.new( :scope('register') );
+
+    our $MACRO_NUM;
+    $MACRO_NUM := $MACRO_NUM + 1; ## increase macro number
+    $var.name( 'macro'~$MACRO_NUM );
+
+    my $get_macro := PAST::Op.new( :pasttype('call'), :name('macro') );
+    $get_macro.push( $name );
+    $var.isdecl(1);
+    $var.viviself( $get_macro );
+
+    our @?BLOCKS;
+    my $block := @?BLOCKS[0];
+    my $sym_name := '$('~$name~')';
+    $block.symbol( $sym_name, :scope('register'), :type('macro'),
+                   :vname( $var.name() ) );
 
     make $var;
 }
@@ -609,17 +642,35 @@ method include($/) {
     }
 }
 
+sub push_arguments($call, $args) {
+    our @?BLOCKS;
+    my $block := @?BLOCKS[0];
+    for @( $args ) {
+        if 0 && $_.isa('PAST::Stmts') {
+            for @( $_ ) {
+                if 0 {
+                    my $s := $_;
+                    PIR q< find_lex $P0, "$s" >;
+                    PIR q< typeof $S0, $P0 >;
+                    PIR q< say $S0 >;
+                }
+                if $_.isa('PAST::Var') && $_.isdecl() {
+                    PIR q< say "push" >;
+                    $block.push( $_ ); ## For isdecl(1) variables
+                }
+            }
+        }
+        $call.push( $_ );
+    }
+}
+
 method function_call($/) {
     my $name := ~$<name>;
     my $past := PAST::Op.new( :name($name), :pasttype('call'), :node( $/ ) );
-    if $<arguments> {
-        my $args := $( $<arguments> );
-        for @( $args ) { $past.push( $_ ); }
-    }
-    elsif $<parameters> {
-        my $args := $( $<parameters> );
-        for @( $args ) { $past.push( $_ ); }
-    }
+    my $args;
+    if $<arguments> { $args := $( $<arguments> ); }
+    elsif $<parameters> { $args := $( $<parameters> ); }
+    push_arguments( $past, $args );
     make $past;
 }
 
@@ -715,7 +766,7 @@ method on_assignable($/, $key) {
         $meth.push( $vars[0] );
         if $<arguments> {
             my $args := $( $<arguments> );
-            for @( $args ) { $meth.push( $_ ); }
+            push_arguments( $meth, $args );
         }
         make $meth;
     }
@@ -731,13 +782,16 @@ method assignment($/) {
 method method_call($/) {
     my $var;
     if $<variable> { $var := $( $<variable> ); }
-    elsif $<macro_reference> { $var := $( $<macro_reference> ); }
+    elsif $<macro_reference> {
+        #$var := $( $<macro_reference> );
+        $var := create_macro_reference( $<macro_reference> );
+    }
 
     my $meth := $( $<dotty> );
     $meth.push( $var );
     if $<arguments> {
         my $args := $( $<arguments> );
-        for @( $args ) { $meth.push( $_ ); }
+        push_arguments( $meth, $args );
     }
     make $meth;
 }
@@ -800,7 +854,8 @@ sub create_assignable_on_variable($/, $stmts) {
 sub create_assignable_on_macro_reference($/, $stmts) {
     our @?BLOCKS;
     my $block := @?BLOCKS[0];
-    my $var := $( $/<macro_reference> );
+    #my $var := $( $/<macro_reference> );
+    my $var := create_macro_reference( $/<macro_reference> );
 
     $stmts.push( $var );
 
@@ -831,7 +886,7 @@ sub create_assignable_on_macro_reference($/, $stmts) {
             $get_attr.push( $var );
             if $<arguments> {
                 my $args := $( $<arguments>[0] );
-                for @( $args ) { $get_attr.push( $_ ); }
+                push_arguments( $get_attr, $args );
             }
 
             $attr.isdecl( 1 );

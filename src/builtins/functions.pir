@@ -6,6 +6,8 @@
 #    $Id$
 #
 
+#.namespace ['smart']
+
 .sub "__onload" :anon :load :init
     load_bytecode "PGE/Glob.pbc"
 
