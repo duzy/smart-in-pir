@@ -633,87 +633,92 @@ method new_operator($/) {
     make $past;
 }
 
-sub lexical_to_register($name) {
-    my $ret;
-    my $sigil;
-    PIR q< find_lex $P0, "$name" >;
-    PIR q< $P1 = clone $P0 >;
-    PIR q< $S0 = $P1 >;
-    PIR q< substr $S1, $S0, 0, 1 >;
+# sub lexical_to_register($name) {
+#     my $ret;
+#     my $sigil;
+#     PIR q< find_lex $P0, "$name" >;
+#     PIR q< $P1 = clone $P0 >;
+#     PIR q< $S0 = $P1 >;
+#     PIR q< substr $S1, $S0, 0, 1 >;
 
-    PIR q< unless $S1 == "$" goto check_sigil_2 >; #"
-    PIR q< substr $S0, 0, 1, "s_" >;
-    PIR q< goto check_sigil_done >;
+#     PIR q< unless $S1 == "$" goto check_sigil_2 >; #"
+#     PIR q< substr $S0, 0, 1, "s_" >;
+#     PIR q< goto check_sigil_done >;
 
-    PIR q< check_sigil_2: >;
-    PIR q< unless $S1 == "@" goto check_sigil_3 >;
-    PIR q< substr $S0, 0, 1, "a_" >;
-    PIR q< goto check_sigil_done >;
+#     PIR q< check_sigil_2: >;
+#     PIR q< unless $S1 == "@" goto check_sigil_3 >;
+#     PIR q< substr $S0, 0, 1, "a_" >;
+#     PIR q< goto check_sigil_done >;
 
-    PIR q< check_sigil_3: >;
-    PIR q< unless $S1 == "%" goto check_sigil_done >;
-    PIR q< substr $S0, 0, 1, "h_" >;
+#     PIR q< check_sigil_3: >;
+#     PIR q< unless $S1 == "%" goto check_sigil_done >;
+#     PIR q< substr $S0, 0, 1, "h_" >;
 
-    PIR q< check_sigil_done: >;
-    PIR q< $P1 = $S0 >;
-    PIR q< store_lex "$ret", $P1 >;
-    return $ret;
-}
+#     PIR q< check_sigil_done: >;
+#     PIR q< $P1 = $S0 >;
+#     PIR q< store_lex "$ret", $P1 >;
+#     return $ret;
+# }
 
 sub create_assignment($/) {
     my $vars := $( $/<assignable> );
     my $rhs  := $( $/<assignment> );
     my $var  := $vars[0];
     my $attr := $vars[1];
-    my $past := PAST::Stmts.new();
+    my $stmts := PAST::Stmts.new();
 
-#     my $s := $var.scope();
-#     my $n := $var.name();
-#     PIR q< find_lex $P0, "$s" >;
-#     PIR q< find_lex $P1, "$n" >;
-#     PIR q< print $P0 >;
-#     PIR q< print ": " >;
-#     PIR q< say $P1 >;
-
-    our $VARIABLE_NUM;
-    my $scope := $var.scope();
-    if $scope eq 'lexical' { # declare new variable
-        $past.push( $var );
-
-        if $attr {
-            ## attribute assignment: $var.attr = "value";
-            if $attr.isdecl() { $past.push( $attr ); }
-            $past.push( PAST::Op.new( :inline('    %0 = %1'),
-              PAST::Var.new( :name( $attr.name() ), :scope('register') ),
-              $rhs )
-            );
+    if $var.scope() eq 'lexical' {
+        ## A lexical variable is binded with a register variable, so we convert it.
+        our @?BLOCKS;
+        my $block := @?BLOCKS[0];
+        my $sym_name := $var.name();
+        my $sym := $block.symbol( $sym_name );
+        if !($sym && $sym<vname> && $sym<type> eq 'variable' && $sym<scope> eq 'lexical' ) {
+            $/.panic( "smart: * Unknown variable: "~$sym_name );
         }
         else {
-            ## normal variable assignment: $var = "value";
-            $var.viviself(
-                PAST::Var.new( :name( lexical_to_register($var.name()) ),
-                  :scope('register'), :isdecl(1), :viviself( $rhs ) )
-            );
+            $stmts.push( $var ); ## push the lexical scoped variable first
+            $var := PAST::Var.new( :scope('register'), :name($sym<vname>) );
         }
     }
-    elsif $scope eq 'register' {
+
+    if $var.scope() eq 'lexical' { # declare new variable
+        $/.panic('smart: * oops: expects "register" but "'~$var.scope()~'"');
+#         $stmts.push( $var );
+#         if $attr {
+#             ## attribute assignment: $var.attr = "value";
+#             if $attr.isdecl() { $stmts.push( $attr ); }
+#             $stmts.push( PAST::Op.new( :inline('    %0 = %1'),
+#               PAST::Var.new( :name( $attr.name() ), :scope('register') ),
+#               $rhs )
+#             );
+#         }
+#         else {
+#             ## normal variable assignment: $var = "value";
+#             $var.viviself(
+#                 PAST::Var.new( :name( lexical_to_register($var.name()) ),
+#                   :scope('register'), :isdecl(1), :viviself( $rhs ) )
+#             );
+#         }
+    }
+    elsif $var.scope() eq 'register' {
         if $attr {
             ## attribute assignment: $var.attr = "value";
-            if $attr.isdecl() { $past.push( $attr ); }
+            if $attr.isdecl() { $stmts.push( $attr ); }
 
-            $past.push( PAST::Op.new( :inline('    %0 = %1'),
+            $stmts.push( PAST::Op.new( :inline('    %0 = %1'),
               PAST::Var.new( :name( $attr.name() ), :scope('register') ),
               $rhs ) );
         }
         else {
-            $past.push( PAST::Op.new( :inline("    %0 = %1"), $var, $rhs ) );
+            $stmts.push( PAST::Op.new( :inline("    %0 = %1"), $var, $rhs ) );
         }
     }
     else {
-        $/.panic( "smart: *** Unsupported variable scope: "~$scope );
+        $/.panic( "smart: *** Unsupported variable scope: "~$var.scope() );
     }
 
-    return $past;
+    return $stmts;
 }
 
 method on_assignable($/, $key) {
@@ -745,36 +750,55 @@ method method_call($/) {
     make $meth;
 }
 
-sub create_assignable_on_variable($/, $past) {
+sub create_assignable_on_variable($/, $stmts) {
     our @?BLOCKS;
     my $block := @?BLOCKS[0];
     my $var := $( $/<variable> );
 
-    $past.push( $var );
+    $stmts.push( $var );
 
     if $var.scope() eq 'lexical' {
-        ## A lexical variable is binded with a register variable by converting
-        ## lexical name using lexical_to_register(). This binding(PIR '.lex')
-        ## will be applied only once, at initializing, so if the scope() is
-        ## 'lexical' we ensure that it's declaring the variable.
-        if $/<dotty> {
-            ## attribute: $var.id => $attr;
-            my $get_attr := $( $/<dotty>[0] );
-            my $attr := PAST::Var.new( :scope('register'),
-              :name( lexical_to_register($var.name())~"_"~$get_attr.name() ) );
-
-            my $sym := $block.symbol( $attr.name() );
-            if !($sym && $sym<type> eq 'variable.attribute' && $sym<scope> eq 'register' ) {
-                $block.symbol( $attr.name(), :scope('register'),
-                                :type('variable.attribute') );
-                $get_attr.push( PAST::Var.new( :scope('register'),
-                  :name( lexical_to_register($var.name()) ) ) );
-                $attr.isdecl(1);
-                $attr.viviself( $get_attr );
-            }
-
-            $past.push( $attr );
+        ## A lexical variable is binded with a register variable, so we convert it.
+        my $sym_name := $var.name();
+        my $sym := $block.symbol( $sym_name );
+        if !($sym && $sym<vname> && $sym<type> eq 'variable' && $sym<scope> eq 'lexical' ) {
+            $/.panic( "smart: * Unknown variable: "~$sym_name );
         }
+        else {
+            $var := PAST::Var.new( :scope('register'), :name($sym<vname>) );
+        }
+    }
+
+    if $var.scope() eq 'lexical' {
+        $/.panic('smart: * oops: expects "register" but "'~$var.scope()~'"');
+#         ## A lexical variable is binded with a register variable by converting
+#         ## lexical name using lexical_to_register(). This binding(PIR '.lex')
+#         ## will be applied only once, at initializing, so if the scope() is
+#         ## 'lexical' we ensure that it's declaring the variable.
+#         if $/<dotty> {
+#             ## attribute: $var.id => $attr;
+#             my $get_attr := $( $/<dotty>[0] );
+#             my $attr := PAST::Var.new( :scope('register') );
+
+#             my $sym_name := lexical_to_register($var.name())~"_"~$get_attr.name();
+#             my $sym := $block.symbol( $sym_name );
+
+#             if !($sym && $sym<vname> && $sym<type> eq 'variable.attribute' && $sym<scope> eq 'register' ) {
+#                 $block.symbol( $sym_name, :scope('register'),
+#                                :type('variable.attribute'),
+#                                :vname( $sym_name ) );
+#                 $get_attr.push( PAST::Var.new( :scope('register'),
+#                   :name( lexical_to_register($var.name()) ) ) );
+#                 $attr.isdecl(1);
+#                 $attr.viviself( $get_attr );
+#                 $attr.name( $sym_name );
+#             }
+#             else {
+#                 $attr.name( $sym<vname> );
+#             }
+
+#             $stmts.push( $attr );
+#         }
     }
     elsif $var.scope() eq 'register' {
         ## If the scope() of the smart-variable is 'register', we ensure that it's
@@ -782,34 +806,39 @@ sub create_assignable_on_variable($/, $past) {
         if $/<dotty> {
             ## attribute: $var.id => $attr;
             my $get_attr := $( $/<dotty>[0] );
-            my $attr := PAST::Var.new(
-                :name( ~$var.name()~"_"~$get_attr.name() ),
-                :scope('register'),
-            );
-            $past.push( $attr );
+            my $attr := PAST::Var.new( :scope('register') );
 
-            my $sym := $block.symbol( $attr.name() );
-            if !($sym && $sym<type> eq 'variable.attribute' && $sym<scope> eq 'register' ) {
-                $block.symbol( $attr.name(), :scope('register'),
-                                :type('variable.attribute') );
+            my $sym_name := ~$var.name()~"_"~$get_attr.name();
+            my $sym := $block.symbol( $sym_name );
+
+            $stmts.push( $attr );
+
+            if !($sym && $sym<vname> && $sym<type> eq 'variable.attribute' && $sym<scope> eq 'register' ) {
+                $block.symbol( $sym_name, :scope('register'),
+                               :type('variable.attribute'),
+                               :vname( $sym_name ) );
                 $get_attr.push( $var );
                 $attr.isdecl(1);
                 $attr.viviself( $get_attr );
+                $attr.name( $sym_name );
+            }
+            else {
+                $attr.name( $sym<vname> );
             }
         }
     }
     else {
         $/.panic( "smart: *** Unsupported variable scope: "~$var.scope() );
     }
-    return $past;
+    return $stmts;
 }
 
-sub create_assignable_on_macro_reference($/, $past) {
+sub create_assignable_on_macro_reference($/, $stmts) {
     our @?BLOCKS;
     my $block := @?BLOCKS[0];
     my $var := $( $/<macro_reference> );
 
-    $past.push( $var );
+    $stmts.push( $var );
 
     if $/<dotty> {
         my $get_attr := $( $/<dotty>[0] );
@@ -817,7 +846,7 @@ sub create_assignable_on_macro_reference($/, $past) {
             :name( ~$var.name()~"_"~$get_attr.name() ),
             :scope('register'),
         );
-        $past.push( $attr );
+        $stmts.push( $attr );
 
         my $sym := $block.symbol( $attr.name() );
         if $sym && $sym<vname> && $sym<type> eq 'macro.attribute' {
@@ -838,18 +867,18 @@ sub create_assignable_on_macro_reference($/, $past) {
             $attr.viviself( $get_attr );
         }
     }
-    return $past;
+    return $stmts;
 }
 
 method assignable($/) {
-    my $past := PAST::Stmts.new();
+    my $stmts := PAST::Stmts.new();
     if $<variable> {
-        create_assignable_on_variable($/, $past);
+        create_assignable_on_variable($/, $stmts);
     }
     elsif $<macro_reference> {
-        create_assignable_on_macro_reference($/, $past);
+        create_assignable_on_macro_reference($/, $stmts);
     }
-    make $past;
+    make $stmts;
 }
 
 method dotty($/) {
@@ -874,15 +903,16 @@ method variable($/) {
     ## binding it with the lexical name '$name' at declaration.
     my $var := PAST::Var.new( :scope('register') );
 
-    if $sigil eq '$' { #'
-        $var.name( 's_'~$<identifier> );
-    }
-
     our @?BLOCKS;
     my $block := @?BLOCKS[0];
     my $sym := $block.symbol( $name );
-    if !( $sym && $sym<type> eq 'variable' ) {
-        $block.symbol( $name, :scope('lexical'), :type('variable') );
+    if !( $sym && $sym<vname> && $sym<type> eq 'variable' ) {
+        if $sigil eq '$' { #'
+            $var.name( 's_'~$<identifier> );
+        }
+
+        $block.symbol( $name, :scope('lexical'), :type('variable'),
+                       :vname( $var.name() ) );
 
         ## Initialize the $var as a declaration to 'Undef'.
         $var.isdecl(1);
@@ -894,6 +924,7 @@ method variable($/) {
         make $lex;
     }
     else {
+        $var.name( $sym<vname> );
         make $var;
     }
 }
@@ -903,11 +934,11 @@ method arguments($/) {
 }
 
 method parameters($/) {
-    my $past := PAST::Stmts.new();
+    my $stmts := PAST::Stmts.new();
     for $<expression> {
-        $past.push( $($_) );
+        $stmts.push( $($_) );
     }
-    make $past;
+    make $stmts;
 }
 
 ##  expression:
