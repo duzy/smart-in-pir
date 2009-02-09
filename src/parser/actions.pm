@@ -151,19 +151,30 @@ method macro_reference($/) {
     }
     $name := expand( $name );
 
-    my $vname := "m_"~$name;
-    my $var := PAST::Var.new( :scope('register'), :name($vname) );
+    my $var := PAST::Var.new( :scope('register') );
 
     our @?BLOCKS;
-    my $?BLOCK := @?BLOCKS[0];
-    if !$?BLOCK.symbol( $vname ) {
-        $?BLOCK.symbol( $vname, :scope('register'), :type('macro') );
+    my $block := @?BLOCKS[0];
+    my $sym := $block.symbol( 'm_'~$name );
+    if $sym && $sym<vname> && $sym<type> eq 'macro' && $sym<scope> eq 'register' {
+        my $sym_type := $sym<type>;
+        if $sym_type ne 'macro' {
+            $/.panic("Conflict variable names: '"~$sym_type~"'(expects macro).");
+        }
+        $var.name( $sym<vname> );
+    }
+    else {
+        our $MACRO_NUM;
+        $MACRO_NUM := $MACRO_NUM + 1; ## increase macro number
+        $var.name( 'macro'~$MACRO_NUM );
 
-        my $get_macro := PAST::Op.new( :pasttype('call'), :name('macro'),
-          $name );
-
+        my $get_macro := PAST::Op.new( :pasttype('call'), :name('macro') );
+        $get_macro.push( $name );
         $var.isdecl(1);
         $var.viviself( $get_macro );
+
+        $block.symbol( 'm_'~$name, :scope('register'), :type('macro'),
+                       :vname( $var.name() ) );
     }
 
     make $var;
@@ -229,7 +240,7 @@ sub push_prerequisites( $past, $name, @prerequisites, $past_rule, $implicit ) {
                       PAST::Var.new( :name($name), :scope('register') ),
                       PAST::Op.new( :pasttype('call'), :name('new:Target'),
                         PAST::Val.new( :value($prereq) ) ) )
-                  );
+                );
             }
             else {
                 if check_wildcard( $prereq ) {
@@ -237,7 +248,7 @@ sub push_prerequisites( $past, $name, @prerequisites, $past_rule, $implicit ) {
                         PAST::Op.new( :pasttype('call'), :name('!WILDCARD-PREREQUISITE'),
                           PAST::Var.new( :name($name), :scope('register') ),
                           PAST::Val.new( :value($prereq) ) )
-                      );
+                    );
                 }
                 else {
                     $past.push(
@@ -245,7 +256,7 @@ sub push_prerequisites( $past, $name, @prerequisites, $past_rule, $implicit ) {
                           PAST::Var.new( :name($name), :scope('register') ),
                           PAST::Op.new( :pasttype('call'), :name(':TARGET'),
                             PAST::Val.new( :value($prereq) ) ) )
-                      );
+                    );
                 }
             }
         } # if $prereq ne ''
@@ -737,6 +748,7 @@ sub create_assignable_on_variable($/, $past) {
     our @?BLOCKS;
     my $?BLOCK := @?BLOCKS[0];
     my $var := $( $/<variable> );
+
     $past.push( $var );
 
     if $var.scope() eq 'lexical' {
@@ -792,9 +804,11 @@ sub create_assignable_on_variable($/, $past) {
 
 sub create_assignable_on_macro_reference($/, $past) {
     our @?BLOCKS;
-    my $?BLOCK := @?BLOCKS[0];
+    my $block := @?BLOCKS[0];
     my $var := $( $/<macro_reference> );
+
     $past.push( $var );
+
     if $/<dotty> {
         my $get_attr := $( $/<dotty>[0] );
         my $attr := PAST::Var.new(
@@ -803,18 +817,23 @@ sub create_assignable_on_macro_reference($/, $past) {
         );
         $past.push( $attr );
 
-        if !$?BLOCK.symbol( $attr.name() ) {
-            $?BLOCK.symbol( $attr.name(), :scope('register'),
-                            :type('macro.attribute') );
+        my $sym := $block.symbol( $attr.name() );
+        if $sym && $sym<vname> && $sym<type> eq 'macro.attribute' {
+            if 0 {
+                my $s := $block.symbol( $attr.name() );
+                PIR q< find_lex $P0, "$s" >;
+                PIR q< $P1 = $P0['type'] >;
+                PIR q< say $P1 >;
+            }
+        }
+        else {
+            $block.symbol( $attr.name(), :scope('register'),
+                           :type('macro.attribute'),
+                           :vname($attr.name())
+            );
             $get_attr.push( $var );
             $attr.isdecl( 1 );
             $attr.viviself( $get_attr );
-        }
-        else {
-            my $s := $?BLOCK.symbol( $attr.name() );
-            PIR q< find_lex $P0, "$s" >;
-            PIR q< $P1 = $P0['type'] >;
-            PIR q< say $P1 >;
         }
     }
     return $past;
@@ -858,9 +877,9 @@ method variable($/) {
     }
 
     our @?BLOCKS;
-    my $?BLOCK := @?BLOCKS[0];
-    if !$?BLOCK.symbol( $name ) {
-        $?BLOCK.symbol( $name, :scope('lexical'), :type('variable') );
+    my $block := @?BLOCKS[0];
+    if !$block.symbol( $name ) {
+        $block.symbol( $name, :scope('lexical'), :type('variable') );
 
         ## Initialize the $var as a declaration to 'Undef'.
         $var.isdecl(1);
