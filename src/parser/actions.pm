@@ -675,6 +675,7 @@ sub create_assignment($/) {
 #     PIR q< print ": " >;
 #     PIR q< say $P1 >;
 
+    our $VARIABLE_NUM;
     my $scope := $var.scope();
     if $scope eq 'lexical' { # declare new variable
         $past.push( $var );
@@ -746,7 +747,7 @@ method method_call($/) {
 
 sub create_assignable_on_variable($/, $past) {
     our @?BLOCKS;
-    my $?BLOCK := @?BLOCKS[0];
+    my $block := @?BLOCKS[0];
     my $var := $( $/<variable> );
 
     $past.push( $var );
@@ -762,12 +763,12 @@ sub create_assignable_on_variable($/, $past) {
             my $attr := PAST::Var.new( :scope('register'),
               :name( lexical_to_register($var.name())~"_"~$get_attr.name() ) );
 
-            if !$?BLOCK.symbol( $attr.name() ) {
-                $?BLOCK.symbol( $attr.name(), :scope('register'),
+            my $sym := $block.symbol( $attr.name() );
+            if !($sym && $sym<type> eq 'variable.attribute' && $sym<scope> eq 'register' ) {
+                $block.symbol( $attr.name(), :scope('register'),
                                 :type('variable.attribute') );
                 $get_attr.push( PAST::Var.new( :scope('register'),
                   :name( lexical_to_register($var.name()) ) ) );
-
                 $attr.isdecl(1);
                 $attr.viviself( $get_attr );
             }
@@ -787,8 +788,9 @@ sub create_assignable_on_variable($/, $past) {
             );
             $past.push( $attr );
 
-            if !$?BLOCK.symbol( $attr.name() ) {
-                $?BLOCK.symbol( $attr.name(), :scope('register'),
+            my $sym := $block.symbol( $attr.name() );
+            if !($sym && $sym<type> eq 'variable.attribute' && $sym<scope> eq 'register' ) {
+                $block.symbol( $attr.name(), :scope('register'),
                                 :type('variable.attribute') );
                 $get_attr.push( $var );
                 $attr.isdecl(1);
@@ -878,7 +880,8 @@ method variable($/) {
 
     our @?BLOCKS;
     my $block := @?BLOCKS[0];
-    if !$block.symbol( $name ) {
+    my $sym := $block.symbol( $name );
+    if !( $sym && $sym<type> eq 'variable' ) {
         $block.symbol( $name, :scope('lexical'), :type('variable') );
 
         ## Initialize the $var as a declaration to 'Undef'.
