@@ -72,9 +72,9 @@ object.
     $P0 = new 'Integer'
     $P0 = 0
     set_hll_global ['smart';'Grammar';'Actions'], '$VARIABLE_NUM', $P0
-    $P0 = new 'Integer'
-    $P0 = 0
-    set_hll_global ['smart';'Grammar';'Actions'], '$COMPILING_STAGE', $P0
+#     $P0 = new 'Integer'
+#     $P0 = 0
+#     set_hll_global ['smart';'Grammar';'Actions'], '$ATTRIBUTE_NUM', $P0
 .end # sub "reset-global-variables"
 
 =item
@@ -190,9 +190,6 @@ check_arg_5: ## --target=xxx
     $I1 = $I1 - $I0
     $S0 = substr arg, $I0, $I1
     push new_args, arg
-    $P0 = new 'String'
-    $P0 = arg
-    set_hll_global ['smart'], "$--target", $P0
     goto check_arg_end
 check_arg_6: ## --compile/-c
     if arg == "-c" goto check_arg_6__mark_compiling
@@ -332,13 +329,6 @@ execute_smart:
     'compile_if_updated'( smart, smartfile, "target"=>"pir" )
     
     "reset-global-variables"()
-    
-    .local pmc comp, targ
-    get_hll_global comp, ['smart';'Grammar';'Actions'], '$COMPILING_STAGE'
-    get_hll_global targ, ['smart'], "$--target"
-    $S0 = targ
-    $I0 = $S0 == 'pir'
-    comp = 1 #$I0
     $P1 = smart.'command_line'( arguments )
     #smart.'evalfiles'( smartfile )
     #goto execute

@@ -57,7 +57,7 @@ do_compile:
     null smart
 
     comp = 0
-    null comp
+    #null comp
 
     open $P1, $S0, "w"
     print $P1, $S1
