@@ -278,7 +278,7 @@ rule assignable {
 
 ## Synopsis:
 ##      .attribute
-##      .method( xxx )
+##      .method
 ## Examples:
 ##      $obj = new SomeType;
 ##      $obj.attribute = 'value';
@@ -320,6 +320,7 @@ token term {
     | <macro_reference> {*}                     #= macro_reference
     | <new_operator> {*}                        #= new_operator
     | <function_call> {*}                       #= function_call
+    | <method_call> {*}                         #= method_call
 }
 
 rule value {

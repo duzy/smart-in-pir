@@ -684,22 +684,6 @@ sub create_assignment($/) {
 
     if $var.scope() eq 'lexical' { # declare new variable
         $/.panic('smart: * oops: expects "register" but "'~$var.scope()~'"');
-#         $stmts.push( $var );
-#         if $attr {
-#             ## attribute assignment: $var.attr = "value";
-#             if $attr.isdecl() { $stmts.push( $attr ); }
-#             $stmts.push( PAST::Op.new( :inline('    %0 = %1'),
-#               PAST::Var.new( :name( $attr.name() ), :scope('register') ),
-#               $rhs )
-#             );
-#         }
-#         else {
-#             ## normal variable assignment: $var = "value";
-#             $var.viviself(
-#                 PAST::Var.new( :name( lexical_to_register($var.name()) ),
-#                   :scope('register'), :isdecl(1), :viviself( $rhs ) )
-#             );
-#         }
     }
     elsif $var.scope() eq 'register' {
         if $attr {
@@ -729,6 +713,10 @@ method on_assignable($/, $key) {
         my $vars := $( $<assignable> );
         my $meth := $( $<dotty> );
         $meth.push( $vars[0] );
+        if $<arguments> {
+            my $args := $( $<arguments> );
+            for @( $args ) { $meth.push( $_ ); }
+        }
         make $meth;
     }
     else {
@@ -747,6 +735,10 @@ method method_call($/) {
 
     my $meth := $( $<dotty> );
     $meth.push( $var );
+    if $<arguments> {
+        my $args := $( $<arguments> );
+        for @( $args ) { $meth.push( $_ ); }
+    }
     make $meth;
 }
 
@@ -771,34 +763,6 @@ sub create_assignable_on_variable($/, $stmts) {
 
     if $var.scope() eq 'lexical' {
         $/.panic('smart: * oops: expects "register" but "'~$var.scope()~'"');
-#         ## A lexical variable is binded with a register variable by converting
-#         ## lexical name using lexical_to_register(). This binding(PIR '.lex')
-#         ## will be applied only once, at initializing, so if the scope() is
-#         ## 'lexical' we ensure that it's declaring the variable.
-#         if $/<dotty> {
-#             ## attribute: $var.id => $attr;
-#             my $get_attr := $( $/<dotty>[0] );
-#             my $attr := PAST::Var.new( :scope('register') );
-
-#             my $sym_name := lexical_to_register($var.name())~"_"~$get_attr.name();
-#             my $sym := $block.symbol( $sym_name );
-
-#             if !($sym && $sym<vname> && $sym<type> eq 'variable.attribute' && $sym<scope> eq 'register' ) {
-#                 $block.symbol( $sym_name, :scope('register'),
-#                                :type('variable.attribute'),
-#                                :vname( $sym_name ) );
-#                 $get_attr.push( PAST::Var.new( :scope('register'),
-#                   :name( lexical_to_register($var.name()) ) ) );
-#                 $attr.isdecl(1);
-#                 $attr.viviself( $get_attr );
-#                 $attr.name( $sym_name );
-#             }
-#             else {
-#                 $attr.name( $sym<vname> );
-#             }
-
-#             $stmts.push( $attr );
-#         }
     }
     elsif $var.scope() eq 'register' {
         ## If the scope() of the smart-variable is 'register', we ensure that it's
@@ -842,6 +806,7 @@ sub create_assignable_on_macro_reference($/, $stmts) {
 
     if $/<dotty> {
         my $get_attr := $( $/<dotty>[0] );
+
         my $attr := PAST::Var.new(
             :name( ~$var.name()~"_"~$get_attr.name() ),
             :scope('register'),
@@ -862,7 +827,13 @@ sub create_assignable_on_macro_reference($/, $stmts) {
                            :type('macro.attribute'),
                            :vname($attr.name())
             );
+
             $get_attr.push( $var );
+            if $<arguments> {
+                my $args := $( $<arguments>[0] );
+                for @( $args ) { $get_attr.push( $_ ); }
+            }
+
             $attr.isdecl( 1 );
             $attr.viviself( $get_attr );
         }
