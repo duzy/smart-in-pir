@@ -462,7 +462,7 @@ error_bad_pattern:
     if name == "error"       goto invoke_valid_callable
     if name == "warning"     goto invoke_valid_callable
     if name == "shell"       goto invoke_valid_callable_shell
-    if name == "origin"      goto invoke_valid_callable
+    if name == "origin"      goto invoke_valid_callable_origin
     if name == "flavor"      goto invoke_valid_callable
     if name == "foreach"     goto invoke_valid_callable
     if name == "call"        goto invoke_valid_callable
@@ -481,6 +481,9 @@ invoke_valid_callable_wildcard:
     goto return_result
 invoke_valid_callable_shell:
     result = 'shell'( args )
+    goto return_result
+invoke_valid_callable_origin:
+    result = 'origin'( args )
     goto return_result
     
 return_result:
