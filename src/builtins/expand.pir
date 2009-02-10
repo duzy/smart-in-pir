@@ -88,6 +88,7 @@ return_result:
 .end # sub "~expanded-items"
 
 
+
 =item
 
 V = prefix{${C}}middle{$(A)}suffix
@@ -104,8 +105,8 @@ V = $(OBJECTS:%.o=$(OUT_OBJS)/%.o)
     .param string str
     .local string result
 
-    print "m: "
-    say str
+#     print "m: "
+#     say str
 
     .local int a
     .local int b
@@ -121,14 +122,14 @@ V = $(OBJECTS:%.o=$(OUT_OBJS)/%.o)
     length str_len, str
 loop:
     (s, a, b) = "search-macro-and-expand"( str, b )
-    print "1: "
-    print str
-    print " => "
-    say s
-    if a == b goto loop_done
+#     print "1: "
+#     print str
+#     print " => '"
+#     print s
+#     print "'\n"
+    #if a == b goto loop_done
     if b < 0 goto loop_done
     if b < a goto error_searching
-    if str_len <= b goto return_result
     $I0 = a - last
     substr $S0, str, last, $I0
     concat result, $S0
@@ -245,10 +246,10 @@ iterate_chars:
 
 parse_computed_name:
     ( $S0, $I0, $I1 ) = "search-macro-and-expand"( str, pos )
-    print "2: "
-    print str
-    print " => "
-    say $S0
+#     print "2: "
+#     print str
+#     print " => "
+#     say $S0
     if $I1 < 0 goto error_computed_name
     concat name, $S0
     set pos, $I1
@@ -328,10 +329,10 @@ iterate_chars:
 
 parse_computed_name:
     ( $S0, $I0, $I1 ) = "search-macro-and-expand"( str, pos )
-    print "3: "
-    print str
-    print " => "
-    say $S0
+#     print "3: "
+#     print str
+#     print " => "
+#     say $S0
     if $I1 < 0 goto error_computed_name
     concat result, $S0
     set pos, $I1
