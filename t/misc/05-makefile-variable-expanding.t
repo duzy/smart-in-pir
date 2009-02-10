@@ -15,8 +15,8 @@ E = {[${D}]} aa$vbb
 say 'check:expand(item1	item2):', ${A}.expand();
 say 'check:expand(item1	item2 item3):', $(B).expand();
 say 'check:expand(item1	item2 item3 item4):', $(C).expand();
-say 'ok $(D).expand = ', $(D).expand();
-say 'ok $(E).expand = ', $(E).expand();
+say 'check:(prefix-{item1	item2 item3 item4}-mid-{item1	item2}-suffix):', $(D).expand();
+say 'check:({[prefix-{item1	item2 item3 item4}-mid-{item1	item2}-suffix]} aa--bb):', $(E).expand();
 
 N = C
 V = $($(N)) item5

@@ -353,6 +353,7 @@ rule parameters {
 }
 
 token macro_reference {
+    '$'
     [
      | <macro_reference1>
      | <macro_reference2>
@@ -364,12 +365,12 @@ token macro_reference {
 #    }}
 }
 token macro_reference1 {
-    '$'
-    [ '(' $<name>=[[<!before ')'><-[\n:=#$]>|<.macro_reference>]+]
+#    [ '(' $<name>=[[<!before ')'><-[\n:=#$]>|<.macro_reference>]+]
+    [ '(' $<name>=[<expandable_text>+]
     [ ')' || <.panic: "smart: * Macro referencing expects ')'"> ]]
 }
 token macro_reference2 {
-    '$'
+#    [ '{' $<name>=[[<!before '}'><-[\n:=#$]>|<.macro_reference>]+]
     [ '{' $<name>=[[<!before '}'><-[\n:=#$]>|<.macro_reference>]+]
     [ '}' || <.panic: "smart: * Macro referencing expects '}'"> ]]
 }
