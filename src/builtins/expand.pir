@@ -135,6 +135,9 @@ loop_done:
     concat result, $S0
 
 return_result:
+    print str
+    print " => "
+    say result
     .return(result)
 
 error_searching:
@@ -169,23 +172,21 @@ error_searching:
     goto handle_paren_3 ## single-named macro: $@, $<, $?, ...
     
 handle_paren_1: ## handles the paren '('
-    $S1 = ")"
-    goto parse_and_append
+    paren = ")"
+    goto parse_and_concat
 handle_paren_2: ## handles the paren '{'
-    $S1 = "}"
-    goto parse_and_append
+    paren = "}"
+    goto parse_and_concat
 
-parse_and_append:
+parse_and_concat:
     inc pos ## skip the '{' or '('
     .const 'Sub' parse_name = "parse-macro-name"
-    ($S0, $S1, $S2, $I0) = parse_name( str, pos, $S1 )
+    ($S0, $S1, $S2, $I0) = parse_name( str, pos, paren )
+    #if $I0 < 0 goto error_
     ## $S1 is macro type: ' '(callable) or ':'(substituation) or ''(named)
-#     print "v: "
-#     print $S0
-#     print "\n"
+    set pos_end, $I0
     $S0 = by_name( $S0, $S1, $S2 )
     concat result, $S0
-    set pos_end, $I0
     goto handle_paren_done
     
 handle_paren_3: ## handles single-character macro: $V, $@, ...
@@ -380,16 +381,11 @@ expand_substituation_macro:
     length $I1, args
     $I1 = $I1 - $I0
     substr $S2, args, $I0, $I1 ## fetch the right-hand-side part
-    print "pat: "
-    print $S1
-    print "="
-    print $S2
-    print "\n"
+
     get_hll_global $P0, ['smart';'make';'variable'], name
     if null $P0 goto return_result
     $S0 = $P0.'expand'()
-    say $S0
-    $S0 = 'patsubst'( $S0, $S1, $S2 )
+    $S0 = 'patsubst'( $S1, $S2, $S0 )
     set result, $S0
     goto return_result
 
