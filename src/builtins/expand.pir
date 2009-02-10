@@ -104,6 +104,9 @@ V = $(OBJECTS:%.o=$(OUT_OBJS)/%.o)
     .param string str
     .local string result
 
+    print "m: "
+    say str
+
     .local int a
     .local int b
     .local int last
@@ -118,6 +121,10 @@ V = $(OBJECTS:%.o=$(OUT_OBJS)/%.o)
     length str_len, str
 loop:
     (s, a, b) = "search-macro-and-expand"( str, b )
+    print "1: "
+    print str
+    print " => "
+    say s
     if a == b goto loop_done
     if b < 0 goto loop_done
     if b < a goto error_searching
@@ -135,9 +142,9 @@ loop_done:
     concat result, $S0
 
 return_result:
-    print str
-    print " => "
-    say result
+#     print str
+#     print " => "
+#     say result
     .return(result)
 
 error_searching:
@@ -145,13 +152,16 @@ error_searching:
     $S0 .= str
     $S0 .= "'. Stop\n"
     printerr $S0
-.end#sub "~expand-string"
+.end # sub "~expand-string"
 
 .sub "search-macro-and-expand" :anon
     .param string str
     .param int pos_beg
     .local int pos_end
     .local string result
+
+#     print "m: "
+#     say str
 
     set pos_end, -1
     set result, ""
@@ -200,7 +210,9 @@ handle_paren_3: ## handles single-character macro: $V, $@, ...
 handle_paren_done:
     
 search_sign_done:
-    
+
+#     print "r: "
+#     say result
     .return(result, pos_beg, pos_end)
 .end # sub "search-macro-and-expand"
 
@@ -233,6 +245,10 @@ iterate_chars:
 
 parse_computed_name:
     ( $S0, $I0, $I1 ) = "search-macro-and-expand"( str, pos )
+    print "2: "
+    print str
+    print " => "
+    say $S0
     if $I1 < 0 goto error_computed_name
     concat name, $S0
     set pos, $I1
@@ -312,6 +328,10 @@ iterate_chars:
 
 parse_computed_name:
     ( $S0, $I0, $I1 ) = "search-macro-and-expand"( str, pos )
+    print "3: "
+    print str
+    print " => "
+    say $S0
     if $I1 < 0 goto error_computed_name
     concat result, $S0
     set pos, $I1
