@@ -160,7 +160,6 @@ error_searching:
     set pos_beg, pos ## save the begin position of macro
     inc pos ## skip the sign '$'
     
-    .const 'Sub' parse_name = "parse-macro-name"
     .const 'Sub' by_name = "expand-by-name"
     
     .local string paren
@@ -177,16 +176,21 @@ handle_paren_2: ## handles the paren '{'
     goto parse_and_append
 
 parse_and_append:
-    inc pos ## skip the '{'
-    ($S0, $S1, $I0) = parse_name( str, pos, $S1 )
-    $S0 = by_name( $S0, $S1 )
-    set pos_end, $I0
+    inc pos ## skip the '{' or '('
+    .const 'Sub' parse_name = "parse-macro-name"
+    ($S0, $S1, $S2, $I0) = parse_name( str, pos, $S1 )
+    ## $S1 is macro type: ' '(callable) or ':'(substituation) or ''(named)
+#     print "v: "
+#     print $S0
+#     print "\n"
+    $S0 = by_name( $S0, $S1, $S2 )
     concat result, $S0
+    set pos_end, $I0
     goto handle_paren_done
     
 handle_paren_3: ## handles single-character macro: $V, $@, ...
     substr $S0, str, pos, 1
-    $S0 = by_name( $S0, "" )
+    $S0 = by_name( $S0, "", "" )
     concat result, $S0
     inc pos ## skip the name
     set pos_end, pos
@@ -207,9 +211,11 @@ search_sign_done:
     .local int pos
     .local string name
     .local string args
+    .local string type
     set pos, pos_beg
     set name, ""
     set args, ""
+    set type, ""
 
     .local int str_len
     length str_len, str
@@ -238,12 +244,18 @@ parse_callable:
     if $I0 < 0 goto error_bad_callable
     set args, $S0
     set pos, $I0
-    ## TODO: tell in .return that it's a callable
+    set type, " " ## tells that it's a callable
     goto return_result
     
 parse_substitution_pattern:
-    inc pos
-    goto iterate_chars
+    inc pos ## skip the character ':'
+    #.const 'Sub' substitution_patterns = "extract-substitution_patterns"
+    .const 'Sub' substitution_patterns = "extract-callable-args"
+    ( $S0, $I0 ) = substitution_patterns( str, pos, right_paren )
+    set args, $S0
+    set pos, $I0
+    set type, ":" ## tells that it's a substituation
+    goto return_result
 
 parse_end:
     inc pos ## skip the right paren
@@ -252,7 +264,7 @@ parse_end:
 iterate_chars_done:
 
 return_result:
-    .return( name, args, pos )
+    .return( name, type, args, pos )
 
 error_computed_name:
     $S0 = "smart: *** Can't compute name: '"
@@ -325,22 +337,60 @@ error_computed_name:
     throw $P0
 .end # :subid("extract-callable-args")
 
+.sub '' :anon :subid("extract-substitution_patterns") :outer("parse-macro-name")
+    .param string str
+    .param int pos_beg
+    .param string right_paren
+    
+    .return("", pos_beg)
+.end # :subid("extract-substitution_patterns")
+
 .sub '' :anon :subid("expand-by-name")
+    ## type may be one of ''(named) and ' '(callable) and ':'(substituation)
     .param string name
+    .param string type
     .param string args
     .local string result
-    
+
     set result, ""
     
-    unless name == "$" goto expand_callable_macro
+    unless name == "$" goto check_macro_type
     concat result, "$"
     goto return_result
+
+check_macro_type:
+    if type == " " goto expand_callable_macro
+    if type == ":" goto expand_substituation_macro
+    goto expand_named_macro
 
 expand_callable_macro:
     .const 'Sub' check_callable = "invoke-if-callable"
     ( $S0, $I0 ) = check_callable( name, args )
     unless $I0 goto expand_named_macro
-    concat result, $S0
+    #concat result, $S0
+    set result, $S0
+    goto return_result
+
+expand_substituation_macro:
+    index $I0, args, "=", 0 ## find the '=' sign
+    if $I0 < 0 goto error_bad_pattern
+    $I1 = $I0
+    substr $S1, args, 0, $I1 ## fetch the left-hand-side part
+    inc $I0 ## skip the "=" character
+    length $I1, args
+    $I1 = $I1 - $I0
+    substr $S2, args, $I0, $I1 ## fetch the right-hand-side part
+    print "pat: "
+    print $S1
+    print "="
+    print $S2
+    print "\n"
+    get_hll_global $P0, ['smart';'make';'variable'], name
+    if null $P0 goto return_result
+    $S0 = $P0.'expand'()
+    say $S0
+    $S0 = 'patsubst'( $S0, $S1, $S2 )
+    set result, $S0
     goto return_result
 
 expand_named_macro:
@@ -352,6 +402,14 @@ expand_named_macro:
 
 return_result:
     .return( result )
+
+error_bad_pattern:      
+    $S0 = "smart: *** Bad substituation macro '"
+    $S0 .= args
+    $S0 .= "'. Stop\n"
+    $P0 = new 'Exception'
+    $P0 = $S0
+    throw $P0
 .end # :subid("expand-by-name")
 
 .sub '' :anon :subid("invoke-if-callable") :outer("expand-by-name")

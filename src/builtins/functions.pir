@@ -110,6 +110,9 @@ loop_items:
     $S0 = substr item, 0, prefix_len
     $I0 = length item
     $I1 = $I0 - suffix_len
+#     say $I0
+#     say $I1
+#     say suffix_len
     $S1 = substr item, $I1, suffix_len
     unless prefix == $S0 goto loop_items_skip
     unless suffix == $S1 goto loop_items_skip
