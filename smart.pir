@@ -72,9 +72,9 @@ object.
     $P0 = new 'Integer'
     $P0 = 0
     set_hll_global ['smart';'Grammar';'Actions'], '$VARIABLE_NUM', $P0
-#     $P0 = new 'Integer'
-#     $P0 = 0
-#     set_hll_global ['smart';'Grammar';'Actions'], '$ATTRIBUTE_NUM', $P0
+    $P0 = new 'Integer'
+    $P0 = 0
+    set_hll_global ['smart';'Grammar';'Actions'], '$BLOCK_NUM', $P0
 .end # sub "reset-global-variables"
 
 =item

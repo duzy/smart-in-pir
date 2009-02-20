@@ -611,16 +611,30 @@ method include($/) {
 
 method function_definition($/) {
     my $sub := $( $<block> );
+    $sub.blocktype('declaration');
     $sub.name( ~$<identifier> );
 
     if $<variable> {
+        my $args := PAST::Stmts.new();
         for $<variable> {
             my $name := variable_lexical_name( $_ );
             my $arg := PAST::Var.new( :scope('parameter') );
             $arg.name( $name );
-            $sub.unshift( $arg );
+            $args.push( $arg );
+
+            my $reuse_name := lexical_variable_pir_name( $_ );
+            my $reuse_var := PAST::Var.new( :scope('register') );
+            $reuse_var.name( $reuse_name );
+            $sub.symbol( $name, :scope('lexical'), :type('variable'),
+                         :var($reuse_var) );
         }
+        $sub.unshift( $args );
     }
+
+    # for $<block><statement> {
+    #     my $stat := $( $_ );
+    #     $sub.push( $stat );
+    # }
 
     make $sub;
 }
@@ -629,14 +643,28 @@ method block($/, $key) {
     our @?BLOCKS;
 
     if $key eq 'enter' {
-        my $block := PAST::Block.new( :blocktype('declaration') );
+        our $BLOCK_NUM;
+        $BLOCK_NUM := $BLOCK_NUM + 1;
+        #my $block := PAST::Block.new( :blocktype('declaration') );
+        my $block := PAST::Block.new();
+        $block.name( '_smart_block_'~$BLOCK_NUM );
         @?BLOCKS.unshift( $block );
     }
     elsif $key eq 'leave' {
         my $block := @?BLOCKS.shift();
         for $<statement> {
             my $stat := $( $_ );
-            $block.push( $stat );
+            if $stat.isa( 'PAST::Block' ) {
+                my $call_block := PAST::Op.new( :pasttype('call') );
+                $call_block.name( $stat.name() );
+                $block.push( $stat );
+                $block.push( $call_block );
+                #my $vb := PAST::Var.new( :scope('register'), :isdecl(1), :viviself($stat) );
+                #$block.push( $vb );
+            }
+            else {
+                $block.push( $stat );
+            }
         }
         make $block;
     }
@@ -958,25 +986,25 @@ method variable_declarator($/) {
 }
 
 method variable($/) {
-    #my $name := variable_lexical_name( $/ );
-    my $name := ~$/;
-
     our @?BLOCKS;
     my $block := @?BLOCKS[0];
+
+    #my $name := ~$/;
+    my $name := variable_lexical_name( $/ );
     my $sym := $block.symbol( $name );
     if !( $sym && $sym<var> && $sym<type> eq 'variable' ) {
-        #$/.panic("smart: * Variable '"~$name~"' undeclaraed.");
         my $pir_name := lexical_variable_pir_name( $/ );
         my $var := PAST::Var.new( :scope('register') );
         $var.name( $pir_name );
         $var.isdecl( 1 );
-        $var.viviself( PAST::Op.new( :inline('find_lex %r, "'~$name~'"') ) );
 
         ## Next time we see the same variable this past will be reused.
         my $reuse_var := PAST::Var.new( :scope('register') );
         $reuse_var.name( $var.name() );
-        $block.symbol( $name, :scope('lexical'), :var( $reuse_var ) );
+        $block.symbol( $name, :scope('lexical'), :type('variable'),
+                       :var( $reuse_var ) );
 
+        $var.viviself( PAST::Op.new( :inline('find_lex %r, "'~$name~'"') ) );
         make $var;
     }
     else {
