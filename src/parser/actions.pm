@@ -609,31 +609,40 @@ method include($/) {
     }
 }
 
-sub create_parameter($v) {
-    
-}
-
 method function_definition($/) {
-    my $sub := PAST::Block.new( :blocktype('declaration'),
-      :name(~$<identifier>),
-    );
+    my $sub := $( $<block> );
+    $sub.name( ~$<identifier> );
+
     if $<variable> {
         for $<variable> {
-            #my $arg := $( $_ );
-            my $arg := create_parameter( $_ );
-            $arg.scope('parameter');
-            $sub.push( $arg );
+            my $name := variable_lexical_name( $_ );
+            my $arg := PAST::Var.new( :scope('parameter') );
+            $arg.name( $name );
+            $sub.unshift( $arg );
         }
     }
-    for $<statement> {
-        my $stat := $( $_ );
-        $sub.push( $stat );
-    }
+
     make $sub;
 }
 
 method block($/, $key) {
+    our @?BLOCKS;
 
+    if $key eq 'enter' {
+        my $block := PAST::Block.new( :blocktype('declaration') );
+        @?BLOCKS.unshift( $block );
+    }
+    elsif $key eq 'leave' {
+        my $block := @?BLOCKS.shift();
+        for $<statement> {
+            my $stat := $( $_ );
+            $block.push( $stat );
+        }
+        make $block;
+    }
+    else {
+        $/.panic("smart: Bad block key: "~$key);
+    }
 }
 
 method function_call($/) {
@@ -886,14 +895,15 @@ method dotty($/) {
 }
 
 sub lexical_variable_pir_name($/) {
-    my $sigil := ~$/<sigil>;
     my $prefix;
+    my $var_ident;
+    my $sigil := ~$/<sigil>;
+
     if $sigil eq '$' { $prefix := 's_'; }
     elsif $sigil eq '@' { $prefix := 'a_'; }
     elsif $sigil eq '%' { $prefix := 'h_'; }
 
-    my $var_ident;
-    if $/<identifier> { $var_ident := 'ID_'~$/<identifier>; }
+    if $/<identifier> { $var_ident := 'NAMED_'~$/<identifier>; }
     elsif $/<special> {
         my $special := $/<special>;
         if $special eq '@' { $var_ident := 'AUTO_AT'; }
@@ -901,17 +911,23 @@ sub lexical_variable_pir_name($/) {
         elsif $special eq '^' { $var_ident := 'AUTO_UPPER'; }
         elsif $special eq '*' { $var_ident := 'AUTO_STAR'; }
     }
+
     return $prefix~$var_ident;
+}
+
+sub variable_lexical_name($/) {
+    my $sigil := ~$/<sigil>;
+    my $var_ident;
+    if $/<identifier> { $var_ident := ~$/<identifier>; }
+    elsif $/<special> { $var_ident := ~$/<special>; }
+    my $name := $sigil~$var_ident;
+    return $name;
 }
 
 method variable_declarator($/) {
     ## We will always represent a smart-variable using register variable,
     ## binding it with the lexical name '$name' at declaration.
-    my $sigil := ~$<variable><sigil>;
-    my $var_ident;
-    if $<variable><identifier> { $var_ident := ~$<variable><identifier>; }
-    elsif $<variable><special> { $var_ident := ~$<variable><special>; }
-    my $name := $sigil~$var_ident;
+    my $name := variable_lexical_name( $<variable> );
 
     our @?BLOCKS;
     my $block := @?BLOCKS[0];
@@ -936,11 +952,13 @@ method variable_declarator($/) {
           :isdecl( 1 ), :viviself( $var ) );
     }
     else {
-        $/.panic("smart: * Variable '"~$name~"' already declaraed.");
+        #$/.panic("smart: * Variable '"~$name~"' already declaraed.");
+        make $sym<var>;
     }
 }
 
 method variable($/) {
+    #my $name := variable_lexical_name( $/ );
     my $name := ~$/;
 
     our @?BLOCKS;

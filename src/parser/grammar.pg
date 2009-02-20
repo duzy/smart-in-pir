@@ -211,9 +211,7 @@ token include {
 
 rule function_definition {
     <identifier>
-#    <arguments>
     '('
-#    [<variable> [',' [<variable> ',']*]?]?
     [<variable> [',' <variable>]* ','? ]?
     ')'
     <block>
