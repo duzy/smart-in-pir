@@ -26,6 +26,7 @@ rule statement {
     | <.ws> ';'                                 # empty statement
     | <on_assignable> ';' {*}                   #= on_assignable
     | <method_call> ';' {*}                     #= method_call
+    | <function_definition> {*}                 #= function_definition
     | <function_call> ';' {*}                   #= function_call
     | <macro_declaration> {*}                   #= macro_declaration
     | <rule> {*}                                #= rule
@@ -204,6 +205,19 @@ rule make_conditional_statement {
 token include {
     'include' <.ws_inline> [\\\n<.ws_inline>]* <expanded_prerequisites>
     [ '\n' | $ ]
+    {*}
+}
+
+rule function_definition {
+    <identifier>
+#    <arguments>
+    '('
+#    [<variable> [',' [<variable> ',']*]?]?
+    [<variable> [',' <variable>]* ','? ]?
+    ')'
+    '{'
+    <statement>*
+    '}'
     {*}
 }
 

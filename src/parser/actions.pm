@@ -609,6 +609,25 @@ method include($/) {
     }
 }
 
+method function_definition($/) {
+    #make PAST::Op.new( :inline("say 'TODO: function definition'") );
+    my $sub := PAST::Block.new( :blocktype('declaration'),
+      :name(~$<identifier>),
+    );
+    if $<variable> {
+        for $<variable> {
+            my $arg := $( $_ );
+            $arg.scope('parameter');
+            $sub.push( $arg );
+        }
+    }
+    for $<statement> {
+        my $stat := $( $_ );
+        $sub.push( $stat );
+    }
+    make $sub;
+}
+
 method function_call($/) {
     my $name := ~$<name>;
     my $past := PAST::Op.new( :name($name), :pasttype('call'), :node( $/ ) );
