@@ -24,6 +24,7 @@ token ws_inline { <!ww> [ <comment_block> | <[ \ \t ]>* | [ '#' \N* ] ] }
 
 rule statement {
     | <.ws> ';'                                 # empty statement
+    | <variable_declarator> ';' {*}             #= variable_declarator
     | <on_assignable> ';' {*}                   #= on_assignable
     | <method_call> ';' {*}                     #= method_call
     | <function_definition> {*}                 #= function_definition
@@ -317,6 +318,7 @@ rule variable_declarator {
 token variable {
     $<sigil>=['$']
     [
+      | $<special>=['@'|'<'|'^'|'*']
       | <identifier>
     ]
     {*}
