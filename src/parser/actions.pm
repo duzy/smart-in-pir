@@ -609,14 +609,18 @@ method include($/) {
     }
 }
 
+sub create_parameter($v) {
+    
+}
+
 method function_definition($/) {
-    #make PAST::Op.new( :inline("say 'TODO: function definition'") );
     my $sub := PAST::Block.new( :blocktype('declaration'),
       :name(~$<identifier>),
     );
     if $<variable> {
         for $<variable> {
-            my $arg := $( $_ );
+            #my $arg := $( $_ );
+            my $arg := create_parameter( $_ );
             $arg.scope('parameter');
             $sub.push( $arg );
         }
@@ -626,6 +630,10 @@ method function_definition($/) {
         $sub.push( $stat );
     }
     make $sub;
+}
+
+method block($/, $key) {
+
 }
 
 method function_call($/) {
@@ -878,14 +886,64 @@ method dotty($/) {
 }
 
 method variable_declarator($/) {
-    my $v := 'Undef';
-    if $<expression> {
+    ## We will always represent a smart-variable using register variable,
+    ## binding it with the lexical name '$name' at declaration.
+    my $var := PAST::Var.new( :scope('register') );
+
+    my $name := ~$<variable>;
+    my $sigil := ~$<variable><sigil>;
+
+    our @?BLOCKS;
+    my $block := @?BLOCKS[0];
+    my $sym := $block.symbol( $name );
+    if !( $sym && $sym<name> && $sym<type> eq 'variable' ) {
+        if $sigil eq '$' { #'
+            $var.name( 's_'~$<identifier> );
+        }
+
+        ## Initialize the $var as a declaration to 'Undef'.
+        $var.isdecl(1);
+        if $<expression> {
+            $var.viviself( $( $<expression>[0] ) );
+        }
+        else {
+            $var.viviself( 'Undef' );
+        }
+
+        ## Binding it with the lexical name.
+        my $lex := PAST::Var.new( :name( $name ), :scope( 'lexical' ),
+          :isdecl( 1 ), :viviself( $var ) );
+
+        $block.symbol( $name, :scope('lexical'), :type('variable'),
+                       :name( $var.name() ), :rvar($var) );
+
+        make $lex;
     }
-    make PAST::Var.new( :name(~$/), :scope('lexical'), :isdecl(1),
-      :viviself( $v ) );
+    else {
+        $/.panic("smart: * Variable '"~$name~"' already declaraed.");
+    }
 }
 
 method variable($/) {
+    ## We will always represent a smart-variable using register variable,
+    ## binding it with the lexical name '$name' at declaration.
+    my $name := ~$/;
+
+    our @?BLOCKS;
+    my $block := @?BLOCKS[0];
+    my $sym := $block.symbol( $name );
+    if !( $sym && $sym<name> && $sym<type> eq 'variable' ) {
+        #$/.panic("smart: * Variable '"~$name~"' undeclaraed.");
+        my $var := PAST::Var.new( :scope('register') );
+        make $var;
+    }
+    else {
+        my $rvar := $sym<rvar>;
+        make $rvar;
+    }
+}
+
+method variable_($/) {
     my $name := ~$/;
     my $sigil := ~$<sigil>;
 

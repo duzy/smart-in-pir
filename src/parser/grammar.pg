@@ -215,10 +215,14 @@ rule function_definition {
 #    [<variable> [',' [<variable> ',']*]?]?
     [<variable> [',' <variable>]* ','? ]?
     ')'
-    '{'
-    <statement>*
-    '}'
+    <block>
     {*}
+}
+
+rule block {
+    '{' {*} #= enter
+    <statement>*
+    '}' {*} #= leave
 }
 
 rule function_call {
@@ -303,7 +307,7 @@ rule dotty {
 }
 
 rule variable_declarator {
-    'my' <variable>
+    'the' <variable>
     [
     '=' <expression>
     ]?

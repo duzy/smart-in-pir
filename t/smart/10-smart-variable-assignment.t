@@ -1,5 +1,7 @@
 # -*- Makefile -*-
 
+the $var;
+
 $var = "variable";
 say( "check:(variable):", $var );
 
@@ -9,7 +11,7 @@ say "check:(100):", $var;
 $var = 'foobar';
 say "check:(foobar):", $var;
 
-$foo = $var;
+the $foo = $var;
 say "check:(foobar):", $foo;
 
 $var = 1 + 1;

@@ -1,6 +1,6 @@
 # -*- Makefile -*-
 
-$var = new Target;
+the $var = new Target;
 $var.object = "foobar";
 #$var.exists();
 say "check:(foobar):", $var.object;
