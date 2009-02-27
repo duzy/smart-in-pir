@@ -813,17 +813,18 @@ sub create_assignable_on_variable($/, $stmts) {
 
     $stmts.push( $var );
 
-    if $var.scope() eq 'lexical' {
-        ## A lexical variable is binded with a register variable, so we convert it.
-        my $sym_name := $var.name();
-        my $sym := $block.symbol( $sym_name );
-        if !($sym && $sym<vname> && $sym<type> eq 'variable' && $sym<scope> eq 'lexical' ) {
-            $/.panic( "smart: * Unknown variable: "~$sym_name );
-        }
-        else {
-            $var := PAST::Var.new( :scope('register'), :name($sym<vname>) );
-        }
-    }
+#     if $var.scope() eq 'lexical' {
+#         ## A lexical variable is binded with a register variable, so we convert it.
+#         my $sym_name := $var.name();
+#         my $sym := $block.symbol( $sym_name );
+#         if !($sym && $sym<vname> && $sym<type> eq 'variable' && $sym<scope> eq 'lexical' ) {
+#             $/.panic( "smart: * Unknown variable: "~$sym_name );
+#         }
+#         else {
+#             $var := PAST::Var.new( :scope('register'), :name($sym<vname>) );
+#         }
+#     }
+    if $var<decl> { $var := $var<decl>; }
 
     if $var.scope() eq 'lexical' {
         $/.panic('smart: * oops: expects "register" but "'~$var.scope()~'"');
@@ -927,7 +928,7 @@ sub lexical_variable_pir_name($/) {
     my $var_ident;
     my $sigil := ~$/<sigil>;
 
-    if $sigil eq '$' { $prefix := 's_'; }
+    if $sigil eq "\$" { $prefix := 's_'; }
     elsif $sigil eq '@' { $prefix := 'a_'; }
     elsif $sigil eq '%' { $prefix := 'h_'; }
 
@@ -955,34 +956,10 @@ sub variable_lexical_name($/) {
 method variable_declarator($/) {
     ## We will always represent a smart-variable using register variable,
     ## binding it with the lexical name '$name' at declaration.
-    my $name := variable_lexical_name( $<variable> );
-
-    our @?BLOCKS;
-    my $block := @?BLOCKS[0];
-    my $sym := $block.symbol( $name );
-    if !( $sym && $sym<var> && $sym<type> eq 'variable' ) {
-        my $pir_name := lexical_variable_pir_name( $<variable> );
-        my $var := PAST::Var.new( :scope('register') );
-        $var.name( $pir_name );
-
-        ## Initialize the $var as a declaration to 'Undef'.
-        $var.isdecl(1);
-        if $<expression> { $var.viviself( $( $<expression>[0] ) ); }
-        else { $var.viviself( 'Undef' ); }
-
-        my $reuse_var := PAST::Var.new( :scope('register') );
-        $reuse_var.name($var.name());
-        $block.symbol( $name, :scope('lexical'), :type('variable'),
-                       :var( $reuse_var ) );
-
-        ## Bind the var with the lexical name.
-        make PAST::Var.new( :name( $name ), :scope( 'lexical' ),
-          :isdecl( 1 ), :viviself( $var ) );
-    }
-    else {
-        #$/.panic("smart: * Variable '"~$name~"' already declaraed.");
-        make $sym<var>;
-    }
+    my $var := $( $<variable> );
+    if $var<decl> { $var := $var<decl>; }
+    if $<expression> { $var.viviself( $( $<expression>[0] ) ); }
+    make $var;
 }
 
 method variable($/) {
@@ -992,23 +969,20 @@ method variable($/) {
     #my $name := ~$/;
     my $name := variable_lexical_name( $/ );
     my $sym := $block.symbol( $name );
-    if !( $sym && $sym<var> && $sym<type> eq 'variable' ) {
-        my $pir_name := lexical_variable_pir_name( $/ );
-        my $var := PAST::Var.new( :scope('register') );
-        $var.name( $pir_name );
-        $var.isdecl( 1 );
+    #if !( $sym && $sym<name> eq $name ) {
+    if !( $sym ) {
+        ## Bind the var with the lexical name.
+        my $decl := PAST::Var.new( :scope('register') );
+        $decl.viviself( 'Undef' );
 
-        ## Next time we see the same variable this past will be reused.
-        my $reuse_var := PAST::Var.new( :scope('register') );
-        $reuse_var.name( $var.name() );
         $block.symbol( $name, :scope('lexical'), :type('variable'),
-                       :var( $reuse_var ) );
+                       :decl( $decl ) );
 
-        $var.viviself( PAST::Op.new( :inline('find_lex %r, "'~$name~'"') ) );
-        make $var;
+        make PAST::Var.new( :name( $name ), :scope( 'lexical' ),
+          :isdecl( 1 ), :viviself( $decl ) );
     }
     else {
-        make $sym<var>;
+        make $sym<decl>;
     }
 }
 
