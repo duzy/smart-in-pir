@@ -11,7 +11,7 @@ include Makefile.def
 PARROT_ARGS =
 
 ## configuration settings
-BUILD_DIR     ?= /more/temp/parrot
+BUILD_DIR     ?= ../parrot/parrot
 LOAD_EXT      = .so
 O             = .o
 
@@ -20,7 +20,7 @@ LN_S          = /bin/ln -s
 PERL          = /usr/bin/perl
 RM_RF         = $(PERL) -MExtUtils::Command -e rm_rf
 CP            = $(PERL) -MExtUtils::Command -e cp
-PARROT        = ../../parrot
+PARROT        = $(BUILD_DIR)/parrot
 CAT           = $(PERL) -MExtUtils::Command -e cat
 BUILD_DYNPMC  = $(PERL) $(BUILD_DIR)/tools/build/dynpmc.pl
 RECONFIGURE   = $(PERL) $(BUILD_DIR)/tools/dev/reconfigure.pl
@@ -34,7 +34,7 @@ PCT           = $(BUILD_DIR)/runtime/parrot/library/PCT.pbc
 
 PMC_DIR       = src/pmc
 
-PBC_TO_EXE    = ../../pbc_to_exe
+PBC_TO_EXE    = $(BUILD_DIR)/pbc_to_exe
 
 all: smart.pbc
 
