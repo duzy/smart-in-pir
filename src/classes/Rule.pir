@@ -49,7 +49,7 @@ has_orderonly:
     Execute actions of the rule.
 =cut
 .sub "execute_actions" :method
-    .local pmc actions, iter
+    .local pmc actions, it
     .local int state, total_actions
     
     set state, -1
@@ -59,10 +59,11 @@ has_orderonly:
     set total_actions, actions
     if total_actions == 0 goto return_result
     
-    new iter, 'Iterator', actions
+    #new it, 'Iterator', actions
+    iter it, actions
 iterate_actions:
-    unless iter goto end_iterate_actions
-    shift $P0, iter
+    unless it goto end_iterate_actions
+    shift $P0, it
     can $I1, $P0, 'execute'
     unless $I1 goto invalid_action_object
     state = $P0.'execute'()

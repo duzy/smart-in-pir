@@ -174,7 +174,8 @@ Bind the target with the specified rule or target-pattern
     $P0 = getattribute src, 'value'
     $S0 = $P0
     $P1 = split " ", $S0
-    $P2 = new 'Iterator', $P1
+    #$P2 = new 'Iterator', $P1
+    iter $P2, $P1
 loop_tag:
     unless $P2 goto loop_tag_end
     $P3 = shift $P2
@@ -222,7 +223,8 @@ loop_tag_end:
 collect_prerequisites_of_updators:
     .local pmc updators, updator_it, updator
     getattribute updators, target, "updators"
-    new updator_it, 'Iterator', updators
+    #new updator_it, 'Iterator', updators
+    iter updator_it, updators
 collect_prerequisites_of_updators__iterate:
     unless updator_it goto collect_prerequisites_of_updators__iterate_end
     shift updator, updator_it
@@ -238,7 +240,8 @@ try_process_pattern_target:
 
 process_rule_object:
     $P1 = updator.'prerequisites'()
-    new $P2, 'Iterator', $P1
+    #new $P2, 'Iterator', $P1
+    iter $P2, $P1
 collect_prerequisites_of_updators__iterate_prerequisite:
     unless $P2 goto collect_prerequisites_of_updators__iterate_prerequisite_end
     shift $P3, $P2
@@ -250,7 +253,8 @@ collect_prerequisites_of_updators__iterate_prerequisite_end:
     null $P3
 
     $P1 = updator.'orderonlys'()
-    new $P2, 'Iterator', $P1
+    #new $P2, 'Iterator', $P1
+    iter $P2, $P1
 collect_prerequisites_of_updators__iterate_orderonly:
     unless $P2 goto collect_prerequisites_of_updators__iterate_orderonly_end
     shift $P3, $P2
@@ -309,7 +313,8 @@ var2_done:
     new var3, 'ResizableStringArray'
     new var4, 'ResizableStringArray'
     new var5, 'ResizableStringArray'
-    new itr, 'Iterator', prerequisites
+    #new itr, 'Iterator', prerequisites
+    iter itr, prerequisites
     set $S0, var0 ## the target name ($@)
 loop_prerequisites:
     unless itr goto loop_prerequisites_end
@@ -337,7 +342,8 @@ var3_push:
 var3_end:
     
     ## var4 => $^, all the prerequisites
-    $P2 = new 'Iterator', var4
+    #$P2 = new 'Iterator', var4
+    iter $P2, var4
 var4_iterate_items:
     unless $P2 goto var4_push
     shift $S2, $P2
@@ -358,7 +364,8 @@ loop_prerequisites_end:
 
     ## var6 => $|
     new var6, 'ResizableStringArray'
-    new itr, 'Iterator', orderonly
+    #new itr, 'Iterator', orderonly
+    iter itr, orderonly
 loop_orderonly:
     unless itr goto loop_orderonly_end
     shift $P2, itr
@@ -483,7 +490,8 @@ var2_done:
     new var4, 'ResizableStringArray'
     new var5, 'ResizableStringArray'
     .local pmc itr
-    new itr, 'Iterator', prerequisites
+    #new itr, 'Iterator', prerequisites
+    iter itr, prerequisites
     set $S0, var0 ## the target name ($@)
 loop_prerequisites:
     unless itr goto loop_prerequisites_end
@@ -508,7 +516,8 @@ var3_push:
 var3_end:
     
     ## var4 => $^, all the prerequisites
-    $P2 = new 'Iterator', var4
+    #$P2 = new 'Iterator', var4
+    iter $P2, var4
 var4_iterate_items:
     unless $P2 goto var4_push
     shift $S2, $P2
@@ -529,7 +538,8 @@ loop_prerequisites_end:
 
     ## var6 => $|
     new var6, 'ResizableStringArray'
-    new itr, 'Iterator', orderonly
+    #new itr, 'Iterator', orderonly
+    iter itr, orderonly
 loop_orderonly:
     unless itr goto loop_orderonly_end
     shift $P2, itr
@@ -654,7 +664,8 @@ loop_orderonly_end:
     get_hll_global array, ['smart';'make';'rule'], ".PHONY"
     if null array goto return_result
     
-    $P0 = new 'Iterator', array
+    #$P0 = new 'Iterator', array
+    iter $P0, array
 iterate_phony:
     unless $P0 goto iterate_phony_end
     $P1 = shift $P0
@@ -978,7 +989,8 @@ return_result:
     .local pmc updator_it
     
     updators = target.'updators'()
-    new updator_it, 'Iterator', updators
+    #new updator_it, 'Iterator', updators
+    iter updator_it, updators
 
 iterate_updators:
     unless updator_it goto iterate_updators_end
@@ -1120,7 +1132,8 @@ visit_the_flatten_prerequisite:
 
 visit_without_flattenning:
     prerequisites = rule.'prerequisites'()
-    new it, 'Iterator', prerequisites
+    #new it, 'Iterator', prerequisites
+    iter it, prerequisites
 iterate_prerequisites:
     unless it goto iterate_prerequisites_end
     shift prerequisite, it
@@ -1129,7 +1142,8 @@ iterate_prerequisites:
 iterate_prerequisites_end:
 
     prerequisites = rule.'orderonlys'()
-    new it, 'Iterator', prerequisites
+    #new it, 'Iterator', prerequisites
+    iter it, prerequisites
 iterate_orderonlys:
     unless it goto iterate_orderonlys_end
     shift prerequisite, it
@@ -1146,7 +1160,8 @@ visit_with_flattenning:
     tar = 'target'( $S0 )
 
     prerequisites = rule.'prerequisites'()
-    new it, 'Iterator', prerequisites
+    #new it, 'Iterator', prerequisites
+    iter it, prerequisites
 iterate_pattern_prerequisites:
     unless it goto iterate_prerequisites_end
     shift prerequisite, it
@@ -1159,7 +1174,8 @@ visit_normal_prerequisite:
 iterate_pattern_prerequisites_end:
 
     prerequisites = rule.'orderonlys'()
-    new it, 'Iterator', prerequisites
+    #new it, 'Iterator', prerequisites
+    iter it, prerequisites
 iterate_pattern_orderonlys:
     unless it goto iterate_orderonlys_end
     shift prerequisite, it
@@ -1219,7 +1235,8 @@ do_visit:
     
     if null patterns goto try_match_anything
     
-    new pattern_it, 'Iterator', patterns
+    #new pattern_it, 'Iterator', patterns
+    iter pattern_it, patterns
 iterate_pattern_targets:
     unless pattern_it goto iterate_pattern_targets_end
     shift pattern_target, pattern_it

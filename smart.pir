@@ -104,7 +104,7 @@ END_USAGE
     .local pmc env, it
     .local string name, value
     env = new 'Env'
-    it  = new 'Iterator', env
+    iter it, env
 iterate_env:
     unless it goto iterate_env_end
     name = shift it
@@ -119,7 +119,7 @@ iterate_env_end:
 =cut
 .sub "parse-command-line-arguments" :anon
     .param pmc args
-    .local pmc iter, new_args
+    .local pmc new_args
     .local string command_name, target
     .local string smartfile
     smartfile = ""
@@ -135,17 +135,17 @@ iterate_env_end:
     if argc == 0 goto guess_smartfile
     
     .local string arg
-    .local pmc iter
+    .local pmc it
     arg = ""
-    iter = new 'Iterator', args
+    iter it, args
 loop_args:
-    unless iter goto end_loop_args
-    arg = shift iter
+    unless it goto end_loop_args
+    arg = shift it
 
 check_arg_0: ## Smartfile specifying
     unless arg == "-f" goto check_arg_1
-    unless iter goto check_arg_0_bad
-    $S0 = shift iter
+    unless it goto check_arg_0_bad
+    $S0 = shift it
     smartfile = $S0
     stat $I0, smartfile, 0
     unless $I0 goto check_arg_0_smartfile_not_existed
@@ -254,10 +254,10 @@ guess_smartfile:
     push filenames, "GNUmakefile"
     push filenames, "makefile"
     push filenames, "Makefile"
-    iter = new 'Iterator', filenames
+    iter it, filenames
 iterate_filenames:
-    unless iter goto iterate_filenames_end
-    $S0 = shift iter
+    unless it goto iterate_filenames_end
+    $S0 = shift it
     stat $I0, $S0, 0
     unless $I0 goto iterate_filenames
     smartfile = $S0

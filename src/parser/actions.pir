@@ -112,15 +112,16 @@ return_result:
 .sub "!UPDATE-GOALS"
     .local pmc targets
     .local pmc target
-    .local pmc iter
+    .local pmc it
     
     ## the target list from command line arguments
     get_hll_global targets, ['smart';'make'], "@<?>"
     if null targets goto update_number_one_target
-    iter = new 'Iterator', targets
+    #it = new 'Iterator', targets
+    iter it, targets
 iterate_command_line_targets:
-    unless iter goto end_iterate_command_line_targets
-    $S0 = shift iter
+    unless it goto end_iterate_command_line_targets
+    $S0 = shift it
     get_hll_global target, ['smart';'make';'target'], $S0
     unless null target goto got_command_line_target
     target = 'new:Target'( $S0 )
@@ -201,7 +202,8 @@ no_number_one_target:
     .local pmc result
     .local pmc it, ait
     result = new 'ResizablePMCArray'
-    it = new 'Iterator', args
+    #it = new 'Iterator', args
+    iter it, args
 iterate_items:
     unless it goto iterate_items_end
     shift $P0, it
@@ -219,7 +221,8 @@ iterate_items__pack_Target:
     goto iterate_items
     
 iterate_items__pack_ResizablePMCArray:
-    ait = new 'Iterator', $P0
+    #ait = new 'Iterator', $P0
+    iter ait, $P0
 iterate_items__pack_ResizablePMCArray__iterate_array:
     unless ait goto iterate_items__pack_ResizablePMCArray__iterate_array_end
     $P1 = shift ait
@@ -281,7 +284,8 @@ check_and_handle_pattern_target_go:
     ( $S0, $P0 ) = '!CHECK-AND-SPLIT-ARCHIVE-MEMBERS'( text )
     if $S0 == "" goto check_and_handle_pattern_target__store_normal_pattern
     
-    new $P1, 'Iterator', $P0
+    #new $P1, 'Iterator', $P0
+    iter $P1, $P0
 iterate_arcives:
     unless $P1 goto iterate_arcives_end
     shift $S0, $P1
@@ -311,8 +315,10 @@ check_and_handle_pattern_target__store_normal_pattern:
 
     ## If static rule, the pattern target will not be stored, but bind with
     ## the static targets instead
-    ##unless null out_statics goto bind_static_targets
-    bsr bind_static_targets
+    .local pmc cs
+    new cs, "ResizableIntegerArray"
+    #bsr bind_static_targets
+    local_branch cs, bind_static_targets
     if $I0 goto return_result
     
     if text == "%" goto check_and_handle_pattern_target__store_match_anything
@@ -333,7 +339,8 @@ check_and_handle_pattern_target__store_match_anything:
 bind_static_targets:
     if null out_statics goto bind_static_targets_done
     .local pmc sit, st
-    new sit, 'Iterator', out_statics
+    #new sit, 'Iterator', out_statics
+    iter sit, out_statics
 iterate_static_targets:
     unless sit goto iterate_static_targets_end
     shift st, sit
@@ -345,8 +352,8 @@ iterate_static_targets_end:
     set $I0, 1 ## set the result
     
 bind_static_targets_done:
-    ret
-    
+    #ret
+    local_return cs
     
 return_result:
     .return ($I0)
@@ -407,7 +414,8 @@ push_pattern_target:
     null $P1
     null $P2
     new $P0, 'ResizableStringArray'
-    new $P1, 'Iterator', $P3
+    #new $P1, 'Iterator', $P3
+    iter $P1, $P3
 check_and_split_archive_members__iterate:
     unless $P1 goto check_and_split_archive_members__iterate_end
     shift $P2, $P1
@@ -485,7 +493,8 @@ check_wildcard_prerequsite__case4:
     
 check_wildcard_prerequsite__done_yes:
     $P1 = '~wildcard'( text )
-    new $P2, 'Iterator', $P1
+    #new $P2, 'Iterator', $P1
+    iter $P2, $P1
 check_wildcard_prerequsite__done_yes__iterate_items:
     unless $P2 goto check_wildcard_prerequsite__done_yes__iterate_items__end
     shift $S1, $P2
@@ -508,7 +517,10 @@ check_wildcard_prerequsite__done:
 
     .local string pat1
     .local string pat2
-    
+
+    .local pmc cs
+    new cs, 'ResizableIntegerArray'
+
 check_and_convert_suffix_target:
     set $I0, 0
     substr $S0, text, 0, 1
@@ -518,7 +530,8 @@ check_and_convert_suffix_target:
     set $I0, 1 ## tells number of suffixes
     
     $S3 = text ## check the suffix
-    bsr check_and_convert_suffix_target__check_suffixes
+    #bsr check_and_convert_suffix_target__check_suffixes
+    local_branch cs, check_and_convert_suffix_target__check_suffixes
     unless $I1 goto check_and_convert_suffix_target__done
     
     ## ".c:" => "%: %.c"
@@ -540,11 +553,13 @@ check_and_convert_suffix_target__check_two_suffixes:
     $S1 = substr text, $I1, $I2 ## the second suffix
     
     $S3 = $S0 ## check the first suffix
-    bsr check_and_convert_suffix_target__check_suffixes
+    #bsr check_and_convert_suffix_target__check_suffixes
+    local_branch cs, check_and_convert_suffix_target__check_suffixes
     unless $I1 goto check_and_convert_suffix_target__done
     
     $S3 = $S1 ## check the second suffix
-    bsr check_and_convert_suffix_target__check_suffixes
+    #bsr check_and_convert_suffix_target__check_suffixes
+    local_branch cs, check_and_convert_suffix_target__check_suffixes
     unless $I1 goto check_and_convert_suffix_target__done
     
     ## ".c.o:" => "%.o:%.c"
@@ -565,7 +580,8 @@ check_and_convert_suffix_target__check_suffixes:
     .local pmc suffixes
     get_hll_global suffixes, ['smart';'make';'rule'], ".SUFFIXES"
     if null suffixes goto check_and_convert_suffix_target__check_suffixes__done
-    $P0 = new 'Iterator', suffixes
+    #$P0 = new 'Iterator', suffixes
+    iter $P0, suffixes
     $I1 = 0
 check_and_convert_suffix_target__iterate_suffixes:
     unless $P0 goto check_and_convert_suffix_target__iterate_suffixes_done
@@ -580,7 +596,8 @@ check_and_convert_suffix_target__iterate_suffixes_done:
     $S4 .= "'\n"
     print $S4
 check_and_convert_suffix_target__check_suffixes__done:
-    ret
+    #ret
+    local_return cs
 .end # sub "!CHECK-AND-CONVERT-SUFFIX"
 
 =item
@@ -588,6 +605,9 @@ check_and_convert_suffix_target__check_suffixes__done:
 .sub "!CONVERT-SUFFIX-TARGET"
     .param pmc prerequisites ## *OUT*
     .param string text ## *IN* *OUT/modifying*
+
+    .local pmc cs
+    new cs, 'ResizableIntegerArray'
     
     ######################
     ## local: check_and_convert_suffix_target
@@ -602,7 +622,8 @@ check_and_convert_suffix_target:
     set $I0, 1 ## tells number of suffixes
     
     $S3 = text
-    bsr check_and_convert_suffix_target__check_suffixes
+    #bsr check_and_convert_suffix_target__check_suffixes
+    local_branch cs, check_and_convert_suffix_target__check_suffixes
     unless $I1 goto check_and_convert_suffix_target__done
     
 #     print "one-suffix-rule: "   #!!!
@@ -627,11 +648,13 @@ check_and_convert_suffix_target__check_two_suffixes:
     $S1 = substr text, $I1, $I2 ## the second suffix
     
     $S3 = $S0
-    bsr check_and_convert_suffix_target__check_suffixes
+    #bsr check_and_convert_suffix_target__check_suffixes
+    local_branch cs, check_and_convert_suffix_target__check_suffixes
     unless $I1 goto check_and_convert_suffix_target__done
     
     $S3 = $S1
-    bsr check_and_convert_suffix_target__check_suffixes
+    #bsr check_and_convert_suffix_target__check_suffixes
+    local_branch cs, check_and_convert_suffix_target__check_suffixes
     unless $I1 goto check_and_convert_suffix_target__done
     
 #     print "two-suffix-rule: "   #!!!
@@ -657,7 +680,8 @@ check_and_convert_suffix_target__check_suffixes:
     .local pmc suffixes
     get_hll_global suffixes, ['smart';'make';'rule'], ".SUFFIXES"
     if null suffixes goto check_and_convert_suffix_target__check_suffixes__done
-    $P0 = new 'Iterator', suffixes
+    #$P0 = new 'Iterator', suffixes
+    iter $P0, suffixes
     $I1 = 0
 check_and_convert_suffix_target__iterate_suffixes:
     unless $P0 goto check_and_convert_suffix_target__iterate_suffixes_done
@@ -672,7 +696,8 @@ check_and_convert_suffix_target__iterate_suffixes_done:
     $S4 .= "'\n"
     print $S4
 check_and_convert_suffix_target__check_suffixes__done:
-    ret
+    #ret
+    local_return cs
    
 .end # sub '!CONVERT-SUFFIX-TARGET'
 
@@ -698,7 +723,8 @@ push_items:
 #     goto convert_items_into_array__iterate_items
 # convert_items_into_array__iterate_items_end:
 # convert_items_into_array__done:
-    new $P1, 'Iterator', items 
+    #new $P1, 'Iterator', items
+    iter $P1, items
 iterate_items:
     unless $P1 goto iterate_items_end
     shift $P0, $P1
@@ -720,7 +746,8 @@ iterate_items_end:
     
 push_items:
     
-    new $P1, 'Iterator', items 
+    #new $P1, 'Iterator', items
+    iter $P1, items
 iterate_items:
     unless $P1 goto iterate_items_end
     shift $P0, $P1
@@ -742,6 +769,9 @@ iterate_items_end:
     
     .return()
 
+    .local pmc cs
+    new cs, 'ResizableIntegerArray'
+
 
     ######################
     ## local routine: update_special_array_rule
@@ -754,8 +784,10 @@ update_special_array_rule:
     set_hll_global ['smart';'make';'rule'], $S0, array
 update_special_PHONY__got_phony_array:
     $P0 = array
-    bsr convert_items_into_array
-    ret
+    #bsr convert_items_into_array
+    #ret
+    local_branch cs, convert_items_into_array
+    local_return cs
     
     ######################
     ## local routine: convert_items_into_array
@@ -764,7 +796,8 @@ update_special_PHONY__got_phony_array:
 convert_items_into_array:
     $S0 = join ' ', items
     $P1 = '~expanded-items'( $S0 )
-    $P2 = new 'Iterator', $P1
+    #$P2 = new 'Iterator', $P1
+    iter $P2, $P1
 convert_items_into_array__iterate_items:
     unless $P2 goto convert_items_into_array__iterate_items_end
     $P1 = shift $P2
@@ -774,7 +807,8 @@ convert_items_into_array__iterate_items:
     goto convert_items_into_array__iterate_items
 convert_items_into_array__iterate_items_end:
 convert_items_into_array__done:
-    ret
+    #ret
+    local_return cs
 
 .end # sub :SPECIAL-RULE
 
@@ -785,7 +819,8 @@ convert_items_into_array__done:
     .local pmc result
     new result, 'ResizablePMCArray'
     items = '~expanded-items'( str )
-    $P0 = new 'Iterator', items
+    #$P0 = new 'Iterator', items
+    iter $P0, items
 iterate_items:
     unless $P0 goto iterate_items_end
     $S0 = shift $P0
